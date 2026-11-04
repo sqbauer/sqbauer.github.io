@@ -1,0 +1,18 @@
+{
+  "_help": "Manual facts the APIs cannot provide. Keys under 'entries' are lowercase DOIs. Applied at render time (npm run render). Fields: role ('first' | 'co-first'; first authorship is otherwise inferred from author order), note (short badge, e.g. 'In revision'), pdf, code, data, slides (URLs), summary (path to an interactive summary page), preprintOf (DOI of the published version, for preprints that Crossref/bioRxiv do not link; the preprint is then shown as a link on the published paper). 'include' adds DOIs missing from ORCID/PubMed (still verified against Crossref); 'exclude' hides DOIs.",
+  "entries": {
+    "10.3389/fncir.2025.1706704": {
+      "role": "co-first"
+    },
+    "10.1101/2023.10.30.564769": {
+      "note": "In revision"
+    },
+    "10.1101/2025.09.16.676487": {
+      "preprintOf": "10.3389/fncir.2025.1706704"
+    }
+  },
+  "include": [
+    "10.1101/2023.10.30.564769"
+  ],
+  "exclude": []
+}

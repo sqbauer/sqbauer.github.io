@@ -1,0 +1,330 @@
+[
+  {
+    "doi": "10.1101/2023.10.30.564769",
+    "type": "preprint",
+    "title": "Sleep-state dependent cerebellar processing in adult mice",
+    "authors": [
+      {
+        "family": "Canto",
+        "given": "Cathrin B."
+      },
+      {
+        "family": "Bauer",
+        "given": "Staf"
+      },
+      {
+        "family": "Hoogland",
+        "given": "Tycho M."
+      },
+      {
+        "family": "Hoedemaker",
+        "given": "Hugo H."
+      },
+      {
+        "family": "Geelen",
+        "given": "Cynthia"
+      },
+      {
+        "family": "Loyola",
+        "given": "Sebastian"
+      },
+      {
+        "family": "Miaja",
+        "given": "Pablo"
+      },
+      {
+        "family": "De Zeeuw",
+        "given": "Chris I."
+      }
+    ],
+    "journal": "bioRxiv",
+    "volume": null,
+    "issue": null,
+    "pages": null,
+    "year": 2023,
+    "date": "2023-11-01",
+    "pmid": null,
+    "pmcid": null,
+    "publishedAs": null,
+    "preprints": [],
+    "sources": [
+      "manual"
+    ],
+    "bibtex": "@article{Canto_2023,\n  title = {Sleep-state dependent cerebellar processing in adult mice},\n  url = {http://dx.doi.org/10.1101/2023.10.30.564769},\n  DOI = {10.1101/2023.10.30.564769},\n  publisher = {openRxiv},\n  author = {Canto, Cathrin B. and Bauer, Staf and Hoogland, Tycho M. and Hoedemaker, Hugo H. and Geelen, Cynthia and Loyola, Sebastian and Miaja, Pablo and De Zeeuw, Chris I.},\n  year = {2023},\n  month = Nov\n}"
+  },
+  {
+    "doi": "10.3389/fncir.2025.1706704",
+    "type": "article",
+    "title": "The cerebellum engages multiple pre-motor pathways through a divergent-convergent architecture to shape whisker dynamics",
+    "authors": [
+      {
+        "family": "Bauer",
+        "given": "Staf"
+      },
+      {
+        "family": "Zhai",
+        "given": "Peipei"
+      },
+      {
+        "family": "van Wingerden",
+        "given": "Nathalie"
+      },
+      {
+        "family": "Zhao",
+        "given": "Hehe"
+      },
+      {
+        "family": "Romano",
+        "given": "Vincenzo"
+      }
+    ],
+    "journal": "Frontiers in Neural Circuits",
+    "volume": "19",
+    "issue": null,
+    "pages": "1706704",
+    "year": 2026,
+    "date": "2026-01-22",
+    "pmid": "41660153",
+    "pmcid": "PMC12872751",
+    "publishedAs": null,
+    "preprints": [
+      "10.1101/2025.09.16.676487"
+    ],
+    "sources": [
+      "pubmed"
+    ],
+    "bibtex": "@article{Bauer_2026,\n  title = {The cerebellum engages multiple pre-motor pathways through a divergent-convergent architecture to shape whisker dynamics},\n  volume = {19},\n  ISSN = {1662-5110},\n  url = {http://dx.doi.org/10.3389/fncir.2025.1706704},\n  DOI = {10.3389/fncir.2025.1706704},\n  journal = {Frontiers in Neural Circuits},\n  publisher = {Frontiers Media SA},\n  author = {Bauer, Staf and Zhai, Peipei and van Wingerden, Nathalie and Zhao, Hehe and Romano, Vincenzo},\n  year = {2026},\n  month = Jan\n}"
+  },
+  {
+    "doi": "10.1038/s41467-025-64592-8",
+    "type": "article",
+    "title": "Stage-dependent cerebrocerebellar communication during sensorimotor processing",
+    "authors": [
+      {
+        "family": "Romano",
+        "given": "Vincenzo"
+      },
+      {
+        "family": "van Driessche",
+        "given": "Matthijs"
+      },
+      {
+        "family": "van Wingerden",
+        "given": "Nathalie"
+      },
+      {
+        "family": "Bauer",
+        "given": "Staf"
+      },
+      {
+        "family": "Boeser",
+        "given": "Brendan"
+      },
+      {
+        "family": "Mejias",
+        "given": "Jorge F."
+      },
+      {
+        "family": "De Zeeuw",
+        "given": "Chris I."
+      }
+    ],
+    "journal": "Nature Communications",
+    "volume": "16",
+    "issue": "1",
+    "pages": "8812",
+    "year": 2025,
+    "date": "2025-10-03",
+    "pmid": "41044080",
+    "pmcid": "PMC12494962",
+    "publishedAs": null,
+    "preprints": [],
+    "sources": [
+      "orcid",
+      "pubmed"
+    ],
+    "bibtex": "@article{Romano_2025,\n  title = {Stage-dependent cerebrocerebellar communication during sensorimotor processing},\n  volume = {16},\n  ISSN = {2041-1723},\n  url = {http://dx.doi.org/10.1038/s41467-025-64592-8},\n  DOI = {10.1038/s41467-025-64592-8},\n  number = {1},\n  journal = {Nature Communications},\n  publisher = {Springer Science and Business Media LLC},\n  author = {Romano, Vincenzo and van Driessche, Matthijs and van Wingerden, Nathalie and Bauer, Staf and Boeser, Brendan and Mejias, Jorge F. and De Zeeuw, Chris I.},\n  year = {2025},\n  month = Oct\n}"
+  },
+  {
+    "doi": "10.1113/jp284064",
+    "type": "article",
+    "title": "Whisker kinematics in the cerebellum",
+    "authors": [
+      {
+        "family": "Zhai",
+        "given": "Peipei"
+      },
+      {
+        "family": "Romano",
+        "given": "Vincenzo"
+      },
+      {
+        "family": "Soggia",
+        "given": "Giulia"
+      },
+      {
+        "family": "Bauer",
+        "given": "Staf"
+      },
+      {
+        "family": "van Wingerden",
+        "given": "Nathalie"
+      },
+      {
+        "family": "Jacobs",
+        "given": "Thomas"
+      },
+      {
+        "family": "van der Horst",
+        "given": "Annabel"
+      },
+      {
+        "family": "White",
+        "given": "Joshua J."
+      },
+      {
+        "family": "Mazza",
+        "given": "Roberta"
+      },
+      {
+        "family": "De Zeeuw",
+        "given": "Chris I."
+      }
+    ],
+    "journal": "The Journal of Physiology",
+    "volume": "602",
+    "issue": "1",
+    "pages": "153-181",
+    "year": 2024,
+    "date": "2023-11-21",
+    "pmid": "37987552",
+    "pmcid": null,
+    "publishedAs": null,
+    "preprints": [],
+    "sources": [
+      "orcid",
+      "pubmed"
+    ],
+    "bibtex": "@article{Zhai_2023,\n  title = {Whisker kinematics in the cerebellum},\n  volume = {602},\n  ISSN = {1469-7793},\n  url = {http://dx.doi.org/10.1113/jp284064},\n  DOI = {10.1113/jp284064},\n  number = {1},\n  journal = {The Journal of Physiology},\n  publisher = {Wiley},\n  author = {Zhai, Peipei and Romano, Vincenzo and Soggia, Giulia and Bauer, Staf and van Wingerden, Nathalie and Jacobs, Thomas and van der Horst, Annabel and White, Joshua J. and Mazza, Roberta and De Zeeuw, Chris I.},\n  year = {2023},\n  month = Nov,\n  pages = {153–181}\n}"
+  },
+  {
+    "doi": "10.3390/biomedicines10081831",
+    "type": "article",
+    "title": "Purkinje Cell Activity Resonation Generates Rhythmic Behaviors at the Preferred Frequency of 8 Hz",
+    "authors": [
+      {
+        "family": "Bauer",
+        "given": "Staf"
+      },
+      {
+        "family": "van Wingerden",
+        "given": "Nathalie"
+      },
+      {
+        "family": "Jacobs",
+        "given": "Thomas"
+      },
+      {
+        "family": "van der Horst",
+        "given": "Annabel"
+      },
+      {
+        "family": "Zhai",
+        "given": "Peipei"
+      },
+      {
+        "family": "Betting",
+        "given": "Jan-Harm L. F."
+      },
+      {
+        "family": "Strydis",
+        "given": "Christos"
+      },
+      {
+        "family": "White",
+        "given": "Joshua J."
+      },
+      {
+        "family": "De Zeeuw",
+        "given": "Chris I."
+      },
+      {
+        "family": "Romano",
+        "given": "Vincenzo"
+      }
+    ],
+    "journal": "Biomedicines",
+    "volume": "10",
+    "issue": "8",
+    "pages": "1831",
+    "year": 2022,
+    "date": "2022-07-29",
+    "pmid": "36009378",
+    "pmcid": "PMC9404806",
+    "publishedAs": null,
+    "preprints": [],
+    "sources": [
+      "orcid",
+      "pubmed"
+    ],
+    "bibtex": "@article{Bauer_2022,\n  title = {Purkinje Cell Activity Resonation Generates Rhythmic Behaviors at the Preferred Frequency of 8 Hz},\n  volume = {10},\n  ISSN = {2227-9059},\n  url = {http://dx.doi.org/10.3390/biomedicines10081831},\n  DOI = {10.3390/biomedicines10081831},\n  number = {8},\n  journal = {Biomedicines},\n  publisher = {MDPI AG},\n  author = {Bauer, Staf and van Wingerden, Nathalie and Jacobs, Thomas and van der Horst, Annabel and Zhai, Peipei and Betting, Jan-Harm L. F. and Strydis, Christos and White, Joshua J. and De Zeeuw, Chris I. and Romano, Vincenzo},\n  year = {2022},\n  month = July,\n  pages = {1831}\n}"
+  },
+  {
+    "doi": "10.1016/j.cub.2021.12.020",
+    "type": "article",
+    "title": "Olivocerebellar control of movement symmetry",
+    "authors": [
+      {
+        "family": "Romano",
+        "given": "Vincenzo"
+      },
+      {
+        "family": "Zhai",
+        "given": "Peipei"
+      },
+      {
+        "family": "van der Horst",
+        "given": "Annabel"
+      },
+      {
+        "family": "Mazza",
+        "given": "Roberta"
+      },
+      {
+        "family": "Jacobs",
+        "given": "Thomas"
+      },
+      {
+        "family": "Bauer",
+        "given": "Staf"
+      },
+      {
+        "family": "Wang",
+        "given": "Xiaolu"
+      },
+      {
+        "family": "White",
+        "given": "Joshua J."
+      },
+      {
+        "family": "De Zeeuw",
+        "given": "C.I."
+      }
+    ],
+    "journal": "Current Biology",
+    "volume": "32",
+    "issue": "3",
+    "pages": "654-670.e4",
+    "year": 2022,
+    "date": "2022-02-01",
+    "pmid": "35016009",
+    "pmcid": null,
+    "publishedAs": null,
+    "preprints": [],
+    "sources": [
+      "orcid",
+      "pubmed"
+    ],
+    "bibtex": "@article{Romano_2022,\n  title = {Olivocerebellar control of movement symmetry},\n  volume = {32},\n  ISSN = {0960-9822},\n  url = {http://dx.doi.org/10.1016/j.cub.2021.12.020},\n  DOI = {10.1016/j.cub.2021.12.020},\n  number = {3},\n  journal = {Current Biology},\n  publisher = {Elsevier BV},\n  author = {Romano, Vincenzo and Zhai, Peipei and van der Horst, Annabel and Mazza, Roberta and Jacobs, Thomas and Bauer, Staf and Wang, Xiaolu and White, Joshua J. and De Zeeuw, C.I.},\n  year = {2022},\n  month = Feb,\n  pages = {654–670.e4}\n}"
+  }
+]

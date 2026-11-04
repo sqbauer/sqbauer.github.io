@@ -1,0 +1,68 @@
+name: Sync publications
+
+# Weekly: query ORCID + PubMed, verify every DOI against Crossref, regenerate the page,
+# and open a pull request if anything changed. Never merges by itself.
+# On pushes to other branches that touch the sync inputs, it regenerates and commits the
+# result back to that branch, so changes to the sync can be tested before merging.
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"   # Mondays 05:17 UTC
+  workflow_dispatch:
+  push:
+    branches-ignore: [main, "bot/**"]
+    paths:
+      - scripts/sync.mjs
+      - _data/overrides.json
+      - .github/workflows/sync.yml
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch and verify publications
+        run: node scripts/sync.mjs --report "$RUNNER_TEMP/sync-report.md"
+
+      - name: Render page
+        run: node scripts/render.mjs
+
+      - name: Show report
+        run: cat "$RUNNER_TEMP/sync-report.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open pull request (main only)
+        if: github.ref == 'refs/heads/main'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bot/publication-sync
+          delete-branch: true
+          add-paths: |
+            _data/publications.json
+            index.html
+            sitemap.xml
+          commit-message: "Sync publications from ORCID/PubMed"
+          title: "Publication sync"
+          body-path: ${{ runner.temp }}/sync-report.md
+
+      - name: Commit result to this branch (non-main pushes)
+        if: github.ref != 'refs/heads/main'
+        run: |
+          git add _data/publications.json index.html sitemap.xml
+          if git diff --cached --quiet; then echo "No changes."; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "Sync publications from ORCID/PubMed"
+          for i in 1 2 3 4; do git push && exit 0; echo "push failed (attempt $i), retrying"; sleep $((i * 15)); git pull --rebase; done
+          echo "::error::Could not push; generated publications.json follows"; cat _data/publications.json; exit 1

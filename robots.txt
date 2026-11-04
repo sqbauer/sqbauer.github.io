@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /_data/
+Disallow: /scripts/
+Disallow: /src/
+
+Sitemap: https://sqbauer.github.io/sitemap.xml
