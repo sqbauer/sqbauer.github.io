@@ -97,7 +97,7 @@ function pubItem(p) {
     ? `<details class="bib"><summary>BibTeX</summary><div class="bib-body"><pre><code>${esc(p.bibtex)}</code></pre><button type="button" class="copy" hidden>Copy BibTeX</button></div></details>`
     : "";
   const cite = citation(p);
-  return `<article class="pub" id="${esc(p.doi.replace(/[^a-z0-9]+/gi, "-"))}" data-role="${r || ""}" data-type="${p.type}">
+  return `<article class="pub" id="doi-${esc(p.doi.replace(/[^a-z0-9]+/gi, "-"))}" data-role="${r || ""}" data-type="${p.type}">
   <h4><a href="https://doi.org/${esc(p.doi)}">${esc(p.title)}</a></h4>
   <p class="authors">${authors}</p>
   <p class="venue"><span class="journal">${esc(p.journal)}</span>${cite ? ` ${esc(cite)}` : ""}${p.type === "preprint" && p.date ? ` · ${esc(p.date.slice(0, 4))}` : ""}</p>
@@ -145,6 +145,10 @@ function talksHtml() {
 </li>`).join("")}</ol>`;
 }
 
+// CSS is inlined (single-page site): saves a render-blocking request on slow connections.
+const css = (await readFile(path.join(ROOT, "assets", "style.css"), "utf8"))
+  .replace(/url\("fonts\//g, 'url("assets/fonts/')
+  .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\n\s*/g, "\n").trim();
 const hasCv = site.cv && existsSync(path.join(ROOT, site.cv));
 const emailHtml = site.email ? `<a href="mailto:${esc(site.email)}">${esc(site.email)}</a>` : todo("public email address");
 
@@ -208,8 +212,7 @@ const html = `<!DOCTYPE html>
 <meta name="twitter:image" content="${esc(site.url)}assets/og.png">
 <script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="preload" href="assets/fonts/newsreader.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/style.css">
+<style>${css}</style>
 <script type="application/ld+json">${jsonLd()}</script>
 </head>
 <body>

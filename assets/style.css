@@ -185,7 +185,7 @@ ul, ol { padding: 0; margin: 0; list-style: none; }
 .bib summary:hover { color: var(--accent); }
 .bib-body { position: relative; margin-top: 6px; }
 .bib pre {
-  margin: 0; padding: 12px 14px; overflow-x: auto; max-width: 100%;
+  margin: 0; padding: 12px 14px; max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere;
   background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
   font: 0.78rem/1.5 var(--mono); color: var(--text);
 }

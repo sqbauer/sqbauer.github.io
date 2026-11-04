@@ -17,7 +17,7 @@ copy-BibTeX buttons.
 | `_data/publications.json` | Publication metadata. **Generated** by `scripts/sync.mjs`. | No |
 | `_data/images.json` | Image sizes/formats. **Generated** by `scripts/images.mjs`. | No |
 | `index.html`, `sitemap.xml` | **Generated** by `scripts/render.mjs`. | No |
-| `assets/` | CSS, JS, fonts (self-hosted, SIL OFL), favicon, social preview image, optimised images. | CSS/JS yes |
+| `assets/` | CSS, JS, fonts (self-hosted, SIL OFL), favicon, social preview image, optimised images. `style.css` is inlined into `index.html` at render time, so run `npm run render` after editing it. | CSS/JS yes |
 | `src/images/` | Original images (photo, research figures). | Yes |
 
 ## Local preview
