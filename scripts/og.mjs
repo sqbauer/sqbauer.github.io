@@ -4,7 +4,7 @@
 // Run: npm run og
 
 import { readFile } from "node:fs/promises";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { createRequire } from "node:module";
 
@@ -12,7 +12,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 const site = JSON.parse(await readFile(path.join(ROOT, "_data", "site.json"), "utf8"));
-const fonts = pathToFileURL(path.join(ROOT, "assets", "fonts")).href;
+const font = async (f) => "data:font/woff2;base64," + (await readFile(path.join(ROOT, "assets", "fonts", f))).toString("base64");
+const [serif, sans] = await Promise.all([font("newsreader.woff2"), font("inter.woff2")]);
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
 const W = 1200, cyc = 22, bout = 400, mid = 60;
@@ -23,7 +24,7 @@ for (let x = 0; x <= W; x += 2) {
 }
 
 const og = `<!doctype html><html><head><style>
-@font-face{font-family:N;src:url(${fonts}/newsreader.woff2)}@font-face{font-family:I;src:url(${fonts}/inter.woff2)}
+@font-face{font-family:N;src:url(${serif});font-weight:400 600}@font-face{font-family:I;src:url(${sans});font-weight:400 600}
 body{margin:0;width:1200px;height:630px;background:radial-gradient(900px 420px at 88% -10%,#dcecea,transparent 70%),#f6f4ef;color:#17181c;font-family:I;position:relative;overflow:hidden}
 .c{padding:92px 96px}.e{font:600 22px I;letter-spacing:.14em;text-transform:uppercase;color:#0b6363;margin:0 0 22px}
 h1{font:500 104px/1 N;letter-spacing:-.02em;margin:0 0 30px}p{font:400 38px/1.35 N;margin:0;max-width:900px}

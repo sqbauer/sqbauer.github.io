@@ -210,7 +210,7 @@ async function main() {
       date: dateOf(m["published-online"]) || dateOf(m["published-print"]) || dateOf(m.issued),
       pmid: pm?.pmid || null,
       pmcid: pm?.pmcid || null,
-      publishedAs: isPreprint ? rel("is-preprint-of")[0] || null : null,
+      publishedAs: isPreprint ? rel("is-preprint-of")[0] || (overrides.entries?.[doi]?.preprintOf ? normDoi(overrides.entries[doi].preprintOf) : null) : null,
       preprints: isPreprint ? [] : rel("has-preprint"),
       sources: c.sources.slice().sort(),
       bibtex,
