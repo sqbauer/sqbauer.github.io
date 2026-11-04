@@ -49,14 +49,26 @@ function picture(name, alt, { eager = false, cls = "", sizes = "100vw" } = {}) {
 }
 
 // ---------- decorative trace (static SVG, generated once at build) ----------
+// A rhythmic "LFP" burst trace. The envelope period (bout) is a whole number of carrier cycles
+// (cyc), so the path is periodic over `bout` and the CSS drift (translateX by -bout) loops
+// seamlessly. Spike ticks sit at wave troughs of high-amplitude cycles (phase-locked); each tick's
+// --d delay matches when the draw-in animation reaches it. Without CSS animation support the SVG
+// is simply static.
 function traceSvg() {
-  const W = 1200, H = 84, mid = 34, cyc = 22, bout = 400;
+  const W = 1200, H = 84, mid = 34, cyc = 20, bout = 400, L = W + bout, DRAW = 1200;
   const env = (x) => 0.12 + 0.88 * Math.sin((Math.PI * x) / bout) ** 4;
-  let d = "";
-  for (let x = 0; x <= W; x += 2) d += `${x ? "L" : "M"}${x} ${(mid - 26 * env(x) * Math.sin((2 * Math.PI * x) / cyc)).toFixed(1)}`;
-  let t = "";
-  for (let c = cyc / 4; c <= W; c += cyc) if (env(c) > 0.55) t += `M${c.toFixed(1)} ${H - 14}V${H - 2}`;
-  return `<svg class="trace" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="wave" vector-effect="non-scaling-stroke" d="${d}"/><path class="spk" vector-effect="non-scaling-stroke" d="${t}"/></svg>`;
+  // One quadratic Bezier per half-cycle (control point at 2x the local amplitude): visually a sine,
+  // at a fraction of the bytes of a sampled polyline.
+  let d = `M0 ${mid}`;
+  for (let x = 0, h = cyc / 2; x < L; x += h) {
+    const sign = Math.round(x / h) % 2 ? 1 : -1;
+    d += `Q${x + h / 2} ${(mid + sign * 2 * 26 * env(x + h / 2)).toFixed(1)} ${x + h} ${mid}`;
+  }
+  const ticks = [];
+  for (let c = (3 * cyc) / 4; c <= L; c += cyc) {
+    if (env(c) > 0.55) ticks.push(`<path class="spk" style="--d:${Math.round((c / L) * DRAW)}ms" d="M${c} ${H - 14}V${H - 2}"/>`);
+  }
+  return `<svg class="trace" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><g class="drift"><path class="wave" pathLength="1" d="${d}"/>${ticks.join("")}</g></svg>`;
 }
 
 // ---------- publications ----------
@@ -70,6 +82,19 @@ function citation(p) {
   if (p.volume) bits.push(p.volume + (p.issue ? `(${p.issue})` : ""));
   if (p.pages) bits.push(p.pages);
   return bits.join(":");
+}
+
+const pubId = (p) => "doi-" + p.doi.replace(/[^a-z0-9]+/gi, "-");
+
+// Optional thumbnail: overrides.json "thumb": { "image": "<name in _data/images.json>", "alt": "…",
+// "credit": "Fig. 2 from …", "license": "CC-BY-4.0" }. Rendered only for CC-BY figures with alt
+// text and credit; width/height come from images.json so the space is reserved (no layout shift).
+function thumbHtml(p, o) {
+  const t = o.thumb;
+  if (!t) return "";
+  const ok = t.image && images[t.image] && t.alt && t.credit && /^CC-BY/i.test(t.license || "");
+  if (!ok) { console.warn(`thumb for ${p.doi} skipped: needs image (in images.json), alt, credit and a CC-BY license`); return ""; }
+  return `<figure class="pub-thumb">${picture(t.image, t.alt, { sizes: "120px" })}<figcaption>${esc(t.credit)} (${esc(t.license)})</figcaption></figure>`;
 }
 
 function pubItem(p) {
@@ -97,8 +122,9 @@ function pubItem(p) {
     ? `<details class="bib"><summary>BibTeX</summary><div class="bib-body"><pre><code>${esc(p.bibtex)}</code></pre><button type="button" class="copy" hidden>Copy BibTeX</button></div></details>`
     : "";
   const cite = citation(p);
-  return `<article class="pub" id="doi-${esc(p.doi.replace(/[^a-z0-9]+/gi, "-"))}" data-role="${r || ""}" data-type="${p.type}">
-  <h4><a href="https://doi.org/${esc(p.doi)}">${esc(p.title)}</a></h4>
+  const thumb = thumbHtml(p, o);
+  return `<article class="pub reveal${thumb ? " has-thumb" : ""}" id="${pubId(p)}" data-role="${r || ""}" data-type="${p.type}">
+  ${thumb}<h4><a href="https://doi.org/${esc(p.doi)}">${esc(p.title)}</a></h4>
   <p class="authors">${authors}</p>
   <p class="venue"><span class="journal">${esc(p.journal)}</span>${cite ? ` ${esc(cite)}` : ""}${p.type === "preprint" && p.date ? ` · ${esc(p.date.slice(0, 4))}` : ""}</p>
   <div class="row">${badges ? `<div class="badges">${badges}</div>` : ""}<div class="pub-links">${links}</div></div>
@@ -124,13 +150,16 @@ ${list.map(pubItem).join("\n")}
 // ---------- other sections ----------
 function researchHtml() {
   return site.research.map((t, i) => {
-    const fig = t.figure ? picture(t.figure, t.figureAlt || "", { sizes: "(min-width: 900px) 360px, 100vw" }) : null;
-    return `<article class="theme">
-  <div class="theme-fig">${fig ? `<figure>${fig}${t.figureCredit ? `<figcaption>${esc(t.figureCredit)}</figcaption>` : ""}</figure>` : todoBlock(`figure for theme ${i + 1} (with alt text and licence/credit)`, "fig-ph")}</div>
-  <div class="theme-text">
-    <h3>${t.title ? esc(t.title) : todo(`theme ${i + 1} title`)}</h3>
-    <p>${t.text ? esc(t.text) : todo(`theme ${i + 1}: 2–3 sentences in your own words`)}</p>
-  </div>
+    const fig = t.figure ? picture(t.figure, t.figureAlt || "", { sizes: "(min-width: 900px) 280px, 100vw" }) : null;
+    const linked = pubs.filter((p) => (overrides.entries?.[p.doi]?.themes || []).includes(t.id));
+    const papers = linked.length
+      ? `<ul class="theme-papers">${linked.map((p) => `<li><a href="#${pubId(p)}">${esc(p.title)}</a> <span class="muted">${esc(p.journal)} ${p.type === "preprint" ? "preprint" : p.year}</span></li>`).join("")}</ul>`
+      : `<p>${todo(`link papers: add "themes": ["${t.id}"] to their entries in _data/overrides.json`)}</p>`;
+    return `<article class="theme card" id="theme-${esc(t.id)}">
+  <div class="theme-fig wipe">${fig ? `<figure>${fig}${t.figureCredit ? `<figcaption>${esc(t.figureCredit)}</figcaption>` : ""}</figure>` : todoBlock(`figure for "${t.title || `theme ${i + 1}`}" (with alt text and licence/credit)`, "fig-ph")}</div>
+  <h3>${t.title ? esc(t.title) : todo(`theme ${i + 1} title`)}</h3>
+  <p class="theme-sum">${t.text ? esc(t.text) : todo("2-line summary in your own words")}</p>
+  ${papers}
 </article>`;
   }).join("\n");
 }
@@ -224,7 +253,7 @@ const html = `<!DOCTYPE html>
 <header class="site-head">
   <div class="wrap bar">
     <a class="brand" href="#top">${esc(site.name)}</a>
-    <nav aria-label="Sections"><ul>${nav.map(([id, l]) => `<li><a href="#${id}">${l}</a></li>`).join("")}</ul></nav>
+    <nav aria-label="Sections"><ul>${nav.map(([id, l]) => `<li><a href="#${id}">${l}</a></li>`).join("")}</ul><span class="nav-ind" aria-hidden="true"></span></nav>
     <button type="button" class="theme-toggle" hidden aria-label="Switch colour theme">${icon.sun}${icon.moon}</button>
   </div>
 </header>
@@ -265,7 +294,8 @@ ${researchHtml()}
     <div class="toolbar">
       <div>
         <h2 id="h-pubs">Publications</h2>
-        <p class="count" id="pub-count" aria-live="polite">${pubs.length} ${pubs.length === 1 ? "paper" : "papers"}</p>
+        <p class="count" id="pub-count"><span class="num">${pubs.length}</span> <span class="unit">${pubs.length === 1 ? "paper" : "papers"}</span></p>
+        <p class="sr-only" id="pub-live" aria-live="polite"></p>
       </div>
       <div class="filters" role="group" aria-label="Filter publications" hidden>
         <button type="button" data-filter="all" aria-pressed="true">All</button>
