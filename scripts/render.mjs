@@ -150,7 +150,8 @@ const css = (await readFile(path.join(ROOT, "assets", "style.css"), "utf8"))
   .replace(/url\("fonts\//g, 'url("assets/fonts/')
   .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\n\s*/g, "\n").trim();
 const hasCv = site.cv && existsSync(path.join(ROOT, site.cv));
-const emailHtml = site.email ? `<a href="mailto:${esc(site.email)}">${esc(site.email)}</a>` : todo("public email address");
+// Convention: null = missing (TODO box), false = intentionally left out.
+const emailHtml = site.email ? `<p class="contact-line"><a href="mailto:${esc(site.email)}">${esc(site.email)}</a></p>` : site.email === false ? "" : `<p class="contact-line">${todo("public email address")}</p>`;
 
 // ---------- JSON-LD ----------
 function jsonLd() {
@@ -178,6 +179,8 @@ function jsonLd() {
 
 // ---------- page ----------
 const photo = site.photo ? picture(site.photo, site.photoAlt, { eager: true, cls: "photo", sizes: "220px" }) : null;
+const photoCol = site.photo === false ? "" : `<div class="hero-photo">${photo || todoBlock("photo (portrait, ≥800 px wide; put in src/images/ and run npm run images)", "photo-ph")}</div>`;
+const upcomingHtml = site.showUpcoming === false ? "" : `<li><span class="pos-label">Next</span> ${site.upcomingUrl ? ext(site.upcomingUrl, site.upcoming) : `${esc(site.upcoming)} ${todo("lab URL")}`}</li>`;
 const nav = [["research", "Research"], ["publications", "Publications"], ["talks", "Talks"], ["cv", "CV"], ["contact", "Contact"]];
 const icon = {
   sun: `<svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`,
@@ -227,22 +230,22 @@ const html = `<!DOCTYPE html>
 
 <main id="main">
 <section class="hero" id="top" aria-labelledby="name">
-  <div class="wrap hero-grid">
+  <div class="wrap hero-grid${photoCol ? "" : " no-photo"}">
     <div class="hero-text">
       <p class="eyebrow">Cerebellar neuroscience</p>
       <h1 id="name">${esc(site.name)}</h1>
       <p class="statement">${esc(site.statement)}</p>
       <ul class="positions">
         <li><span class="pos-label">Now</span> ${esc(site.position)}</li>
-        <li><span class="pos-label">Next</span> ${site.upcomingUrl ? ext(site.upcomingUrl, site.upcoming) : esc(site.upcoming)}${site.upcomingUrl ? "" : ` ${todo("Blumberg lab URL")}`}</li>
+        ${upcomingHtml}
       </ul>
       <ul class="links">
-        <li>${site.email ? ext("mailto:" + site.email, "Email") : todo("email")}</li>
+        ${site.email ? `<li>${ext("mailto:" + site.email, "Email")}</li>` : site.email === false ? "" : `<li>${todo("email")}</li>`}
         ${site.links.map((l) => `<li>${ext(l.url, l.label)}</li>`).join("\n        ")}
         <li>${hasCv ? ext(site.cv, "CV (PDF)") : todo("CV PDF")}</li>
       </ul>
     </div>
-    <div class="hero-photo">${photo || todoBlock("photo (portrait, ≥800 px wide; put in src/images/ and run npm run images)", "photo-ph")}</div>
+    ${photoCol}
   </div>
   ${traceSvg()}
 </section>
@@ -293,8 +296,9 @@ ${publicationsHtml()}
 <section class="section" id="contact" aria-labelledby="h-contact">
   <div class="wrap">
     <h2 id="h-contact">Contact</h2>
-    <p class="contact-line">${emailHtml}</p>
+    ${emailHtml}
     <p class="muted">Department of Neuroscience, Erasmus MC, Rotterdam, the Netherlands</p>
+    <ul class="links">${site.links.map((l) => `<li>${ext(l.url, l.label)}</li>`).join("")}</ul>
   </div>
 </section>
 </main>

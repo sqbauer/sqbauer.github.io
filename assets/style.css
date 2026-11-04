@@ -111,6 +111,7 @@ ul, ol { padding: 0; margin: 0; list-style: none; }
   background: radial-gradient(900px 420px at 88% -10%, var(--accent-soft), transparent 70%), var(--bg);
 }
 .hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 32px 48px; align-items: start; }
+.hero-grid.no-photo { grid-template-columns: minmax(0, 1fr); }
 .eyebrow { margin: 0 0 12px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
 .hero h1 { font-size: clamp(2.5rem, 7vw, 4.2rem); line-height: 1; letter-spacing: -0.02em; margin: 0 0 20px; }
 .statement { margin: 0 0 24px; max-width: 36ch; font: 400 clamp(1.2rem, 2.5vw, 1.45rem)/1.45 var(--serif); }
@@ -212,6 +213,7 @@ ul, ol { padding: 0; margin: 0; list-style: none; }
 }
 .button:hover { color: var(--bg); background: var(--accent-ink); }
 .contact-line { font: 400 1.35rem/1.4 var(--serif); margin: 0 0 6px; }
+#contact .links { margin-top: 14px; }
 
 .site-foot { margin-top: 72px; border-top: 1px solid var(--line); color: var(--faint); font-size: 0.85rem; }
 .site-foot p { margin: 0; padding: 28px 0 40px; }

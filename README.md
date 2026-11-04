@@ -11,7 +11,7 @@ copy-BibTeX buttons.
 
 | Path | What it is | Edit by hand? |
 |---|---|---|
-| `_data/site.json` | Page text: position, statement, links, research themes, photo, email, CV path. `null` renders as a visible **TODO** box. | Yes |
+| `_data/site.json` | Page text: position, statement, links, research themes, photo, email, CV path. `null` renders as a visible **TODO** box; `false` means intentionally left out. `showUpcoming` toggles the postdoc line. | Yes |
 | `_data/talks.json` | Talks and posters. | Yes |
 | `_data/overrides.json` | Publication facts the APIs cannot provide: co-first authorship, notes ("In revision"), PDF/code/data/slides links, DOIs to include or exclude. | Yes |
 | `_data/publications.json` | Publication metadata. **Generated** by `scripts/sync.mjs`. | No |
@@ -19,6 +19,7 @@ copy-BibTeX buttons.
 | `index.html`, `sitemap.xml` | **Generated** by `scripts/render.mjs`. | No |
 | `assets/` | CSS, JS, fonts (self-hosted, SIL OFL), favicon, social preview image, optimised images. `style.css` is inlined into `index.html` at render time, so run `npm run render` after editing it. | CSS/JS yes |
 | `src/images/` | Original images (photo, research figures). | Yes |
+| `src/cv.md` | Public (sanitised) CV source for the PDF. **Generated** by `npm run cv -- <master cv.md>`. | No |
 
 ## Local preview
 
@@ -62,8 +63,14 @@ plus sizes to `_data/images.json`), set `"photo": "photo"` or a theme's `"figure
 `"figureAlt"` in `_data/site.json`, then `npm run render`. Only use figures you hold the rights to
 (CC-BY papers with credit in `figureCredit`, or redrawn from your own data).
 
-**Add the CV.** Save it as `assets/Staf_Bauer_CV.pdf` (without home address, phone number or date
-of birth) and run `npm run render`; the TODO turns into a download link automatically.
+**Update the CV PDF.** Your master CV (with private details) stays outside this repo. Run
+`npm run cv -- /path/to/master/cv.md`: it strips the address, phone number, date of birth and email,
+refuses to continue if any of those survive, saves the sanitised Markdown to `src/cv.md`, and prints
+`assets/Staf_Bauer_CV.pdf` with the site fonts. `npm run cv` alone rebuilds from `src/cv.md`. Needs
+pandoc and Playwright (local only).
+
+**Show the postdoc position (from February 2027).** Set `"showUpcoming": true` in
+`_data/site.json` (edit the `upcoming` text if needed), then `npm run render`.
 
 **Social preview image.** `npm run og` regenerates `assets/og.png` and the touch icon (needs
 Playwright with Chromium; local only).

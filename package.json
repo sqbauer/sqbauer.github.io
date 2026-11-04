@@ -8,10 +8,13 @@
     "render": "node scripts/render.mjs",
     "images": "node scripts/images.mjs",
     "og": "node scripts/og.mjs",
+    "cv": "node scripts/cv.mjs",
     "validate": "html-validate index.html",
     "serve": "python3 -m http.server 8000"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "html-validate": "^9.0.0",
     "sharp": "^0.33.0",
