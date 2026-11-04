@@ -64,4 +64,5 @@ jobs:
           if git diff --cached --quiet; then echo "No changes."; exit 0; fi
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             commit -m "Sync publications from ORCID/PubMed"
-          git push
+          for i in 1 2 3 4; do git push && exit 0; echo "push failed (attempt $i), retrying"; sleep $((i * 15)); git pull --rebase; done
+          echo "::error::Could not push; generated publications.json follows"; cat _data/publications.json; exit 1
