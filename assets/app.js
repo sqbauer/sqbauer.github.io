@@ -148,6 +148,8 @@
         if (k < 1) requestAnimationFrame(step);
       };
       requestAnimationFrame(step);
+      // If frames are suspended (e.g. a stalled transition), land on the final value anyway.
+      setTimeout(function () { num.textContent = to; }, dur + 120);
     };
     var apply = function (f) {
       var shown = 0;
