@@ -4,19 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Staf Bauer · Publications</title>
-  <meta name="description" content="Staf Bauer — PhD candidate in neuroscience, Erasmus MC. Cerebellar control of movement, locomotion and sleep.">
+  <meta name="description" content="Staf Bauer — neuroscientist at Erasmus MC studying how the cerebellum shapes rhythmic movements.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
   <header class="hero">
     <div class="wrap">
+      <p class="eyebrow">Neuroscience · Erasmus MC, Rotterdam</p>
       <h1>Staf Bauer</h1>
-      <p class="role">PhD candidate, Department of Neuroscience, Erasmus MC, Rotterdam</p>
+      <p class="role">PhD candidate, Department of Neuroscience</p>
       <p class="bio">
-        I study how the cerebellum controls movement, using chronic silicon-probe
-        recordings and kinematic tracking in freely moving mice. Current work covers
-        cerebellar encoding of locomotion and gait adjustment, sensorimotor adaptation,
-        and cerebellar processing during sleep.
+        Interested in how the cerebellum shapes rhythmic movements, using
+        electrophysiological recordings, combined with videography, and optogenetics.
       </p>
       <nav class="links" aria-label="Profiles">
         <a href="https://orcid.org/0000-0002-5553-1664">ORCID</a>
@@ -25,24 +27,29 @@
         <a href="https://github.com/sqbauer">GitHub</a>
       </nav>
     </div>
+    <div class="trace" id="trace" aria-hidden="true"></div>
   </header>
 
   <main class="wrap">
     <div class="toolbar">
-      <h2>Publications</h2>
+      <div>
+        <h2>Publications</h2>
+        <p class="count" id="count" aria-live="polite"></p>
+      </div>
       <div class="filters" role="group" aria-label="Filter publications">
         <button type="button" data-filter="all" aria-pressed="true">All</button>
         <button type="button" data-filter="lead" aria-pressed="false">First / co-first</button>
         <button type="button" data-filter="preprint" aria-pressed="false">Preprints</button>
       </div>
     </div>
-    <p class="count" id="count" aria-live="polite"></p>
     <div id="pubs"></div>
     <noscript><p>This list needs JavaScript. See <a href="https://pubmed.ncbi.nlm.nih.gov/?term=Bauer+Staf%5BAuthor%5D">PubMed</a>.</p></noscript>
   </main>
 
-  <footer class="wrap foot">
-    <p>Last updated <span id="updated">November 2026</span>.</p>
+  <footer class="foot">
+    <div class="wrap">
+      <p>© Staf Bauer · Last updated November 2026</p>
+    </div>
   </footer>
 
   <script src="data/publications.js"></script>

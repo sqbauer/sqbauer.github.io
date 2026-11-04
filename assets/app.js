@@ -96,8 +96,12 @@
 
     groups.forEach(function (g) {
       var sec = el("section", "group");
-      sec.appendChild(el("h2", "group-label", g[0]));
-      g[1].forEach(function (p) { sec.appendChild(card(p)); });
+      var label = el("h2", "group-label");
+      label.appendChild(el("span", "sticky", g[0]));
+      sec.appendChild(label);
+      var items = el("div", "items");
+      g[1].forEach(function (p) { items.appendChild(card(p)); });
+      sec.appendChild(items);
       list.appendChild(sec);
     });
 
@@ -112,4 +116,26 @@
   });
 
   render("all");
+
+  // Decorative header trace: a rhythmic oscillation with waxing/waning bouts
+  // and spike ticks phase-locked to the high-amplitude cycles.
+  // Periodic over W so the CSS scroll (translateX -50%) loops seamlessly.
+  (function trace() {
+    var host = document.getElementById("trace");
+    if (!host) return;
+    var W = 1200, H = 84, mid = 34, cyc = 22, bout = 400;
+    var d = "", ticks = "";
+    for (var x = 0; x <= 2 * W; x += 2) {
+      var env = 0.12 + 0.88 * Math.pow(Math.sin(Math.PI * x / bout), 4);
+      var y = mid - 26 * env * Math.sin(2 * Math.PI * x / cyc);
+      d += (x ? "L" : "M") + x + " " + y.toFixed(2);
+    }
+    for (var c = cyc / 4; c <= 2 * W; c += cyc) {
+      var e = 0.12 + 0.88 * Math.pow(Math.sin(Math.PI * c / bout), 4);
+      if (e > 0.55) ticks += "M" + c.toFixed(1) + " " + (H - 14) + "V" + (H - 2);
+    }
+    host.innerHTML =
+      '<svg viewBox="0 0 ' + 2 * W + ' ' + H + '" preserveAspectRatio="none">' +
+      '<path class="wave" d="' + d + '"/><path class="spk" d="' + ticks + '"/></svg>';
+  })();
 })();
