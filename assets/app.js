@@ -164,9 +164,14 @@
         var f = b.dataset.filter, shown;
         if (!canVT || reduced()) { tween(apply(f)); return; }
         named.forEach(function (el, i) { el.style.viewTransitionName = "f" + i; });
-        var t = document.startViewTransition(function () { shown = apply(f); });
-        t.updateCallbackDone.then(function () { tween(shown); });
-        t.finished.then(function () { named.forEach(function (el) { el.style.viewTransitionName = ""; }); });
+        var done = false;
+        var run = function () { if (!done) { done = true; shown = apply(f); tween(shown); } };
+        var clear = function () { named.forEach(function (el) { el.style.viewTransitionName = ""; }); };
+        var t = document.startViewTransition(run);
+        t.updateCallbackDone.then(null, function (e) { console.warn("filter transition:", e && e.name); run(); });
+        t.finished.then(clear, clear);
+        // Watchdog: the filter must apply even if a browser stalls or aborts the transition.
+        setTimeout(function () { if (!done) { try { t.skipTransition(); } catch (e) { /* ignore */ } run(); } }, 250);
       });
     });
   }
