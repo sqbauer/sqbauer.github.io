@@ -1,0 +1,26 @@
+{
+  "_help": "Page content. Any value set to null renders as a visible TODO box on the page. Images: put the original in src/images/, run `npm run images`, then reference it here by file name without extension (e.g. \"photo\").",
+  "url": "https://sqbauer.github.io/",
+  "name": "Staf Bauer",
+  "title": "Staf Bauer — Cerebellar Neuroscience",
+  "description": "Staf Bauer studies how the cerebellum shapes rhythmic movements, using electrophysiological recordings, videography and optogenetics.",
+  "position": "PhD candidate, Department of Neuroscience, Erasmus MC, Rotterdam (thesis submitted November 2026)",
+  "upcoming": "Incoming postdoc, Blumberg lab, University of Iowa (from February 2027)",
+  "upcomingUrl": null,
+  "statement": "Interested in how the cerebellum shapes rhythmic movements, using electrophysiological recordings, combined with videography, and optogenetics.",
+  "photo": null,
+  "photoAlt": "Portrait of Staf Bauer",
+  "email": null,
+  "links": [
+    { "label": "ORCID", "url": "https://orcid.org/0000-0002-5553-1664" },
+    { "label": "PubMed", "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Bauer+Staf%5BAuthor%5D" },
+    { "label": "GitHub", "url": "https://github.com/sqbauer" },
+    { "label": "LinkedIn", "url": "https://www.linkedin.com/in/staf-bauer-2bb16284/" }
+  ],
+  "research": [
+    { "title": null, "text": null, "figure": null, "figureAlt": null, "figureCredit": null },
+    { "title": null, "text": null, "figure": null, "figureAlt": null, "figureCredit": null },
+    { "title": null, "text": null, "figure": null, "figureAlt": null, "figureCredit": null }
+  ],
+  "cv": "assets/Staf_Bauer_CV.pdf"
+}

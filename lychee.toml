@@ -1,0 +1,15 @@
+# Link checker config (CI). Some sites refuse automated requests even when the link is fine:
+# LinkedIn answers 999, publishers behind bot protection answer 403. Those are excluded or
+# accepted here so CI failures mean real breakage. DOIs are verified separately by the sync script.
+accept = ["200..=299", "429"]
+max_retries = 3
+timeout = 30
+exclude = [
+  "^https://www\\.linkedin\\.com/",
+  "^https://doi\\.org/",
+  "^https://physoc\\.onlinelibrary\\.wiley\\.com/",
+  "^https://www\\.cell\\.com/",
+  "^https://www\\.biorxiv\\.org/",
+  "^https://fonts\\.",
+  "^mailto:"
+]
