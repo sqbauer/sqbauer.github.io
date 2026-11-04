@@ -56,7 +56,7 @@ function traceSvg() {
   for (let x = 0; x <= W; x += 2) d += `${x ? "L" : "M"}${x} ${(mid - 26 * env(x) * Math.sin((2 * Math.PI * x) / cyc)).toFixed(1)}`;
   let t = "";
   for (let c = cyc / 4; c <= W; c += cyc) if (env(c) > 0.55) t += `M${c.toFixed(1)} ${H - 14}V${H - 2}`;
-  return `<svg class="trace" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="wave" d="${d}"/><path class="spk" d="${t}"/></svg>`;
+  return `<svg class="trace" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path class="wave" vector-effect="non-scaling-stroke" d="${d}"/><path class="spk" vector-effect="non-scaling-stroke" d="${t}"/></svg>`;
 }
 
 // ---------- publications ----------

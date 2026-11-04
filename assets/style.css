@@ -28,6 +28,8 @@
   --todo-bg: #fff4c7;
   --todo-line: #b45309;
   --todo-ink: #7c2d12;
+  --underline: rgba(11, 99, 99, 0.35);
+  --head-bg: rgba(246, 244, 239, 0.88);
   --serif: "Newsreader", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -38,7 +40,7 @@
     --bg: #101214; --surface: #171a1d; --text: #e9e8e4; --muted: #b0b2b8; --faint: #9a9da4;
     --line: #2a2e33; --accent: #5cc4bc; --accent-ink: #84d8d1; --accent-soft: #163331;
     --pre: #e8b55e; --pre-soft: #3a2d15; --note-soft: #25282c;
-    --todo-bg: #3a2a08; --todo-line: #f59e0b; --todo-ink: #fcd77a;
+    --todo-bg: #3a2a08; --todo-line: #f59e0b; --todo-ink: #fcd77a; --underline: rgba(92, 196, 188, 0.4); --head-bg: rgba(16, 18, 20, 0.88);
     color-scheme: dark;
   }
 }
@@ -46,7 +48,7 @@
   --bg: #101214; --surface: #171a1d; --text: #e9e8e4; --muted: #b0b2b8; --faint: #9a9da4;
   --line: #2a2e33; --accent: #5cc4bc; --accent-ink: #84d8d1; --accent-soft: #163331;
   --pre: #e8b55e; --pre-soft: #3a2d15; --note-soft: #25282c;
-  --todo-bg: #3a2a08; --todo-line: #f59e0b; --todo-ink: #fcd77a;
+  --todo-bg: #3a2a08; --todo-line: #f59e0b; --todo-ink: #fcd77a; --underline: rgba(92, 196, 188, 0.4); --head-bg: rgba(16, 18, 20, 0.88);
   color-scheme: dark;
 }
 
@@ -58,7 +60,7 @@ body {
   overflow-wrap: break-word;
 }
 img, svg { max-width: 100%; }
-a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); }
+a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: var(--underline); }
 a:hover { color: var(--accent-ink); text-decoration-color: currentColor; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
 h1, h2, h3, h4 { font-family: var(--serif); font-weight: 500; letter-spacing: -0.01em; }
@@ -80,7 +82,7 @@ ul, ol { padding: 0; margin: 0; list-style: none; }
 /* ---------- Header bar ---------- */
 .site-head {
   position: sticky; top: 0; z-index: 10;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  background: var(--head-bg);
   -webkit-backdrop-filter: saturate(1.4) blur(10px); backdrop-filter: saturate(1.4) blur(10px);
   border-bottom: 1px solid var(--line);
 }
@@ -125,8 +127,8 @@ ul, ol { padding: 0; margin: 0; list-style: none; }
 .hero-photo .photo img, .photo-ph { display: block; width: 220px; height: 275px; border-radius: 12px; object-fit: cover; }
 .photo-ph { display: flex; align-items: center; text-align: center; }
 .trace { position: absolute; left: 0; bottom: 16px; width: 100%; height: 84px; pointer-events: none; }
-.trace .wave { fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .5; vector-effect: non-scaling-stroke; }
-.trace .spk { stroke: var(--accent); stroke-width: 1.2; opacity: .45; vector-effect: non-scaling-stroke; }
+.trace .wave { fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: .5; }
+.trace .spk { stroke: var(--accent); stroke-width: 1.2; opacity: .45; }
 
 /* ---------- Sections ---------- */
 .section { padding: 64px 0 8px; }
