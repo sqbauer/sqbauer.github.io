@@ -181,7 +181,8 @@ function jsonLd() {
 const photo = site.photo ? picture(site.photo, site.photoAlt, { eager: true, cls: "photo", sizes: "220px" }) : null;
 const photoCol = site.photo === false ? "" : `<div class="hero-photo">${photo || todoBlock("photo (portrait, ≥800 px wide; put in src/images/ and run npm run images)", "photo-ph")}</div>`;
 const upcomingHtml = site.showUpcoming === false ? "" : `<li><span class="pos-label">Next</span> ${site.upcomingUrl ? ext(site.upcomingUrl, site.upcoming) : `${esc(site.upcoming)} ${todo("lab URL")}`}</li>`;
-const nav = [["research", "Research"], ["publications", "Publications"], ["talks", "Talks"], ["cv", "CV"], ["contact", "Contact"]];
+const showResearch = site.showResearch !== false, showTalks = site.showTalks !== false;
+const nav = [showResearch && ["research", "Research"], ["publications", "Publications"], showTalks && ["talks", "Talks"], ["cv", "CV"], ["contact", "Contact"]].filter(Boolean);
 const icon = {
   sun: `<svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`,
   moon: `<svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`,
@@ -250,14 +251,14 @@ const html = `<!DOCTYPE html>
   ${traceSvg()}
 </section>
 
-<section class="section" id="research" aria-labelledby="h-research">
+${showResearch ? `<section class="section" id="research" aria-labelledby="h-research">
   <div class="wrap">
     <h2 id="h-research">Research</h2>
     <div class="themes">
 ${researchHtml()}
     </div>
   </div>
-</section>
+</section>` : ""}
 
 <section class="section" id="publications" aria-labelledby="h-pubs">
   <div class="wrap">
@@ -279,12 +280,12 @@ ${publicationsHtml()}
   </div>
 </section>
 
-<section class="section" id="talks" aria-labelledby="h-talks">
+${showTalks ? `<section class="section" id="talks" aria-labelledby="h-talks">
   <div class="wrap">
     <h2 id="h-talks">Talks &amp; posters</h2>
     ${talksHtml()}
   </div>
-</section>
+</section>` : ""}
 
 <section class="section" id="cv" aria-labelledby="h-cv">
   <div class="wrap">

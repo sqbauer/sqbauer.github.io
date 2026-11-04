@@ -11,7 +11,7 @@ copy-BibTeX buttons.
 
 | Path | What it is | Edit by hand? |
 |---|---|---|
-| `_data/site.json` | Page text: position, statement, links, research themes, photo, email, CV path. `null` renders as a visible **TODO** box; `false` means intentionally left out. `showUpcoming` toggles the postdoc line. | Yes |
+| `_data/site.json` | Page text: position, statement, links, research themes, photo, email, CV path. `null` renders as a visible **TODO** box; `false` means intentionally left out. `showUpcoming`, `showResearch` and `showTalks` turn the postdoc line and the Research and Talks sections on or off. | Yes |
 | `_data/talks.json` | Talks and posters. | Yes |
 | `_data/overrides.json` | Publication facts the APIs cannot provide: co-first authorship, notes ("In revision"), PDF/code/data/slides links, DOIs to include or exclude. | Yes |
 | `_data/publications.json` | Publication metadata. **Generated** by `scripts/sync.mjs`. | No |

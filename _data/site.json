@@ -30,6 +30,7 @@
       "url": "https://www.linkedin.com/in/staf-bauer-2bb16284/"
     }
   ],
+  "showResearch": false,
   "research": [
     {
       "title": "Cerebellum",
@@ -53,5 +54,6 @@
       "figureCredit": null
     }
   ],
+  "showTalks": false,
   "cv": "assets/Staf_Bauer_CV.pdf"
 }
