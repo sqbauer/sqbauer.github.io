@@ -202,7 +202,7 @@ transition: border-color var(--t-fast) ease, color var(--t-fast) ease, transform
 @keyframes drift { to { transform: translateX(-400px); } }
 .section { padding: var(--s8) 0 var(--s2); }
 .section h2 { font-size: 2.1rem; line-height: 1.08; margin: 0 0 var(--s5); }
-.themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s5); }
+.themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s5); }
 .card {
 display: flex; flex-direction: column; gap: var(--s3);
 background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: var(--s3) var(--s3) var(--s5);
@@ -376,23 +376,17 @@ html { scroll-behavior: auto; }
   <div class="wrap">
     <h2 id="h-research">Research</h2>
     <div class="themes">
-<article class="theme card" id="theme-cerebellum">
-  <div class="theme-fig wipe"><div class="todo todo-block fig-ph">TODO: figure for &quot;Cerebellum&quot; (with alt text and licence/credit)</div></div>
-  <h3>Cerebellum</h3>
-  <p class="theme-sum"><span class="todo">TODO: 2-line summary in your own words</span></p>
-  <p><span class="todo">TODO: link papers: add &quot;themes&quot;: [&quot;cerebellum&quot;] to their entries in _data/overrides.json</span></p>
-</article>
 <article class="theme card" id="theme-motor-control">
-  <div class="theme-fig wipe"><div class="todo todo-block fig-ph">TODO: figure for &quot;Motor control&quot; (with alt text and licence/credit)</div></div>
+  
   <h3>Motor control</h3>
-  <p class="theme-sum"><span class="todo">TODO: 2-line summary in your own words</span></p>
-  <p><span class="todo">TODO: link papers: add &quot;themes&quot;: [&quot;motor-control&quot;] to their entries in _data/overrides.json</span></p>
+  <p class="theme-sum">I study how the olivocerebellar system sculpts rhythmic movements</p>
+  <ul class="theme-papers"><li><a href="#doi-10-3389-fncir-2025-1706704">The cerebellum engages multiple pre-motor pathways through a divergent-convergent architecture to shape whisker dynamics</a> <span class="muted">Frontiers in Neural Circuits 2026</span></li><li><a href="#doi-10-1038-s41467-025-64592-8">Stage-dependent cerebrocerebellar communication during sensorimotor processing</a> <span class="muted">Nature Communications 2025</span></li><li><a href="#doi-10-1113-jp284064">Whisker kinematics in the cerebellum</a> <span class="muted">The Journal of Physiology 2024</span></li><li><a href="#doi-10-3390-biomedicines10081831">Purkinje Cell Activity Resonation Generates Rhythmic Behaviors at the Preferred Frequency of 8 Hz</a> <span class="muted">Biomedicines 2022</span></li><li><a href="#doi-10-1016-j-cub-2021-12-020">Olivocerebellar control of movement symmetry</a> <span class="muted">Current Biology 2022</span></li></ul>
 </article>
 <article class="theme card" id="theme-sleep">
-  <div class="theme-fig wipe"><div class="todo todo-block fig-ph">TODO: figure for &quot;Sleep&quot; (with alt text and licence/credit)</div></div>
+  
   <h3>Sleep</h3>
-  <p class="theme-sum"><span class="todo">TODO: 2-line summary in your own words</span></p>
-  <p><span class="todo">TODO: link papers: add &quot;themes&quot;: [&quot;sleep&quot;] to their entries in _data/overrides.json</span></p>
+  <p class="theme-sum">I study how twitches during sleep help shape our waking behaviour</p>
+  <ul class="theme-papers"><li><a href="#doi-10-1101-2023-10-30-564769">Sleep-state dependent cerebellar processing in adult mice</a> <span class="muted">bioRxiv preprint</span></li></ul>
 </article>
     </div>
   </div>

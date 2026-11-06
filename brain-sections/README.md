@@ -1,8 +1,9 @@
 # Mouse brain sections
 
 <https://sqbauer.github.io/brain-sections/>: a static page that draws a coronal or sagittal
-section of the adult mouse brain at a given stereotaxic coordinate, optionally marks target sites,
-and exports the drawing as editable SVG (one named path per region) or PNG.
+section of the adult mouse brain at a given stereotaxic coordinate, or a dorsal (top-down) view,
+optionally marks target sites (e.g. optic fibre or craniotomy positions by AP/ML on the dorsal
+view), and exports the drawing as editable SVG (one named path per region) or PNG.
 
 ## Data
 
@@ -11,12 +12,26 @@ Framework v3 (2017 annotation, 10 µm; [Wang et al. 2020, Cell](https://doi.org/
 Each region mask in each plane is Gaussian-blurred (σ = 10 µm), contoured at 0.5 and simplified
 (Douglas–Peucker, 3.5 µm), so neighbouring regions share borders. Planes are every 50 µm: coronal
 over the whole brain, sagittal over one hemisphere (the annotation is mirror-symmetric).
+The dorsal view is the label of the topmost annotated voxel in every (AP, ML) column, i.e. the
+brain seen from directly above along the CCF DV axis (no head pitch); at the full-atlas level,
+cortical and cerebellar layers are merged into their parent area.
+The 3D views (`tools/build_views.py`, run after `build_sections.py`) ray-cast the 20 µm annotation
+with an orthographic camera on the animal's left, 30° or 45° from above, from the side and from the
+front/rear three-quarters; right-side views are mirror images. Each view stores the visible surface
+(as for sections), silhouettes of every summary structure (to show deep targets through the brain)
+and a 40 µm depth map, which the page uses to hide the parts of implants the brain occludes. An
+implant's tip sits at its ML/AP/depth target (depth measured vertically, from the surface above the
+target or from bregma); it runs up an axis set by a coronal tilt (+ = top leans right) and a sagittal
+tilt (+ = top leans anterior), and its entry point is where that axis crosses the dorsal surface. In
+coronal and sagittal sections, tracks show the in-plane component of the tilt. The 3D views
+show the unscaled CCF; marker coordinates are converted to it from the chosen system.
 Three hierarchy levels are stored per plane: Allen "Major Divisions", Allen "Summary Structures"
 (fiber tracts and ventricles grouped two/one levels below their roots) and the full annotation.
 
 ```bash
 pip install numpy scipy scikit-image pynrrd
 python tools/build_sections.py --cache /tmp/ccf --out data     # ~15 min, downloads ~33 MB
+python tools/build_views.py --cache /tmp/ccf --out data        # ~3 min
 ```
 
 ## Coordinates
