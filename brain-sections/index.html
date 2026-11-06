@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mouse Brain Sections</title>
-<meta name="description" content="Draw a coronal or sagittal section of the adult mouse brain (Allen CCFv3) at any stereotaxic coordinate, mark target sites, and download it as an editable SVG.">
+<meta name="description" content="Draw a coronal or sagittal section or a dorsal view of the adult mouse brain (Allen CCFv3) at any stereotaxic coordinate, mark target sites, and download it as an editable SVG.">
 <meta name="color-scheme" content="light dark">
 <link rel="canonical" href="https://sqbauer.github.io/brain-sections/">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
@@ -16,7 +16,7 @@
 <header class="top">
   <div>
     <h1>Mouse brain sections</h1>
-    <p class="sub">Coronal or sagittal section at any coordinate, from the Allen CCFv3 atlas. Mark target sites, then download an editable vector file.</p>
+    <p class="sub">Coronal or sagittal section at any coordinate, or the brain seen from above, from the Allen CCFv3 atlas. Mark target sites, then download an editable vector file.</p>
   </div>
   <a class="home" href="../">sqbauer.github.io</a>
 </header>
@@ -28,8 +28,22 @@
       <div class="seg" role="radiogroup" aria-label="Plane">
         <label><input type="radio" name="plane" value="coronal" checked><span>Coronal</span></label>
         <label><input type="radio" name="plane" value="sagittal"><span>Sagittal</span></label>
+        <label><input type="radio" name="plane" value="dorsal"><span>Dorsal</span></label>
+        <label><input type="radio" name="plane" value="view3d"><span>3D</span></label>
       </div>
-      <label class="field">
+      <label class="field" id="viewField" hidden>
+        <span>View</span>
+        <select id="view">
+          <option value="side-left">Left side, from above</option>
+          <option value="side-right">Right side, from above</option>
+          <option value="front-left">Front-left three-quarter</option>
+          <option value="front-right">Front-right three-quarter</option>
+          <option value="rear-left">Rear-left three-quarter</option>
+          <option value="rear-right">Rear-right three-quarter</option>
+        </select>
+      </label>
+      <p class="hint" id="view3dNote" hidden>Oblique view of the unscaled Allen CCF, 30° from above. Markers are converted from the chosen coordinate system to the atlas; implants are vertical. Highlighted regions that are not on the surface show as silhouettes through the brain.</p>
+      <label class="field" id="posField">
         <span id="posLabel">AP from bregma (mm)</span>
         <input type="number" id="pos" step="0.01" value="-6.36" inputmode="decimal">
       </label>
@@ -71,8 +85,10 @@
           <option value="none">None (line drawing)</option>
           <option value="grey">Light grey</option>
           <option value="allen">Allen atlas colours</option>
+          <option value="colour">Single colour</option>
         </select>
       </label>
+      <label class="field" id="fillColorField" hidden><span>Fill colour</span><input type="color" id="fillColor" value="#f3e7bf"></label>
       <div class="row2">
         <label class="field"><span>Line colour</span><input type="color" id="lineColor" value="#8a8a8a"></label>
         <label class="field"><span>Outline colour</span><input type="color" id="outlineColor" value="#000000"></label>
@@ -96,7 +112,7 @@
       </label>
       <label class="check"><input type="checkbox" id="scalebar" checked> Scale bar (1 mm)</label>
       <label class="check"><input type="checkbox" id="caption" checked> Coordinate caption</label>
-      <label class="check"><input type="checkbox" id="grid"> 1 mm grid from bregma</label>
+      <label class="check" id="gridField"><input type="checkbox" id="grid"> 1 mm grid from bregma</label>
     </fieldset>
 
     <fieldset>
@@ -114,9 +130,10 @@
       <legend>Mark a target</legend>
       <div class="row2">
         <label class="field"><span id="mxLabel">ML (mm, + = right)</span><input type="number" id="mx" step="0.01" value="2.00" inputmode="decimal"></label>
-        <label class="field"><span>Depth (mm)</span><input type="number" id="mdv" step="0.01" value="0.75" inputmode="decimal"></label>
+        <label class="field" id="mapField" hidden><span>AP from bregma (mm)</span><input type="number" id="map" step="0.01" value="-6.36" inputmode="decimal"></label>
+        <label class="field"><span id="mdvLabel">Depth (mm)</span><input type="number" id="mdv" step="0.01" value="0.75" inputmode="decimal"></label>
       </div>
-      <label class="field">
+      <label class="field" id="mrefField">
         <span>Depth measured from</span>
         <select id="mref">
           <option value="surface">Brain surface at the target</option>
@@ -129,18 +146,19 @@
           <select id="mshape">
             <option value="dot">Dot</option>
             <option value="cross">Cross</option>
-            <option value="track">Track from surface</option>
+            <option value="track" id="trackOpt">Track from surface</option>
             <option value="ring">Spread (circle)</option>
           </select>
         </label>
         <label class="field"><span>Colour</span><input type="color" id="mcolor" value="#d62728"></label>
       </div>
       <div class="row2">
-        <label class="field"><span>Size / radius (mm)</span><input type="number" id="msize" step="0.05" min="0.02" value="0.10"></label>
+        <label class="field"><span id="msizeLabel">Size / radius (mm)</span><input type="number" id="msize" step="0.05" min="0.02" value="0.10"></label>
         <label class="field"><span>Label (optional)</span><input type="text" id="mlabel" maxlength="40"></label>
       </div>
+      <label class="field" id="mlenField" hidden><span>Implant length above the brain (mm)</span><input type="number" id="mlen" step="0.1" min="0.1" value="1.5" inputmode="decimal"></label>
       <button type="button" id="addMarker" class="primary">Add marker</button>
-      <p class="hint">Click the drawing with <kbd>Shift</kbd> held to drop a marker at the cursor.</p>
+      <p class="hint" id="shiftHint">Click the drawing with Shift held to drop a marker at the cursor.</p>
       <ul class="markers" id="markerList"></ul>
     </fieldset>
   </form>

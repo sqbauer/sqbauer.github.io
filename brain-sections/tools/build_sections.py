@@ -107,6 +107,18 @@ def anchor(mask):
     return int(c), int(r), float(dt[r, c])
 
 
+def top_view(annot, chunk=60):
+    """Label of the topmost (most dorsal) labelled voxel in every (AP, ML) column."""
+    out = np.zeros((annot.shape[0], annot.shape[2]), annot.dtype)
+    for a in range(0, annot.shape[0], chunk):
+        blk = annot[a:a + chunk]                      # (ap, dv, ml)
+        m = blk > 0
+        top = m.argmax(axis=1)                        # first labelled DV index
+        lab = np.take_along_axis(blk, top[:, None, :], axis=1)[:, 0, :]
+        out[a:a + chunk] = np.where(m.any(axis=1), lab, 0)
+    return out
+
+
 def build_plane(sl, ids, maps, used):
     """Contours of one section (2D label image, rows = DV) at each hierarchy level."""
     P = 3                       # padding (voxels) around each region crop
@@ -148,7 +160,7 @@ def main():
     ap.add_argument("--step", type=int, default=50, help="spacing between planes in um")
     a = ap.parse_args()
     os.makedirs(a.cache, exist_ok=True)
-    for plane in ("coronal", "sagittal"):
+    for plane in ("coronal", "sagittal", "dorsal"):
         os.makedirs(os.path.join(a.out, plane), exist_ok=True)
 
     annot, _ = nrrd.read(fetch(ANNOT_URL, os.path.join(a.cache, "annotation_10.nrrd")))  # (AP, DV, ML)
@@ -162,7 +174,7 @@ def main():
     ids = [int(u) for u in np.unique(annot) if u != 0]
     maps = level_maps(ids, st, summary, major)
     used = set()
-    index = {"coronal": [], "sagittal": []}
+    index = {"coronal": [], "sagittal": [], "dorsal": []}
     where = {}   # structure id -> plane -> [first um, last um, um of largest area, largest area]
     n = a.step // RES
     # coronal: every n-th AP plane; image rows = DV, cols = ML (x = ML, y = DV)
@@ -172,12 +184,18 @@ def main():
     # image rows = DV, cols = AP (x = AP, y = DV)
     mid = annot.shape[2] // 2
     planes += [("sagittal", i * RES, lambda i=i: annot[:, :, i].T) for i in range(mid, annot.shape[2], n)]
+    # dorsal view: the brain seen from directly above (along DV, no pitch); each (AP, ML) column
+    # shows its topmost labelled voxel. image rows = AP, cols = ML (x = ML, y = AP). Cortical and
+    # cerebellar layers are merged into their parent area, since only layer 1 / molecular layer
+    # would otherwise be visible.
+    planes.append(("dorsal", 0, lambda: top_view(annot)))
+    dmaps = {**maps, "fine": {u: (st[u]["parent"] if "layer" in st[u]["name"].lower() else u) for u in ids}}
     for plane, pos_um, get in planes:
         sl = get()
         if not sl.any():
             continue
-        rec = build_plane(sl, ids, maps, used)
-        key = "ccf_ap_um" if plane == "coronal" else "ccf_ml_um"
+        rec = build_plane(sl, ids, dmaps if plane == "dorsal" else maps, used)
+        key = {"coronal": "ccf_ap_um", "sagittal": "ccf_ml_um", "dorsal": "view_um"}[plane]
         rec = {key: pos_um, **rec}
         fn = f"{pos_um:05d}.json"
         with open(os.path.join(a.out, plane, fn), "w") as f:
@@ -204,7 +222,7 @@ def main():
     meta = {"source": "Allen Mouse Brain CCFv3 (2017), 10 um annotation",
             "citation": "Wang Q, et al. (2020) The Allen Mouse Brain Common Coordinate Framework: "
                         "A 3D Reference Atlas. Cell 181:936-953. doi:10.1016/j.cell.2020.04.007",
-            "units": "path coordinates in voxels of 10 um, CCF origin; coronal x = ML, sagittal x = AP; y = DV (0 = dorsal)",
+            "units": "path coordinates in voxels of 10 um, CCF origin; coronal x = ML, y = DV; sagittal x = AP, y = DV; dorsal x = ML, y = AP",
             "volume_shape_ap_dv_ml": list(annot.shape), "step_um": a.step, "res_um": RES,
             "midline_ml_um": 5695,
             "sigma_vox": SIGMA, "tolerance_vox": TOL}
