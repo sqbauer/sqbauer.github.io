@@ -202,7 +202,7 @@ ul, ol { padding: 0; margin: 0; list-style: none; }
 .section h2 { font-size: 2.1rem; line-height: 1.08; margin: 0 0 var(--s5); }
 
 /* Research cards */
-.themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s5); }
+.themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s5); }
 .card {
   display: flex; flex-direction: column; gap: var(--s3);
   background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: var(--s3) var(--s3) var(--s5);

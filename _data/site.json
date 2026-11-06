@@ -30,31 +30,23 @@
       "url": "https://www.linkedin.com/in/staf-bauer-2bb16284/"
     }
   ],
-  "showResearch": false,
+  "showResearch": true,
   "research": [
-    {
-      "id": "cerebellum",
-      "title": "Cerebellum",
-      "text": null,
-      "figure": null,
-      "figureAlt": null,
-      "figureCredit": null
-    },
     {
       "id": "motor-control",
       "title": "Motor control",
-      "text": null,
-      "figure": null,
-      "figureAlt": null,
-      "figureCredit": null
+      "text": "I study how the olivocerebellar system sculpts rhythmic movements",
+      "figure": false,
+      "figureAlt": false,
+      "figureCredit": false
     },
     {
       "id": "sleep",
       "title": "Sleep",
-      "text": null,
-      "figure": null,
-      "figureAlt": null,
-      "figureCredit": null
+      "text": "I study how twitches during sleep help shape our waking behaviour",
+      "figure": false,
+      "figureAlt": false,
+      "figureCredit": false
     }
   ],
   "showTalks": false,

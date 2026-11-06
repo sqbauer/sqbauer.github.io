@@ -156,7 +156,7 @@ function researchHtml() {
       ? `<ul class="theme-papers">${linked.map((p) => `<li><a href="#${pubId(p)}">${esc(p.title)}</a> <span class="muted">${esc(p.journal)} ${p.type === "preprint" ? "preprint" : p.year}</span></li>`).join("")}</ul>`
       : `<p>${todo(`link papers: add "themes": ["${t.id}"] to their entries in _data/overrides.json`)}</p>`;
     return `<article class="theme card" id="theme-${esc(t.id)}">
-  <div class="theme-fig wipe">${fig ? `<figure>${fig}${t.figureCredit ? `<figcaption>${esc(t.figureCredit)}</figcaption>` : ""}</figure>` : todoBlock(`figure for "${t.title || `theme ${i + 1}`}" (with alt text and licence/credit)`, "fig-ph")}</div>
+  ${t.figure === false ? "" : `<div class="theme-fig wipe">${fig ? `<figure>${fig}${t.figureCredit ? `<figcaption>${esc(t.figureCredit)}</figcaption>` : ""}</figure>` : todoBlock(`figure for "${t.title || `theme ${i + 1}`}" (with alt text and licence/credit)`, "fig-ph")}</div>`}
   <h3>${t.title ? esc(t.title) : todo(`theme ${i + 1} title`)}</h3>
   <p class="theme-sum">${t.text ? esc(t.text) : todo("2-line summary in your own words")}</p>
   ${papers}
