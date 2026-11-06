@@ -30,9 +30,10 @@
       "url": "https://www.linkedin.com/in/staf-bauer-2bb16284/"
     }
   ],
-  "showResearch": false,
+  "showResearch": true,
   "research": [
     {
+      "id": "cerebellum",
       "title": "Cerebellum",
       "text": null,
       "figure": null,
@@ -40,6 +41,7 @@
       "figureCredit": null
     },
     {
+      "id": "motor-control",
       "title": "Motor control",
       "text": null,
       "figure": null,
@@ -47,6 +49,7 @@
       "figureCredit": null
     },
     {
+      "id": "sleep",
       "title": "Sleep",
       "text": null,
       "figure": null,
