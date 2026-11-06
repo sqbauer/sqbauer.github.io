@@ -36,6 +36,7 @@ without checking against histology.
 
 ## Licence and citation
 
+- **Code** (`index.html`, `app.js`, `style.css`, `tools/`): [MIT](LICENSE).
 - **Atlas data** (everything in `data/`, and every drawing the page makes) is derived from the Allen
   Mouse Brain CCFv3, © Allen Institute. It is not under an open licence: the
   [Allen Institute terms of use](https://alleninstitute.org/legal/terms-of-use/) allow research and other
