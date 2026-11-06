@@ -36,6 +36,13 @@ without checking against histology.
 
 ## Licence and citation
 
-Atlas data © Allen Institute, used under the [Allen Institute terms of use](https://alleninstitute.org/terms-of-use/).
-Cite Wang et al. 2020 when you publish a drawing made with this page; the exported SVG carries the
-citation and the exact coordinates in its `<desc>` element.
+- **Atlas data** (everything in `data/`, and every drawing the page makes) is derived from the Allen
+  Mouse Brain CCFv3, © Allen Institute. It is not under an open licence: the
+  [Allen Institute terms of use](https://alleninstitute.org/legal/terms-of-use/) allow research and other
+  non-commercial use, including derivative works, provided the source is cited according to the
+  [citation policy](https://alleninstitute.org/legal/citation-policy/) (cite Wang et al. 2020). Commercial
+  use needs written permission from the Allen Institute. The exported SVG carries the citation and the
+  exact coordinates in its `<desc>` element.
+- **Coordinate conventions** (bregma, midline, scaling factors) are numerical values documented in
+  [iblatlas](https://github.com/int-brain-lab/iblatlas) (MIT licence); no iblatlas code is included.
+- Not affiliated with or endorsed by the Allen Institute.

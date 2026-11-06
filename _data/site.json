@@ -58,5 +58,12 @@
     }
   ],
   "showTalks": false,
+  "tools": [
+    {
+      "title": "Mouse brain sections",
+      "url": "brain-sections/",
+      "text": "Draw a coronal or sagittal section of the mouse brain (Allen CCFv3) at a stereotaxic coordinate, mark target sites and download it as an editable SVG."
+    }
+  ],
   "cv": "assets/Staf_Bauer_CV.pdf"
 }
