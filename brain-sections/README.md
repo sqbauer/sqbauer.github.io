@@ -16,11 +16,14 @@ The dorsal view is the label of the topmost annotated voxel in every (AP, ML) co
 brain seen from directly above along the CCF DV axis (no head pitch); at the full-atlas level,
 cortical and cerebellar layers are merged into their parent area.
 The 3D views (`tools/build_views.py`, run after `build_sections.py`) ray-cast the 20 µm annotation
-with an orthographic camera on the animal's left, 30° from above, from the side and from the
+with an orthographic camera on the animal's left, 30° or 45° from above, from the side and from the
 front/rear three-quarters; right-side views are mirror images. Each view stores the visible surface
 (as for sections), silhouettes of every summary structure (to show deep targets through the brain)
-and a 40 µm depth map, which the page uses to hide the parts of implants the brain occludes. Fibres
-and electrodes are vertical and start at the dorsal surface above their AP/ML position. The 3D views
+and a 40 µm depth map, which the page uses to hide the parts of implants the brain occludes. An
+implant's tip sits at its ML/AP/depth target (depth measured vertically, from the surface above the
+target or from bregma); it runs up an axis set by a coronal tilt (+ = top leans right) and a sagittal
+tilt (+ = top leans anterior), and its entry point is where that axis crosses the dorsal surface. In
+coronal and sagittal sections, tracks show the in-plane component of the tilt. The 3D views
 show the unscaled CCF; marker coordinates are converted to it from the chosen system.
 Three hierarchy levels are stored per plane: Allen "Major Divisions", Allen "Summary Structures"
 (fiber tracts and ventricles grouped two/one levels below their roots) and the full annotation.

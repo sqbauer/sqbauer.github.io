@@ -42,7 +42,14 @@
           <option value="rear-right">Rear-right three-quarter</option>
         </select>
       </label>
-      <p class="hint" id="view3dNote" hidden>Oblique view of the unscaled Allen CCF, 30° from above. Markers are converted from the chosen coordinate system to the atlas; implants are vertical. Highlighted regions that are not on the surface show as silhouettes through the brain.</p>
+      <label class="field" id="elevField">
+        <span>Camera height</span>
+        <select id="elev">
+          <option value="30">30° from above</option>
+          <option value="45">45° from above</option>
+        </select>
+      </label>
+      <p class="hint" id="view3dNote" hidden>Oblique view of the unscaled Allen CCF. Markers are converted from the chosen coordinate system to the atlas. Each implant's tip sits at its ML/AP/depth target and runs up its tilt axis. Highlighted regions that are not on the surface show as silhouettes through the brain.</p>
       <label class="field" id="posField">
         <span id="posLabel">AP from bregma (mm)</span>
         <input type="number" id="pos" step="0.01" value="-6.36" inputmode="decimal">
@@ -155,6 +162,10 @@
       <div class="row2">
         <label class="field"><span id="msizeLabel">Size / radius (mm)</span><input type="number" id="msize" step="0.05" min="0.02" value="0.10"></label>
         <label class="field"><span>Label (optional)</span><input type="text" id="mlabel" maxlength="40"></label>
+      </div>
+      <div class="row2" id="tiltRow">
+        <label class="field" id="mtcField"><span>Coronal tilt (°, + = top leans right)</span><input type="number" id="mtc" step="1" min="-60" max="60" value="0" inputmode="decimal"></label>
+        <label class="field" id="mtsField"><span>Sagittal tilt (°, + = top leans forward)</span><input type="number" id="mts" step="1" min="-60" max="60" value="0" inputmode="decimal"></label>
       </div>
       <label class="field" id="mlenField" hidden><span>Implant length above the brain (mm)</span><input type="number" id="mlen" step="0.1" min="0.1" value="1.5" inputmode="decimal"></label>
       <button type="button" id="addMarker" class="primary">Add marker</button>

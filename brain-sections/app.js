@@ -22,7 +22,7 @@ const $ = (id) => document.getElementById(id);
 const state = {
   plane: "coronal", pos: -6.36, coords: "dorr", level: "summary", fill: "none",
   lineColor: "#8a8a8a", outlineColor: "#000000", lineWidth: 1, hemi: "both", labels: "none",
-  scalebar: true, caption: true, grid: false, fillColor: "#f3e7bf", view: "side-left",
+  scalebar: true, caption: true, grid: false, fillColor: "#f3e7bf", view: "side-left", elev: 30,
   hl: new Map(),   // structure id -> colour
   markers: [],     // {plane, x, depth, ref, shape, color, size, label}
 };
@@ -50,7 +50,10 @@ function hlColour(id) {
   return null;
 }
 const VIEW_NAMES = { side: "side view", front: "front three-quarter view", rear: "rear three-quarter view" };
-const viewParts = () => { const [v, side] = state.view.split("-"); return { v, mirror: side === "right", side }; };
+const viewParts = () => {
+  const [v, side] = state.view.split("-");
+  return { v, file: v + (state.elev === 45 ? "45" : ""), mirror: side === "right", side };
+};
 function b64u16(b64) {
   const bin = atob(b64), n = bin.length >> 1, out = new Uint16Array(n);
   for (let i = 0; i < n; i++) out[i] = bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8);
@@ -185,13 +188,29 @@ function project(sec, ccf) {                 // ccf = [ap, dv, ml] um -> [X, Y, 
   }
   return [sec.mirror ? -u : u, v, t, vis];
 }
-function marker3d(m) {                       // -> {entry, target} in CCF um, or {error}
+/* implant axis: unit vector pointing from the tip up the implant, in world axes
+   (X = ML right, Y = anterior, Z = up). tc = coronal tilt (+ = top leans right),
+   ts = sagittal tilt (+ = top leans anterior), in degrees from vertical. */
+function implantAxis(m) {
+  const x = Math.tan((m.tc || 0) * Math.PI / 180), y = Math.tan((m.ts || 0) * Math.PI / 180), n = Math.hypot(x, y, 1);
+  return [x / n, y / n, 1 / n];
+}
+function marker3d(m) {                       // tip = target point; the implant runs from it up its axis
   const s = S();
   const ccfAp = BREGMA.ap - m.ap * 1000 / s.ap, ccfMl = MIDLINE + m.x * 1000 / s.ml;
   const sdv = surfaceDvCcf(ccfAp, ccfMl);
-  if (sdv == null) return { error: "no brain at this AP/ML" };
+  if (sdv == null && m.ref === "surface") return { error: "no brain at this AP/ML" };
   const tdv = m.ref === "surface" ? sdv + m.depth * 1000 / s.dv : BREGMA.dv + m.depth * 1000 / s.dv;
-  return { entry: [ccfAp, sdv, ccfMl], target: [ccfAp, tdv, ccfMl] };
+  const tip = [ccfAp, tdv, ccfMl], ax = implantAxis(m);
+  const at = (k) => [tip[0] - k * ax[1], tip[1] - k * ax[2], tip[2] + k * ax[0]];   // k um up the axis
+  // entry: first point up the axis that is above the dorsal surface (or outside the brain)
+  let kIn = 0;
+  for (let k = 0; k <= 12000; k += 10) {
+    const q = at(k), sv = surfaceDvCcf(q[0], q[2]);
+    if (sv == null || q[1] <= sv) { kIn = k; break; }
+    kIn = k;
+  }
+  return { tip, at, kIn, entry: at(kIn), target: tip };
 }
 function marker3dSvg(sec, m, W) {
   const p = marker3d(m);
@@ -199,30 +218,40 @@ function marker3dSvg(sec, m, W) {
   if (p.error) return "";
   const c = m.color, w = m.size * 1000, len = (m.len || 1.5) * 1000, el = sec.raw.el * Math.PI / 180;
   const stroke = `stroke="${state.outlineColor}" stroke-width="${W * 0.001}"`;
+  const kTop = p.kIn + len;
+  const axis = implantAxis(m), cam = sec.raw.cam;
+  const axWorld = [axis[0] * (sec.mirror ? -1 : 1), axis[1], axis[2]];
+  const facing = Math.abs(axWorld[0] * cam[0] + axWorld[1] * cam[1] + axWorld[2] * cam[2]);  // |axis . camera|
   let g = "";
   const shaft = (width, color, withCap) => {
-    // sample the implant from the surface upwards; draw only the runs the brain does not hide
-    const N = 120, pts = [];
-    for (let k = 0; k <= N; k++) pts.push(project(sec, [p.entry[0], p.entry[1] - len * k / N, p.entry[2]]));
+    // sample the implant from its tip to its top; draw only the runs the brain does not hide
+    const N = 160, pts = [];
+    for (let k = 0; k <= N; k++) pts.push(project(sec, p.at(kTop * k / N)));
+    const a0 = pts[0], a1 = pts[N];
+    const L = Math.hypot(a1[0] - a0[0], a1[1] - a0[1]) || 1;
+    const nx = -(a1[1] - a0[1]) / L * width / 2, ny = (a1[0] - a0[0]) / L * width / 2;   // screen normal
     let out = "", run = [];
     const flush = () => {
       if (run.length > 1) {
         const a = run[0], b = run[run.length - 1];
-        out += `<path d="M${a[0] - width / 2} ${a[1]}L${b[0] - width / 2} ${b[1]}L${b[0] + width / 2} ${b[1]}L${a[0] + width / 2} ${a[1]}Z" fill="${color}" ${stroke}/>`;
+        out += `<path d="M${a[0] + nx} ${a[1] + ny}L${b[0] + nx} ${b[1] + ny}L${b[0] - nx} ${b[1] - ny}L${a[0] - nx} ${a[1] - ny}Z" fill="${color}" ${stroke}/>`;
       }
       run = [];
     };
     for (const q of pts) { if (q[3]) run.push(q); else flush(); }
     flush();
     const top = pts[N];
-    if (withCap && top[3]) out += `<ellipse cx="${top[0]}" cy="${top[1]}" rx="${width / 2}" ry="${(width / 2) * Math.sin(el)}" fill="${color}" ${stroke}/>`;
+    if (withCap && top[3]) {
+      const rot = Math.atan2(ny, nx) * 180 / Math.PI;
+      out += `<ellipse cx="${top[0]}" cy="${top[1]}" rx="${width / 2}" ry="${(width / 2) * Math.max(facing, 0.05)}" transform="rotate(${rot.toFixed(1)} ${top[0]} ${top[1]})" fill="${color}" ${stroke}/>`;
+    }
     return { out, top };
   };
   const spot = () => {
     const e = project(sec, p.entry);
     return e[3] ? `<ellipse cx="${e[0]}" cy="${e[1]}" rx="${w}" ry="${w * Math.sin(el)}" fill="${c}" fill-opacity="0.85" ${stroke}/>` : "";
   };
-  let top = project(sec, [p.entry[0], p.entry[1] - len, p.entry[2]]);
+  let top = project(sec, p.at(kTop));
   if (m.shape === "fibre_spot" || m.shape === "spot") g += spot();
   if (m.shape === "fibre_spot" || m.shape === "fibre") { const r = shaft(w, c, true); g += r.out; top = r.top; }
   if (m.shape === "electrode") { const r = shaft(Math.max(w * 0.25, W * 0.002), c, false); g += r.out; top = r.top; }
@@ -250,8 +279,14 @@ function markerSvg(sec, m, W) {
   else if (m.shape === "ring") g = `<circle cx="${X}" cy="${Y}" r="${s}" fill="${c}" fill-opacity="0.3" stroke="${c}" stroke-width="${W * 0.0015}"/>`;
   else if (m.shape === "track" && sec.plane === "dorsal") g = `<circle cx="${X}" cy="${Y}" r="${s / 2}" fill="${c}"/>`;
   else if (m.shape === "track") {
-    const top = (p.sy != null ? p.sy : Y) - W * 0.03;
-    g = `<line x1="${X}" y1="${top}" x2="${X}" y2="${Y}" stroke="${c}" stroke-width="${s}" stroke-linecap="butt"/>` +
+    // in-plane tilt: coronal tilt in coronal sections (+ top leans right), sagittal tilt in sagittal
+    // sections (+ top leans anterior, which is to the left); out-of-plane tilt cannot be shown
+    const deg = sec.plane === "coronal" ? (m.tc || 0) : -(m.ts || 0);
+    const dx = Math.sin(deg * Math.PI / 180), dy = -Math.cos(deg * Math.PI / 180);
+    let k = 0;
+    while (k < 15000 && hitCtx.isPointInPath(sec.outlinePath, X + dx * k, Y + dy * k, "evenodd")) k += 5;
+    const kt = k + W * 0.03;
+    g = `<line x1="${X + dx * kt}" y1="${Y + dy * kt}" x2="${X}" y2="${Y}" stroke="${c}" stroke-width="${s}" stroke-linecap="butt"/>` +
         `<circle cx="${X}" cy="${Y}" r="${s * 0.9}" fill="${c}"/>`;
   }
   if (m.label) {
@@ -276,7 +311,7 @@ function buildSvg(sec, forExport) {
     for (const mk of state.markers) {
       if (mk.plane !== plane) continue;
       const p = marker3d(mk); if (p.error) continue;
-      const top = project(sec, [p.entry[0], p.entry[1] - (mk.len || 1.5) * 1000, p.entry[2]]);
+      const top = project(sec, p.at(p.kIn + (mk.len || 1.5) * 1000));
       const r = mk.size * 1000;
       x0 = Math.min(x0, top[0] - r); x1 = Math.max(x1, top[0] + r);
       y0 = Math.min(y0, top[1] - r - (mk.label ? pad : 0));
@@ -417,10 +452,19 @@ function descText(sec) {
     (mk ? `Markers: ${mk}. ` : "") +
     `Atlas: Allen Mouse Brain Common Coordinate Framework v3 (2017 annotation), Wang Q et al. (2020) Cell 181:936-953, doi:10.1016/j.cell.2020.04.007. Made with https://sqbauer.github.io/brain-sections/`;
 }
+function tiltText(m) {
+  const t = [];
+  if (m.tc && m.plane !== "sagittal" && m.plane !== "dorsal") t.push(`coronal tilt ${fmt(m.tc, 0)}°`);
+  if (m.ts && m.plane !== "coronal" && m.plane !== "dorsal") t.push(`sagittal tilt ${fmt(m.ts, 0)}°`);
+  return t.length ? `, ${t.join(", ")}` : "";
+}
 function markerText(m) {
+  return markerText0(m) + ((m.plane === "view3d" || m.shape === "track") ? tiltText(m) : "");
+}
+function markerText0(m) {
   if (m.plane === "view3d") {
     const d = `${fmt(m.depth)} mm below ${m.ref === "surface" ? "surface" : "bregma"}`;
-    return `ML ${fmt(m.x)}, AP ${fmt(m.ap)}` + (m.shape === "target" ? `, ${d}` : "");
+    return `ML ${fmt(m.x)}, AP ${fmt(m.ap)}, tip ${d}`;
   }
   if (m.plane === "dorsal") {
     const reg = m._info && m._info.region ? `, ${struct(m._info.region).a}` : "";
@@ -436,16 +480,16 @@ function markerText(m) {
 async function draw() {
   if (!atlas) return;
   const plane = state.plane;
-  const um = plane === "view3d" ? viewParts().v : nearestPlane(plane, state.pos);
+  const um = plane === "view3d" ? viewParts().file : nearestPlane(plane, state.pos);
   let raw;
   try {
     if (plane === "view3d" && !views) views = await loadFile("data/views/index.json");
     raw = await loadRaw(plane, um);
   } catch (e) { $("status").textContent = "Could not load section data."; return; }
   if (plane !== state.plane) return;     // user switched while loading
-  if (!current || current.raw !== raw || current.coords !== state.coords || current.view !== state.view) {
+  if (!current || current.raw !== raw || current.coords !== state.coords || current.view !== state.view || current.elev !== state.elev) {
     current = processSection(raw, plane, um);
-    current.coords = state.coords; current.view = state.view;
+    current.coords = state.coords; current.view = state.view; current.elev = state.elev;
   }
   if (plane === "view3d" && state.hl.size && !current.sil) {
     const sec = current;
@@ -475,11 +519,13 @@ function syncPlaneUi() {
   const pl = state.plane, c = pl === "coronal", d = pl === "dorsal", v3 = pl === "view3d";
   $("posLabel").textContent = c ? "AP from bregma (mm, + = anterior)" : "ML from midline (mm)";
   $("mxLabel").textContent = pl === "sagittal" ? "AP from bregma (mm)" : "ML (mm, + = right)";
-  $("mdvLabel").textContent = d ? "AP from bregma (mm, + = anterior)" : "Depth (mm)";
+  $("mdvLabel").textContent = d ? "AP from bregma (mm, + = anterior)" : v3 ? "Tip depth (mm)" : "Depth (mm)";
   $("hemiField").hidden = !(c || d);
   for (const id of ["posField", "posSlider", "posInfo"]) $(id).hidden = d || v3;
-  $("viewField").hidden = !v3;
+  $("viewField").hidden = !v3; $("elevField").hidden = !v3;
   $("mapField").hidden = !v3; $("mlenField").hidden = !v3;
+  $("mtcField").hidden = !(v3 || c); $("mtsField").hidden = !(v3 || pl === "sagittal");
+  $("tiltRow").hidden = d;
   $("mrefField").hidden = d;
   $("gridField").hidden = v3;
   $("msizeLabel").textContent = v3 ? "Fibre / spot size (mm)" : "Size / radius (mm)";
@@ -548,6 +594,7 @@ function renderMarkerList() {
 function readMarkerForm() {
   return { plane: state.plane, x: +$("mx").value || 0, depth: +$("mdv").value || 0, ref: $("mref").value,
     ap: +$("map").value || 0, len: Math.max(0.1, +$("mlen").value || 1.5),
+    tc: Math.max(-60, Math.min(60, +$("mtc").value || 0)), ts: Math.max(-60, Math.min(60, +$("mts").value || 0)),
     shape: $("mshape").value, color: $("mcolor").value, size: Math.max(0.01, +$("msize").value || 0.1), label: $("mlabel").value.trim() };
 }
 
@@ -569,7 +616,7 @@ function svgPoint(evt) {
 /* ---------- export ---------- */
 function filename(ext) {
   if (current.plane === "dorsal") return `mouse_dorsal_view_${state.coords}.${ext}`;
-  if (current.plane === "view3d") return `mouse_3d_${state.view}.${ext}`;
+  if (current.plane === "view3d") return `mouse_3d_${state.view}_${state.elev}deg.${ext}`;
   const v = planeToMm(current.plane, current.um).toFixed(2);
   return `mouse_${current.plane}_${current.plane === "coronal" ? "AP" : "ML"}${v}mm_${state.coords}.${ext}`;
 }
@@ -604,8 +651,8 @@ function saveHash() {
     p.set("opt", [state.scalebar ? "s" : "", state.caption ? "c" : "", state.grid ? "g" : ""].join(""));
     if (state.hl.size) p.set("hl", [...state.hl].map(([u, c]) => `${u}.${c.slice(1)}`).join(","));
     if (state.markers.length) p.set("mk", state.markers.map((m) =>
-      [m.plane[0], m.x, m.depth, m.ref[0], m.shape, m.color.slice(1), m.size, encodeURIComponent(m.label), m.ap || 0, m.len || 1.5].join("~")).join(","));
-    if (state.plane === "view3d") p.set("view", state.view);
+      [m.plane[0], m.x, m.depth, m.ref[0], m.shape, m.color.slice(1), m.size, encodeURIComponent(m.label), m.ap || 0, m.len || 1.5, m.tc || 0, m.ts || 0].join("~")).join(","));
+    if (state.plane === "view3d") { p.set("view", state.view); p.set("elev", state.elev); }
     if (state.fill === "colour") p.set("fc", state.fillColor.slice(1));
     history.replaceState(null, "", "#" + p.toString());
   }, 250);
@@ -615,6 +662,7 @@ function loadHash() {
   const g = (k) => p.get(k);
   if (["coronal", "sagittal", "dorsal", "view3d"].includes(g("plane"))) state.plane = g("plane");
   if (/^(side|front|rear)-(left|right)$/.test(g("view") || "")) state.view = g("view");
+  if (g("elev") === "45" || g("elev") === "30") state.elev = +g("elev");
   if (g("pos") != null && isFinite(+g("pos"))) state.pos = +g("pos");
   if (SYSTEMS[g("sys")]) state.coords = g("sys");
   if (["major", "summary", "fine"].includes(g("lvl"))) state.level = g("lvl");
@@ -628,19 +676,19 @@ function loadHash() {
   if (g("opt") != null) { const o = g("opt"); state.scalebar = o.includes("s"); state.caption = o.includes("c"); state.grid = o.includes("g"); }
   if (g("hl")) for (const t of g("hl").split(",")) { const [u, c] = t.split("."); if (struct(+u) && hex(c)) state.hl.set(+u, hex(c)); }
   if (g("mk")) for (const t of g("mk").split(",")) {
-    const [pl, x, d, r, sh, c, sz, lab, mapv, mlen] = t.split("~");
+    const [pl, x, d, r, sh, c, sz, lab, mapv, mlen, mtc, mts] = t.split("~");
     if (!hex(c)) continue;
     const plane = { s: "sagittal", d: "dorsal", v: "view3d" }[pl] || "coronal";
     const okShapes = plane === "view3d" ? SHAPES.view3d.map((o) => o[0]) : ["dot", "cross", "track", "ring"];
     state.markers.push({ plane, x: +x, depth: +d, ref: r === "b" ? "bregma" : "surface",
       shape: okShapes.includes(sh) ? sh : okShapes[0], color: hex(c), size: +sz || 0.1, label: decodeURIComponent(lab || ""),
-      ap: +mapv || 0, len: +mlen || 1.5 });
+      ap: +mapv || 0, len: +mlen || 1.5, tc: +mtc || 0, ts: +mts || 0 });
   }
 }
 function stateToForm() {
   document.querySelector(`input[name=plane][value=${state.plane}]`).checked = true;
   $("coords").value = state.coords; $("level").value = state.level; $("fill").value = state.fill;
-  $("view").value = state.view; $("fillColor").value = state.fillColor; $("fillColorField").hidden = state.fill !== "colour";
+  $("view").value = state.view; $("elev").value = state.elev; $("fillColor").value = state.fillColor; $("fillColorField").hidden = state.fill !== "colour";
   $("lineColor").value = state.lineColor; $("outlineColor").value = state.outlineColor; $("lineWidth").value = state.lineWidth;
   $("hemi").value = state.hemi; $("labels").value = state.labels;
   $("scalebar").checked = state.scalebar; $("caption").checked = state.caption; $("grid").checked = state.grid;
@@ -661,6 +709,7 @@ function wire() {
   $("fill").addEventListener("input", () => { $("fillColorField").hidden = $("fill").value !== "colour"; });
   for (const [k, id] of Object.entries(simple)) $(id).addEventListener("input", () => { state[k] = $(id).value; draw(); });
   $("lineWidth").addEventListener("input", () => { state.lineWidth = +$("lineWidth").value; draw(); });
+  $("elev").addEventListener("input", () => { state.elev = +$("elev").value; draw(); });
   for (const k of ["scalebar", "caption", "grid"]) $(k).addEventListener("change", () => { state[k] = $(k).checked; draw(); });
 
   const dl = $("regionList");

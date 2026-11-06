@@ -34,6 +34,9 @@ VIEWS = {          # name: (azimuth deg, elevation deg); az > 0 turns the camera
     "side": (0, 30),
     "front": (40, 30),
     "rear": (-40, 30),
+    "side45": (0, 45),
+    "front45": (40, 45),
+    "rear45": (-40, 45),
 }
 
 
