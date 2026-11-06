@@ -89,6 +89,13 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .paper { background: #ffffff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
   aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; }
 .paper svg { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: manipulation; }
+.stepper { display: flex; align-items: center; gap: 6px; }
+.stepper input[type=range] { margin-top: 0; flex: 1; }
+.stepper button { padding: 2px 8px; flex: none; }
+.field output { color: var(--text); font-variant-numeric: tabular-nums; margin-left: 4px; }
+.paper.rotatable svg { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.paper.rotatable svg:active { cursor: grabbing; }
+.paper:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .hover { margin: 6px 0 0; min-height: 1.45em; font-size: 13px; color: var(--muted); }
 .credit { margin-top: 10px; font-size: 12px; color: var(--muted); max-width: 90ch; }
 

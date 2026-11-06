@@ -22,7 +22,7 @@ const $ = (id) => document.getElementById(id);
 const state = {
   plane: "coronal", pos: -6.36, coords: "dorr", level: "summary", fill: "none",
   lineColor: "#8a8a8a", outlineColor: "#000000", lineWidth: 1, hemi: "both", labels: "none",
-  scalebar: true, caption: true, grid: false, fillColor: "#f3e7bf", view: "side-left", elev: 30,
+  scalebar: true, caption: true, grid: false, fillColor: "#f3e7bf", rot: 30, elev: 30,
   hl: new Map(),   // structure id -> colour
   markers: [],     // {plane, x, depth, ref, shape, color, size, label}
 };
@@ -45,15 +45,42 @@ function lineage(id) {             // [id, parent, ..., root]
   }
   return a;
 }
-function hlColour(id) {
-  for (const u of lineage(id)) if (state.hl.has(u)) return [u, state.hl.get(u)];
+/* Highlights: state.hl keys are a structure id (both hemispheres) or "<id>L" / "<id>R" (one
+   hemisphere; L = the animal's left, ML < 0). */
+const keyId = (k) => (typeof k === "number" ? k : parseInt(k, 10));
+const keySide = (k) => (typeof k === "string" ? k.slice(-1) : null);
+function hlColour(id, side) {            // match for a region piece; side = "L" | "R" | undefined (both)
+  for (const u of lineage(id)) {
+    if (state.hl.has(u)) return [u, state.hl.get(u)];
+    if (side && state.hl.has(u + side)) return [u + side, state.hl.get(u + side)];
+  }
   return null;
 }
-const VIEW_NAMES = { side: "side view", front: "front three-quarter view", rear: "rear three-quarter view" };
-const viewParts = () => {
-  const [v, side] = state.view.split("-");
-  return { v, file: v + (state.elev === 45 ? "45" : ""), mirror: side === "right", side };
+function hlSided(id) {                   // one-sided matches for a region that spans both hemispheres
+  const out = [];
+  for (const sd of ["L", "R"]) for (const u of lineage(id)) if (state.hl.has(u + sd)) { out.push([u + sd, state.hl.get(u + sd), sd]); break; }
+  return out;
+}
+/* 3D camera: rotation around the brain (0 = left side, 90 = front, 180 = right, -90 = rear) and
+   elevation above the horizontal, both in 15-degree steps. Views exist for the left half of the
+   circle (-90..90); the right half are mirror images of them (the atlas is symmetric). */
+const ROT_STEP = 15, ELEVS = [0, 15, 30, 45, 60, 75];
+const normRot = (r) => { const x = (((r % 360) + 540) % 360) - 180; return x === -180 ? 180 : x; };
+const viewParts = (rot = state.rot, elev = state.elev) => {
+  const r = normRot(rot);
+  let az = r, mirror = false;
+  if (r > 90) { az = 180 - r; mirror = true; } else if (r < -90) { az = -180 - r; mirror = true; }
+  return { rot: r, az, mirror, file: `a${az}_e${elev}` };
 };
+function viewName(rot) {
+  const names = ["left", "front-left", "front", "front-right", "right", "rear-right", "rear", "rear-left"];
+  return names[((Math.round(normRot(rot) / 45) % 8) + 8) % 8];
+}
+function b64u8(b64) {
+  const bin = atob(b64), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
 function b64u16(b64) {
   const bin = atob(b64), n = bin.length >> 1, out = new Uint16Array(n);
   for (let i = 0; i < n; i++) out[i] = bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8);
@@ -117,22 +144,24 @@ function processSection(raw, plane, um) {
   const [x0, y0, x1, y1] = raw.bbox;
   const a = tx(x0, y0), b = tx(x1, y1);
   const bbox = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])];  // mirrored views flip x
-  const sec = { plane, um, raw, tx, bbox, levels: {} };
+  const sec = { plane, um, raw, tx, bbox, levels: {}, mirror: plane === "view3d" && viewParts().mirror };
   sec.outline = convertPath(raw.outline, tx);
   sec.outlinePath = new Path2D(sec.outline);
   sec.level = (lvl) => {
     if (!sec.levels[lvl]) {
-      sec.levels[lvl] = raw[lvl].map(([id, d, ax, ay, area, depth]) => {
+      sec.levels[lvl] = (raw[lvl] || raw.summary).map(([id, d, ax, ay, area, depth, side]) => {
         const dd = convertPath(d, tx); const [X, Y] = tx(ax, ay);
-        return { id, d: dd, x: X, y: Y, area, depth: depth * (raw.px_um || RES) * (plane === "view3d" ? 1 : Math.min(S().ml, S().ap, S().dv)), p2d: null };
+        // view pieces carry their hemisphere; sagittal sections show the right hemisphere only.
+        // Mirrored 3D views show the other side of the brain, so L and R swap.
+        const sd = plane === "view3d" ? (sec.mirror ? { L: "R", R: "L" }[side] : side) : plane === "sagittal" ? "R" : undefined;
+        return { id, d: dd, x: X, y: Y, area, side: sd, depth: depth * (raw.px_um || RES) * (plane === "view3d" ? 1 : Math.min(S().ml, S().ap, S().dv)), p2d: null };
       });
     }
     return sec.levels[lvl];
   };
   if (plane === "view3d") {
-    sec.mirror = viewParts().mirror;
     const d = raw.depth;
-    sec.depth = { ...d, grid: b64u16(d.data) };
+    sec.depth = { ...d, grid: d.unit_um ? b64u8(d.data) : b64u16(d.data), nodata: d.nodata ?? 65535, unit: d.unit_um || 1 };
   }
   return sec;
 }
@@ -184,7 +213,7 @@ function project(sec, ccf) {                 // ccf = [ap, dv, ml] um -> [X, Y, 
   let vis = true;
   if (i >= 0 && j >= 0 && i < d.shape[0] && j < d.shape[1]) {
     const q = d.grid[i * d.shape[1] + j];
-    if (q !== 65535 && t < d.t0 + q - 2 * d.px_um) vis = false;
+    if (q !== d.nodata && t < d.t0 + q * d.unit - 2 * d.px_um - d.unit / 2) vis = false;
   }
   return [sec.mirror ? -u : u, v, t, vis];
 }
@@ -329,7 +358,7 @@ function buildSvg(sec, forExport) {
   const used = new Set();
   const regs = sec.level(state.level);
   const fillOf = (r) => {
-    const h = hlColour(r.id);
+    const h = hlColour(r.id, r.side);
     if (h) return h[1];
     if (state.fill === "allen") return "#" + struct(r.id).c;
     if (state.fill === "grey") return "#ececec";
@@ -337,37 +366,63 @@ function buildSvg(sec, forExport) {
     return "none";
   };
   const covered = new Set();
-  let body = "";
+  let body = "", halves = "";
+  // one-sided highlights of regions that span both hemispheres (sections, dorsal view): the region
+  // is drawn again on top, clipped to that half
+  const halfOf = (r, st, fillAttr) => {
+    if (r.side) return "";
+    let out = "";
+    for (const [k, col, sd] of hlSided(r.id)) {
+      if (hlColour(r.id)) continue;
+      covered.add(k);
+      const idAttr = forExport ? ` id="${safeId(st.a + (sd === "L" ? "_left" : "_right"), used)}"` : ` data-id="${r.id}"`;
+      out += `<path${idAttr} d="${r.d}" fill="${col}" clip-path="url(#half${sd})"${forExport ? "" : ' pointer-events="all"'}><title>${esc(st.a + " — " + st.n + (sd === "L" ? " (left)" : " (right)"))}</title></path>`;
+    }
+    return out;
+  };
   for (const r of regs) {
-    const h = hlColour(r.id); if (h) covered.add(h[0]);
+    const h = hlColour(r.id, r.side); if (h) covered.add(h[0]);
     const st = struct(r.id);
-    const idAttr = forExport ? ` id="${safeId(st.a, used)}"` : ` data-id="${r.id}"`;
+    const idAttr = forExport ? ` id="${safeId(st.a + (r.side && plane === "view3d" ? "_" + r.side : ""), used)}"` : ` data-id="${r.id}"${r.side ? ` data-side="${r.side}"` : ""}`;
     body += `<path${idAttr} d="${r.d}" fill="${fillOf(r)}"${forExport ? "" : ' pointer-events="all"'}><title>${esc(st.a + " — " + st.n)}</title></path>`;
+    halves += halfOf(r, st);
   }
   // highlighted regions finer than the displayed level: draw them from the full atlas on top
   let extra = "";
   const missing = [...state.hl.keys()].filter((u) => !covered.has(u));
   if (missing.length && state.level !== "fine") {
     for (const r of sec.level("fine")) {
-      const hit = lineage(r.id).find((u) => missing.includes(u));
-      if (hit === undefined) continue;
-      const st = struct(r.id);
-      const idAttr = forExport ? ` id="${safeId(st.a, used)}"` : ` data-id="${r.id}"`;
-      extra += `<path${idAttr} d="${r.d}" fill="${state.hl.get(hit)}"${forExport ? "" : ' pointer-events="all"'}><title>${esc(st.a + " — " + st.n)}</title></path>`;
+      for (const k of missing) {
+        const base = keyId(k), sd = keySide(k);
+        if (!lineage(r.id).includes(base)) continue;
+        if (sd && r.side && r.side !== sd) continue;
+        const st = struct(r.id);
+        const clipA = sd && !r.side ? ` clip-path="url(#half${sd})"` : "";
+        const idAttr = forExport ? ` id="${safeId(st.a + (sd ? (sd === "L" ? "_left" : "_right") : ""), used)}"` : ` data-id="${r.id}"${r.side ? ` data-side="${r.side}"` : ""}`;
+        extra += `<path${idAttr} d="${r.d}" fill="${state.hl.get(k)}"${clipA}${forExport ? "" : ' pointer-events="all"'}><title>${esc(st.a + " — " + st.n)}</title></path>`;
+        break;
+      }
     }
   }
   // 3D views: highlighted regions not on the visible surface are drawn as silhouettes seen through the brain
   let sil = "";
   if (plane === "view3d" && sec.sil) {
     const onSurface = new Set(covered);
-    for (const r of sec.level("fine")) { const h = hlColour(r.id); if (h) onSurface.add(h[0]); }
+    for (const r of sec.level("fine")) { const h = hlColour(r.id, r.side); if (h) onSurface.add(h[0]); }
+    // silhouette keys are "<id>L" / "<id>R" in the unmirrored view; mirrored views swap sides
+    const silSide = (k) => { const sd = k.slice(-1); return sec.mirror ? { L: "R", R: "L" }[sd] : sd; };
     for (const u of state.hl.keys()) {
       if (onSurface.has(u)) continue;
-      let keys = Object.keys(sec.sil).filter((k) => lineage(+k).includes(u));
-      if (!keys.length) { const a = lineage(u).find((k) => sec.sil[k]); if (a !== undefined) keys = [String(a)]; }
+      const base = keyId(u), want = keySide(u);
+      const okSide = (k) => !want || silSide(k) === want;
+      let keys = Object.keys(sec.sil).filter((k) => lineage(parseInt(k, 10)).includes(base) && okSide(k));
+      if (!keys.length) {
+        const a = lineage(base).find((x) => sec.sil[x + "L"] || sec.sil[x + "R"]);
+        if (a !== undefined) keys = ["L", "R"].map((sd) => a + sd).filter((k) => sec.sil[k] && okSide(k));
+      }
       for (const k of keys) {
-        const st = struct(+k);
-        const idAttr = forExport ? ` id="${safeId(st.a + "_silhouette", used)}"` : "";
+        const st = struct(parseInt(k, 10));
+        const idAttr = forExport ? ` id="${safeId(st.a + "_silhouette_" + silSide(k), used)}"` : "";
         sil += `<path${idAttr} d="${sec.silPath(k)}" fill="${state.hl.get(u)}" fill-opacity="0.9"><title>${esc(st.a + " — " + st.n)}</title></path>`;
       }
     }
@@ -376,15 +431,19 @@ function buildSvg(sec, forExport) {
   let labels = "";
   if (state.labels !== "none") {
     const fs = W * 0.016;
-    const pool = state.labels === "hl" ? regs.concat(extra ? sec.level("fine") : []).filter((r) => hlColour(r.id)) : regs;
+    const matchOf = (r) => hlColour(r.id, r.side) || (hlSided(r.id)[0] || null);
+    const pool = state.labels === "hl" ? regs.concat(extra ? sec.level("fine") : []).filter((r) => matchOf(r)) : regs;
     const seen = new Set();
     for (const r of pool) {
       if (state.labels === "all" && r.depth < fs * 0.75) continue;
-      if (state.labels === "hl") { const k = hlColour(r.id)[0]; if (seen.has(k)) continue; seen.add(k); }
-      const name = state.labels === "hl" ? struct(hlColour(r.id)[0]).a : struct(r.id).a;
+      let k = null;
+      if (state.labels === "hl") { k = matchOf(r)[0]; if (seen.has(k)) continue; seen.add(k); }
+      const name = state.labels === "hl" ? struct(keyId(k)).a : struct(r.id).a;
       // anchors sit in a region's largest piece, which may be in the hidden half; the atlas is
-      // mirror-symmetric, so mirror them into view
-      const lx = (state.hemi === "right" && r.x < 0) || (state.hemi === "left" && r.x > 0) ? -r.x : r.x;
+      // mirror-symmetric, so mirror them into view (or into the highlighted half)
+      const wantSide = k ? keySide(k) : null;
+      const hide = wantSide === "L" ? "right" : wantSide === "R" ? "left" : state.hemi;
+      const lx = (hide === "right" && r.x > 0) || (hide === "left" && r.x < 0) || (state.hemi === "right" && r.x < 0) || (state.hemi === "left" && r.x > 0) ? -r.x : r.x;
       labels += `<text x="${mlx ? lx : r.x}" y="${r.y + fs * 0.35}">${esc(name)}</text>`;
     }
   }
@@ -412,7 +471,10 @@ function buildSvg(sec, forExport) {
 
   // clip exactly at the midline on the cut side
   const cx0 = state.hemi === "right" ? 0 : vb[0], cx1 = state.hemi === "left" ? 0 : vb[0] + vb[2];
-  const clipDef = clip ? `<defs><clipPath id="hemiclip"><rect x="${cx0}" y="${vb[1]}" width="${cx1 - cx0}" height="${vb[3]}"/></clipPath></defs>` : "";
+  const halfDefs = halves || extra.includes("url(#half")
+    ? `<clipPath id="halfL"><rect x="${vb[0]}" y="${vb[1]}" width="${-vb[0]}" height="${vb[3]}"/></clipPath>` +
+      `<clipPath id="halfR"><rect x="0" y="${vb[1]}" width="${vb[0] + vb[2]}" height="${vb[3]}"/></clipPath>` : "";
+  const clipDef = clip || halfDefs ? `<defs>${clip ? `<clipPath id="hemiclip"><rect x="${cx0}" y="${vb[1]}" width="${cx1 - cx0}" height="${vb[3]}"/></clipPath>` : ""}${halfDefs}</defs>` : "";
   const cl = clip ? ' clip-path="url(#hemiclip)"' : "";
   const outW = 1200, outH = Math.round(outW * vb[3] / vb[2]);
   const head = forExport
@@ -423,6 +485,7 @@ function buildSvg(sec, forExport) {
     `<rect id="background" x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="#ffffff"/>` +
     `<g${cl}>` +
     `<g id="regions" stroke="${state.lineColor}" stroke-width="${lw}" stroke-linejoin="round">${body}</g>` +
+    (halves ? `<g id="highlighted_one_side" stroke="${state.lineColor}" stroke-width="${lw}" stroke-linejoin="round">${halves}</g>` : "") +
     (extra ? `<g id="highlighted_subregions" stroke="${state.lineColor}" stroke-width="${lw}" stroke-linejoin="round">${extra}</g>` : "") +
     `<path id="brain_outline" d="${sec.outline}" fill="none" stroke="${state.outlineColor}" stroke-width="${Math.max(lw * 2, W * 0.0012)}" stroke-linejoin="round" pointer-events="none"/>` +
     (sil ? `<g id="deep_regions" stroke="${state.outlineColor}" stroke-width="${Math.max(lw, W * 0.0008)}" stroke-linejoin="round" pointer-events="none">${sil}</g>` : "") +
@@ -435,8 +498,8 @@ function buildSvg(sec, forExport) {
 function captionText(sec) {
   if (sec.plane === "dorsal") return "Dorsal view";
   if (sec.plane === "view3d") {
-    const { v, side } = viewParts();
-    return `${side[0].toUpperCase() + side.slice(1)} ${VIEW_NAMES[v]}, ${sec.raw.el}° from above`;
+    const n = viewName(sec.rot);
+    return `3D view from the ${n} (rotation ${fmt(sec.rot, 0)}°), ${sec.raw.el}° from above`;
   }
   const v = planeToMm(sec.plane, sec.um);
   return sec.plane === "coronal"
@@ -444,7 +507,7 @@ function captionText(sec) {
     : `Sagittal, ML ${fmt(v)} mm from midline`;
 }
 function descText(sec) {
-  const ccf = sec.plane === "view3d" ? `orthographic view of the unscaled CCF, camera azimuth ${sec.raw.az} deg, elevation ${sec.raw.el} deg; implants vertical`
+  const ccf = sec.plane === "view3d" ? `orthographic view of the unscaled CCF; camera rotation ${sec.rot} deg (0 = left, 90 = front), elevation ${sec.raw.el} deg`
     : sec.plane === "dorsal" ? "seen from directly above along the CCF DV axis, no pitch; anterior up"
     : sec.plane === "coronal" ? `CCF AP ${sec.um} um` : `CCF ML ${sec.um} um`;
   const mk = state.markers.filter((m) => m.plane === sec.plane).map((m) => markerText(m)).join("; ");
@@ -481,16 +544,19 @@ async function draw() {
   if (!atlas) return;
   const plane = state.plane;
   const um = plane === "view3d" ? viewParts().file : nearestPlane(plane, state.pos);
+  const wantRot = state.rot, wantElev = state.elev;
   let raw;
   try {
     if (plane === "view3d" && !views) views = await loadFile("data/views/index.json");
     raw = await loadRaw(plane, um);
   } catch (e) { $("status").textContent = "Could not load section data."; return; }
   if (plane !== state.plane) return;     // user switched while loading
-  if (!current || current.raw !== raw || current.coords !== state.coords || current.view !== state.view || current.elev !== state.elev) {
+  if (plane === "view3d" && (wantRot !== state.rot || wantElev !== state.elev)) return;   // rotated again meanwhile
+  if (!current || current.raw !== raw || current.coords !== state.coords || (plane === "view3d" && current.rot !== viewParts().rot)) {
     current = processSection(raw, plane, um);
-    current.coords = state.coords; current.view = state.view; current.elev = state.elev;
+    current.coords = state.coords; current.rot = plane === "view3d" ? viewParts().rot : null;
   }
+  if (plane === "view3d") prefetchNeighbours();
   if (plane === "view3d" && state.hl.size && !current.sil) {
     const sec = current;
     try {
@@ -523,6 +589,8 @@ function syncPlaneUi() {
   $("hemiField").hidden = !(c || d);
   for (const id of ["posField", "posSlider", "posInfo"]) $(id).hidden = d || v3;
   $("viewField").hidden = !v3; $("elevField").hidden = !v3;
+  $("paper").classList.toggle("rotatable", v3);
+  $("paper").tabIndex = v3 ? 0 : -1;
   $("mapField").hidden = !v3; $("mlenField").hidden = !v3;
   $("mtcField").hidden = !(v3 || c); $("mtsField").hidden = !(v3 || pl === "sagittal");
   $("tiltRow").hidden = d;
@@ -553,12 +621,14 @@ function addHighlight(id) {
 }
 function renderHlList() {
   const ul = $("hlList"); ul.textContent = "";
-  for (const [id, col] of state.hl) {
+  for (const [key, col] of state.hl) {
+    const id = keyId(key), sd = keySide(key);
     const st = struct(id);
     const li = document.createElement("li");
     const cp = document.createElement("input"); cp.type = "color"; cp.value = col; cp.setAttribute("aria-label", `Colour for ${st.a}`);
-    cp.addEventListener("input", () => { state.hl.set(id, cp.value); draw(); });
-    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = `${st.a} — ${st.n}`; nm.title = st.n;
+    cp.addEventListener("input", () => { state.hl.set(key, cp.value); draw(); });
+    const nm = document.createElement("span"); nm.className = "nm";
+    nm.textContent = `${st.a}${sd ? (sd === "L" ? " (left)" : " (right)") : ""} — ${st.n}`; nm.title = st.n;
     li.append(cp, nm);
     const w = st.w && st.w[state.plane];
     if (w && current) {
@@ -571,11 +641,31 @@ function renderHlList() {
       }
     }
     const rm = document.createElement("button"); rm.type = "button"; rm.textContent = "×"; rm.setAttribute("aria-label", `Remove ${st.a}`);
-    rm.addEventListener("click", () => { state.hl.delete(id); draw(); });
+    rm.addEventListener("click", () => { state.hl.delete(key); draw(); });
     li.append(rm); ul.append(li);
   }
 }
-let editing = -1, editBackup = null;   // index of the marker being edited, and its state before editing
+let editing = -1, editBackup = null;
+let suppressClick = false;                 // a drag-to-rotate ends with a click event; ignore it
+function setView(rot, elev) {
+  const r = normRot(Math.round(rot / ROT_STEP) * ROT_STEP);
+  const e = Math.max(ELEVS[0], Math.min(ELEVS[ELEVS.length - 1], Math.round(elev / 15) * 15));
+  if (r === normRot(state.rot) && e === state.elev) return;
+  state.rot = r; state.elev = e; syncRotUi(); draw();
+}
+function syncRotUi() {
+  const r = viewParts().rot;
+  $("rot").value = r; $("elev").value = state.elev;
+  $("rotOut").textContent = `${fmt(r, 0)}° (${viewName(r)})`;
+  $("elevOut").textContent = `${state.elev}° from above`;
+}
+function prefetchNeighbours() {            // make the next rotation step instant
+  for (const [dr, de] of [[ROT_STEP, 0], [-ROT_STEP, 0], [0, 15], [0, -15]]) {
+    const e = state.elev + de;
+    if (!ELEVS.includes(e)) continue;
+    loadFile(`data/views/${viewParts(state.rot + dr, e).file}.json`).catch(() => {});
+  }
+}   // index of the marker being edited, and its state before editing
 function renderMarkerList() {
   const ul = $("markerList"); ul.textContent = "";
   state.markers.forEach((m, i) => {
@@ -662,7 +752,7 @@ function svgPoint(evt) {
 /* ---------- export ---------- */
 function filename(ext) {
   if (current.plane === "dorsal") return `mouse_dorsal_view_${state.coords}.${ext}`;
-  if (current.plane === "view3d") return `mouse_3d_${state.view}_${state.elev}deg.${ext}`;
+  if (current.plane === "view3d") return `mouse_3d_rot${viewParts().rot}_elev${state.elev}.${ext}`;
   const v = planeToMm(current.plane, current.um).toFixed(2);
   return `mouse_${current.plane}_${current.plane === "coronal" ? "AP" : "ML"}${v}mm_${state.coords}.${ext}`;
 }
@@ -698,7 +788,7 @@ function saveHash() {
     if (state.hl.size) p.set("hl", [...state.hl].map(([u, c]) => `${u}.${c.slice(1)}`).join(","));
     if (state.markers.length) p.set("mk", state.markers.map((m) =>
       [m.plane[0], m.x, m.depth, m.ref[0], m.shape, m.color.slice(1), m.size, encodeURIComponent(m.label), m.ap || 0, m.len || 1.5, m.tc || 0, m.ts || 0].join("~")).join(","));
-    if (state.plane === "view3d") { p.set("view", state.view); p.set("elev", state.elev); }
+    if (state.plane === "view3d") { p.set("rot", viewParts().rot); p.set("elev", state.elev); }
     if (state.fill === "colour") p.set("fc", state.fillColor.slice(1));
     history.replaceState(null, "", "#" + p.toString());
   }, 250);
@@ -707,8 +797,10 @@ function loadHash() {
   const p = new URLSearchParams(location.hash.slice(1));
   const g = (k) => p.get(k);
   if (["coronal", "sagittal", "dorsal", "view3d"].includes(g("plane"))) state.plane = g("plane");
-  if (/^(side|front|rear)-(left|right)$/.test(g("view") || "")) state.view = g("view");
-  if (g("elev") === "45" || g("elev") === "30") state.elev = +g("elev");
+  const old = /^(side|front|rear)-(left|right)$/.exec(g("view") || "");      // links from the earlier version
+  if (old) { const a = { side: 0, front: 45, rear: -45 }[old[1]]; state.rot = old[2] === "right" ? normRot(180 - a) : a; }
+  if (g("rot") != null && isFinite(+g("rot"))) state.rot = normRot(Math.round(+g("rot") / ROT_STEP) * ROT_STEP);
+  if (ELEVS.includes(+g("elev"))) state.elev = +g("elev");
   if (g("pos") != null && isFinite(+g("pos"))) state.pos = +g("pos");
   if (SYSTEMS[g("sys")]) state.coords = g("sys");
   if (["major", "summary", "fine"].includes(g("lvl"))) state.level = g("lvl");
@@ -720,7 +812,10 @@ function loadHash() {
   if (["both", "left", "right"].includes(g("hemi"))) state.hemi = g("hemi");
   if (["none", "hl", "all"].includes(g("lab"))) state.labels = g("lab");
   if (g("opt") != null) { const o = g("opt"); state.scalebar = o.includes("s"); state.caption = o.includes("c"); state.grid = o.includes("g"); }
-  if (g("hl")) for (const t of g("hl").split(",")) { const [u, c] = t.split("."); if (struct(+u) && hex(c)) state.hl.set(+u, hex(c)); }
+  if (g("hl")) for (const t of g("hl").split(",")) {
+    const [u, c] = t.split("."), m = /^(\d+)([LR]?)$/.exec(u || "");
+    if (m && struct(+m[1]) && hex(c)) state.hl.set(m[2] ? m[1] + m[2] : +m[1], hex(c));
+  }
   if (g("mk")) for (const t of g("mk").split(",")) {
     const [pl, x, d, r, sh, c, sz, lab, mapv, mlen, mtc, mts] = t.split("~");
     if (!hex(c)) continue;
@@ -734,7 +829,7 @@ function loadHash() {
 function stateToForm() {
   document.querySelector(`input[name=plane][value=${state.plane}]`).checked = true;
   $("coords").value = state.coords; $("level").value = state.level; $("fill").value = state.fill;
-  $("view").value = state.view; $("elev").value = state.elev; $("fillColor").value = state.fillColor; $("fillColorField").hidden = state.fill !== "colour";
+  $("rot").value = viewParts().rot; $("elev").value = state.elev; syncRotUi(); $("fillColor").value = state.fillColor; $("fillColorField").hidden = state.fill !== "colour";
   $("lineColor").value = state.lineColor; $("outlineColor").value = state.outlineColor; $("lineWidth").value = state.lineWidth;
   $("hemi").value = state.hemi; $("labels").value = state.labels;
   $("scalebar").checked = state.scalebar; $("caption").checked = state.caption; $("grid").checked = state.grid;
@@ -752,11 +847,39 @@ function wire() {
   $("pos").addEventListener("change", () => { const v = +$("pos").value; if (isFinite(v)) { state.pos = v; syncPlaneUi(); draw(); } });
   $("posSlider").addEventListener("input", () => { state.pos = +(+$("posSlider").value).toFixed(2); $("pos").value = state.pos; draw(); });
   $("coords").addEventListener("change", () => { state.coords = $("coords").value; current = null; syncPlaneUi(); draw(); });
-  const simple = { level: "level", fill: "fill", lineColor: "lineColor", outlineColor: "outlineColor", hemi: "hemi", labels: "labels", fillColor: "fillColor", view: "view" };
+  const simple = { level: "level", fill: "fill", lineColor: "lineColor", outlineColor: "outlineColor", hemi: "hemi", labels: "labels", fillColor: "fillColor" };
   $("fill").addEventListener("input", () => { $("fillColorField").hidden = $("fill").value !== "colour"; });
   for (const [k, id] of Object.entries(simple)) $(id).addEventListener("input", () => { state[k] = $(id).value; draw(); });
   $("lineWidth").addEventListener("input", () => { state.lineWidth = +$("lineWidth").value; draw(); });
-  $("elev").addEventListener("input", () => { state.elev = +$("elev").value; draw(); });
+  $("rot").addEventListener("input", () => setView(+$("rot").value, state.elev));
+  $("elev").addEventListener("input", () => setView(state.rot, +$("elev").value));
+  $("rotL").addEventListener("click", () => setView(state.rot - ROT_STEP, state.elev));
+  $("rotR").addEventListener("click", () => setView(state.rot + ROT_STEP, state.elev));
+  $("elevU").addEventListener("click", () => setView(state.rot, state.elev + 15));
+  $("elevD").addEventListener("click", () => setView(state.rot, state.elev - 15));
+  // drag the 3D drawing to rotate: horizontal = around the brain, vertical = camera height
+  const DRAG_PX = 22;
+  let drag = null;
+  $("paper").addEventListener("pointerdown", (e) => {
+    if (state.plane !== "view3d" || e.button !== 0 || e.shiftKey) return;
+    drag = { x: e.clientX, y: e.clientY, rot: state.rot, elev: state.elev, moved: false, id: e.pointerId };
+  });
+  $("paper").addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.abs(dx) + Math.abs(dy) > 5) { drag.moved = true; $("paper").setPointerCapture(drag.id); }
+    if (!drag.moved) return;
+    setView(drag.rot + Math.round(dx / DRAG_PX) * ROT_STEP, drag.elev + Math.round(dy / DRAG_PX) * 15);
+  });
+  const endDrag = (e) => { if (drag) { suppressClick = drag.moved; drag = null; } };
+  $("paper").addEventListener("pointerup", endDrag);
+  $("paper").addEventListener("pointercancel", endDrag);
+  $("paper").addEventListener("keydown", (e) => {
+    if (state.plane !== "view3d") return;
+    const k = { ArrowLeft: [-ROT_STEP, 0], ArrowRight: [ROT_STEP, 0], ArrowUp: [0, -15], ArrowDown: [0, 15] }[e.key];
+    if (!k) return;
+    e.preventDefault(); setView(state.rot + k[0], state.elev + k[1]);
+  });
   for (const k of ["scalebar", "caption", "grid"]) $(k).addEventListener("change", () => { state[k] = $(k).checked; draw(); });
 
   const dl = $("regionList");
@@ -783,6 +906,7 @@ function wire() {
 
   const paper = $("paper");
   paper.addEventListener("click", (e) => {
+    if (suppressClick) { suppressClick = false; return; }
     if (!current) return;
     const pt = svgPoint(e); if (!pt) return;
     if (e.shiftKey && current.plane === "view3d") return;
@@ -804,7 +928,20 @@ function wire() {
     const el = e.target.closest("[data-id]");
     if (!el) return;
     const id = +el.dataset.id;
-    const h = hlColour(id);
+    let side = el.dataset.side || null;
+    if ((e.ctrlKey || e.metaKey) && current.plane !== "sagittal") {
+      // one hemisphere only: the half that was clicked
+      if (!side) side = pt[0] < 0 ? "L" : "R";
+      const full = hlColour(id);
+      const sided = hlColour(id, side);
+      if (full && sided && full[0] === sided[0]) {                  // whole region highlighted: drop the clicked half
+        const other = side === "L" ? "R" : "L";
+        state.hl.delete(full[0]); state.hl.set(keyId(full[0]) + other, full[1]);
+      } else if (sided) state.hl.delete(sided[0]);
+      else addHighlight(id + side);
+      draw(); return;
+    }
+    const h = hlColour(id, side) || hlSided(id)[0];
     if (h) state.hl.delete(h[0]); else addHighlight(id);
     draw();
   });
