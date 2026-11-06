@@ -133,8 +133,8 @@
       <ul class="chips" id="hlList"></ul>
     </fieldset>
 
-    <fieldset>
-      <legend>Mark a target</legend>
+    <fieldset id="markerSet">
+      <legend id="markerLegend">Mark a target</legend>
       <div class="row2">
         <label class="field"><span id="mxLabel">ML (mm, + = right)</span><input type="number" id="mx" step="0.01" value="2.00" inputmode="decimal"></label>
         <label class="field" id="mapField" hidden><span>AP from bregma (mm)</span><input type="number" id="map" step="0.01" value="-6.36" inputmode="decimal"></label>
@@ -168,7 +168,10 @@
         <label class="field" id="mtsField"><span>Sagittal tilt (°, + = top leans forward)</span><input type="number" id="mts" step="1" min="-60" max="60" value="0" inputmode="decimal"></label>
       </div>
       <label class="field" id="mlenField" hidden><span>Implant length above the brain (mm)</span><input type="number" id="mlen" step="0.1" min="0.1" value="1.5" inputmode="decimal"></label>
-      <button type="button" id="addMarker" class="primary">Add marker</button>
+      <div class="mbtns">
+        <button type="button" id="addMarker" class="primary">Add marker</button>
+        <button type="button" id="cancelEdit" hidden>Cancel</button>
+      </div>
       <p class="hint" id="shiftHint">Click the drawing with Shift held to drop a marker at the cursor.</p>
       <ul class="markers" id="markerList"></ul>
     </fieldset>

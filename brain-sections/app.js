@@ -575,21 +575,67 @@ function renderHlList() {
     li.append(rm); ul.append(li);
   }
 }
+let editing = -1, editBackup = null;   // index of the marker being edited, and its state before editing
 function renderMarkerList() {
   const ul = $("markerList"); ul.textContent = "";
   state.markers.forEach((m, i) => {
     const li = document.createElement("li");
-    const sw = document.createElement("span"); sw.className = "sw"; sw.style.background = m.color;
+    if (i === editing) li.className = "editing";
+    const sw = document.createElement("input"); sw.type = "color"; sw.className = "sw"; sw.value = m.color;
+    sw.setAttribute("aria-label", "Marker colour");
+    sw.addEventListener("input", () => { m.color = sw.value; if (i === editing) $("mcolor").value = sw.value; draw(); });
     const nm = document.createElement("span"); nm.className = "nm";
     let txt = (m.label ? m.label + ": " : "") + markerText(m);
-    if (m.plane !== state.plane) txt = `(${m.plane}) ` + txt;
+    if (m.plane !== state.plane) txt = `(${m.plane === "view3d" ? "3D" : m.plane}) ` + txt;
     else if (m._info && m._info.error) txt += ` (${m._info.error})`;
     nm.textContent = txt; nm.title = txt;
     if (m.plane === state.plane && m._info && m._info.region) nm.title += ` (${struct(m._info.region).n})`;
+    const ed = document.createElement("button"); ed.type = "button"; ed.textContent = i === editing ? "Editing" : "Edit";
+    ed.setAttribute("aria-label", "Edit marker"); ed.disabled = i === editing;
+    ed.addEventListener("click", () => startEdit(i));
     const rm = document.createElement("button"); rm.type = "button"; rm.textContent = "×"; rm.setAttribute("aria-label", "Remove marker");
-    rm.addEventListener("click", () => { state.markers.splice(i, 1); draw(); });
-    li.append(sw, nm, rm); ul.append(li);
+    rm.addEventListener("click", () => {
+      if (i === editing) stopEdit(false); else if (i < editing) editing--;
+      state.markers.splice(i, 1); draw();
+    });
+    li.append(sw, nm, ed, rm); ul.append(li);
   });
+}
+function fillMarkerForm(m) {
+  $("mx").value = m.x; $("mdv").value = m.depth; $("mref").value = m.ref;
+  $("map").value = m.ap || 0; $("mlen").value = m.len || 1.5; $("mtc").value = m.tc || 0; $("mts").value = m.ts || 0;
+  $("mshape").value = m.shape; $("mcolor").value = m.color; $("msize").value = m.size; $("mlabel").value = m.label || "";
+}
+function startEdit(i) {
+  if (editing >= 0) stopEdit(true);
+  const m = state.markers[i];
+  if (m.plane !== state.plane) {           // show the marker's own view first
+    state.plane = m.plane;
+    document.querySelector(`input[name=plane][value=${m.plane}]`).checked = true;
+    syncPlaneUi();
+  }
+  editing = i; editBackup = { ...m };
+  fillMarkerForm(m);
+  $("addMarker").textContent = "Done editing"; $("cancelEdit").hidden = false;
+  $("markerLegend").textContent = `Edit marker${m.label ? ` "${m.label}"` : ""}`;
+  $("markerSet").classList.add("editing");
+  if (m.plane !== "view3d") $("shiftHint").textContent = "Shift-click the drawing to move this marker to the cursor.";
+  $("markerSet").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  draw();
+}
+function stopEdit(keep) {
+  if (editing >= 0 && !keep && editBackup) state.markers[editing] = editBackup;
+  editing = -1; editBackup = null;
+  $("addMarker").textContent = "Add marker"; $("cancelEdit").hidden = true;
+  $("markerLegend").textContent = "Mark a target";
+  $("markerSet").classList.remove("editing");
+  syncPlaneUi();
+}
+function applyEdit() {                     // live update of the marker being edited
+  if (editing < 0) return;
+  const m = state.markers[editing];
+  state.markers[editing] = { ...readMarkerForm(), plane: m.plane };
+  draw();
 }
 function readMarkerForm() {
   return { plane: state.plane, x: +$("mx").value || 0, depth: +$("mdv").value || 0, ref: $("mref").value,
@@ -697,6 +743,7 @@ function stateToForm() {
 /* ---------- wiring ---------- */
 function wire() {
   for (const r of document.querySelectorAll("input[name=plane]")) r.addEventListener("change", () => {
+    if (editing >= 0) stopEdit(true);
     state.plane = r.value;
     state.pos = state.plane === "coronal" ? -6.36 : state.plane === "sagittal" ? 1.0 : 0;
     if (state.plane === "view3d" && state.fill === "none") { state.fill = "colour"; $("fill").value = "colour"; $("fillColorField").hidden = false; }
@@ -725,7 +772,14 @@ function wire() {
   $("regionSearch").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } });
   $("controls").addEventListener("submit", (e) => e.preventDefault());
 
-  $("addMarker").addEventListener("click", () => { state.markers.push(readMarkerForm()); draw(); });
+  $("addMarker").addEventListener("click", () => {
+    if (editing >= 0) { applyEdit(); stopEdit(true); draw(); return; }
+    state.markers.push(readMarkerForm()); draw();
+  });
+  $("cancelEdit").addEventListener("click", () => { stopEdit(false); draw(); });
+  for (const ev of ["input", "change"]) $("markerSet").addEventListener(ev, (e) => {
+    if (editing >= 0 && e.target.closest("#markerList") === null && e.target.id !== "addMarker") applyEdit();
+  });
 
   const paper = $("paper");
   paper.addEventListener("click", (e) => {
@@ -734,7 +788,8 @@ function wire() {
     if (e.shiftKey && current.plane === "view3d") return;
     if (e.shiftKey && current.plane === "dorsal") {
       $("mx").value = (pt[0] / 1000).toFixed(2); $("mdv").value = (-pt[1] / 1000).toFixed(2);
-      state.markers.push(readMarkerForm()); draw(); return;
+      if (editing >= 0) applyEdit(); else { state.markers.push(readMarkerForm()); draw(); }
+      return;
     }
     if (e.shiftKey) {
       const [X, Y] = pt;
@@ -743,7 +798,8 @@ function wire() {
       if (ref === "surface") { const sy = surfaceY(current, X); if (sy == null) return; depth = Y - sy; }
       $("mx").value = ((current.plane === "coronal" ? X : -X) / 1000).toFixed(2);
       $("mdv").value = (depth / 1000).toFixed(2);
-      state.markers.push(readMarkerForm()); draw(); return;
+      if (editing >= 0) applyEdit(); else { state.markers.push(readMarkerForm()); draw(); }
+      return;
     }
     const el = e.target.closest("[data-id]");
     if (!el) return;
