@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mouse Brain Sections</title>
+<meta name="description" content="Draw a coronal or sagittal section of the adult mouse brain (Allen CCFv3) at any stereotaxic coordinate, mark target sites, and download it as an editable SVG.">
+<meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://sqbauer.github.io/brain-sections/">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Mouse brain sections</h1>
+    <p class="sub">Coronal or sagittal section at any coordinate, from the Allen CCFv3 atlas. Mark target sites, then download an editable vector file.</p>
+  </div>
+  <a class="home" href="../">sqbauer.github.io</a>
+</header>
+
+<main class="layout">
+  <form class="panel" id="controls" autocomplete="off">
+    <fieldset>
+      <legend>Section</legend>
+      <div class="seg" role="radiogroup" aria-label="Plane">
+        <label><input type="radio" name="plane" value="coronal" checked><span>Coronal</span></label>
+        <label><input type="radio" name="plane" value="sagittal"><span>Sagittal</span></label>
+      </div>
+      <label class="field">
+        <span id="posLabel">AP from bregma (mm)</span>
+        <input type="number" id="pos" step="0.01" value="-6.36" inputmode="decimal">
+      </label>
+      <input type="range" id="posSlider" step="0.01" aria-label="Section position">
+      <p class="hint" id="posInfo"></p>
+      <label class="field">
+        <span>Coordinate system</span>
+        <select id="coords">
+          <option value="dorr">Stereotaxic: CCF scaled to Dorr 2008 (IBL)</option>
+          <option value="ccf">Allen CCF, unscaled (IBL bregma)</option>
+          <option value="qiu">Stereotaxic: CCF scaled to Qiu 2018, no pitch</option>
+        </select>
+      </label>
+      <details class="note">
+        <summary>How coordinates are converted</summary>
+        <p>The Allen CCF has no skull landmarks, so bregma is placed at CCF AP 5400 µm, DV 332 µm
+        (<a href="https://github.com/int-brain-lab/iblatlas">IBL convention</a>). ML 0 is the
+        atlas midline. The CCF brain is slightly shorter (AP) and taller (DV) than a live
+        stereotaxic brain; the Dorr scaling (AP ×1.087, DV ×0.952) corrects for this. Unscaled
+        and scaled coordinates differ by up to ~0.5 mm in the cerebellum, so pick the one your
+        coordinates come from. None of these is the Paxinos &amp; Franklin atlas; expect
+        mismatches of a few hundred µm.</p>
+      </details>
+    </fieldset>
+
+    <fieldset>
+      <legend>Drawing</legend>
+      <label class="field">
+        <span>Detail</span>
+        <select id="level">
+          <option value="major">Major divisions (~14)</option>
+          <option value="summary" selected>Summary structures (~300)</option>
+          <option value="fine">Full atlas (incl. cortical layers)</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Fill</span>
+        <select id="fill">
+          <option value="none">None (line drawing)</option>
+          <option value="grey">Light grey</option>
+          <option value="allen">Allen atlas colours</option>
+        </select>
+      </label>
+      <div class="row2">
+        <label class="field"><span>Line colour</span><input type="color" id="lineColor" value="#8a8a8a"></label>
+        <label class="field"><span>Outline colour</span><input type="color" id="outlineColor" value="#000000"></label>
+      </div>
+      <label class="field"><span>Line width</span><input type="range" id="lineWidth" min="0" max="4" step="0.25" value="1"></label>
+      <label class="field" id="hemiField">
+        <span>Hemisphere</span>
+        <select id="hemi">
+          <option value="both">Both</option>
+          <option value="left">Left half</option>
+          <option value="right">Right half</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Labels</span>
+        <select id="labels">
+          <option value="none">None</option>
+          <option value="hl">Highlighted regions only</option>
+          <option value="all">All that fit</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="scalebar" checked> Scale bar (1 mm)</label>
+      <label class="check"><input type="checkbox" id="caption" checked> Coordinate caption</label>
+      <label class="check"><input type="checkbox" id="grid"> 1 mm grid from bregma</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Highlight regions</legend>
+      <div class="search">
+        <input type="search" id="regionSearch" list="regionList" placeholder="Name or acronym, e.g. IntA, Crus1" aria-label="Find a region">
+        <datalist id="regionList"></datalist>
+        <button type="button" id="addRegion">Add</button>
+      </div>
+      <p class="hint">Or click a region in the drawing. Highlighting a parent (e.g. CBN) colours all of its parts.</p>
+      <ul class="chips" id="hlList"></ul>
+    </fieldset>
+
+    <fieldset>
+      <legend>Mark a target</legend>
+      <div class="row2">
+        <label class="field"><span id="mxLabel">ML (mm, + = right)</span><input type="number" id="mx" step="0.01" value="2.00" inputmode="decimal"></label>
+        <label class="field"><span>Depth (mm)</span><input type="number" id="mdv" step="0.01" value="0.75" inputmode="decimal"></label>
+      </div>
+      <label class="field">
+        <span>Depth measured from</span>
+        <select id="mref">
+          <option value="surface">Brain surface at the target</option>
+          <option value="bregma">Bregma</option>
+        </select>
+      </label>
+      <div class="row2">
+        <label class="field">
+          <span>Shape</span>
+          <select id="mshape">
+            <option value="dot">Dot</option>
+            <option value="cross">Cross</option>
+            <option value="track">Track from surface</option>
+            <option value="ring">Spread (circle)</option>
+          </select>
+        </label>
+        <label class="field"><span>Colour</span><input type="color" id="mcolor" value="#d62728"></label>
+      </div>
+      <div class="row2">
+        <label class="field"><span>Size / radius (mm)</span><input type="number" id="msize" step="0.05" min="0.02" value="0.10"></label>
+        <label class="field"><span>Label (optional)</span><input type="text" id="mlabel" maxlength="40"></label>
+      </div>
+      <button type="button" id="addMarker" class="primary">Add marker</button>
+      <p class="hint">Click the drawing with <kbd>Shift</kbd> held to drop a marker at the cursor.</p>
+      <ul class="markers" id="markerList"></ul>
+    </fieldset>
+  </form>
+
+  <section class="stage" aria-label="Section drawing">
+    <div class="toolbar">
+      <p class="status" id="status" aria-live="polite">Loading atlas…</p>
+      <div class="btns">
+        <button type="button" id="dlSvg" class="primary">Download SVG</button>
+        <button type="button" id="dlPng">PNG</button>
+        <button type="button" id="copyLink">Copy link</button>
+      </div>
+    </div>
+    <div class="paper" id="paper"></div>
+    <p class="hover" id="hover">&nbsp;</p>
+    <footer class="credit">
+      Atlas: Allen Mouse Brain Common Coordinate Framework v3 (2017),
+      <a href="https://doi.org/10.1016/j.cell.2020.04.007">Wang et al. 2020, Cell</a>. © Allen Institute,
+      used for non-commercial research under the <a href="https://alleninstitute.org/legal/terms-of-use/">Allen Institute terms of use</a>.
+      Drawings are derived from Allen content: use them for research, teaching and publications, cite the atlas
+      as the <a href="https://alleninstitute.org/legal/citation-policy/">citation policy</a> asks, and ask the Allen Institute before any commercial use.
+      This page is not affiliated with or endorsed by the Allen Institute.
+      Coordinate conventions from <a href="https://github.com/int-brain-lab/iblatlas">iblatlas</a>.
+      Not for surgical planning without checking against your own histology.
+      <a href="https://github.com/sqbauer/sqbauer.github.io/tree/main/brain-sections">Source and build script</a> (code: MIT licence).
+    </footer>
+  </section>
+</main>
+</body>
+</html>

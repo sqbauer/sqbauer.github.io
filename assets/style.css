@@ -288,6 +288,9 @@ ul, ol { padding: 0; margin: 0; list-style: none; }
 }
 .copy[hidden] { display: none; }
 .copy:hover { border-color: var(--accent); color: var(--accent); }
+.tools { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s4); }
+.tools h3 { font-size: 1.15rem; margin: 0 0 var(--s1); }
+.tools p { margin: 0; max-width: 70ch; }
 .source-note { margin: var(--s5) 0 0; font-size: 0.82rem; color: var(--faint); }
 
 /* Talks */
