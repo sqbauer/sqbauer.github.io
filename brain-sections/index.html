@@ -31,25 +31,23 @@
         <label><input type="radio" name="plane" value="dorsal"><span>Dorsal</span></label>
         <label><input type="radio" name="plane" value="view3d"><span>3D</span></label>
       </div>
-      <label class="field" id="viewField" hidden>
-        <span>View</span>
-        <select id="view">
-          <option value="side-left">Left side, from above</option>
-          <option value="side-right">Right side, from above</option>
-          <option value="front-left">Front-left three-quarter</option>
-          <option value="front-right">Front-right three-quarter</option>
-          <option value="rear-left">Rear-left three-quarter</option>
-          <option value="rear-right">Rear-right three-quarter</option>
-        </select>
-      </label>
-      <label class="field" id="elevField">
-        <span>Camera height</span>
-        <select id="elev">
-          <option value="30">30° from above</option>
-          <option value="45">45° from above</option>
-        </select>
-      </label>
-      <p class="hint" id="view3dNote" hidden>Oblique view of the unscaled Allen CCF. Markers are converted from the chosen coordinate system to the atlas. Each implant's tip sits at its ML/AP/depth target and runs up its tilt axis. Highlighted regions that are not on the surface show as silhouettes through the brain.</p>
+      <div class="field" id="viewField" hidden>
+        <span>Rotation <output id="rotOut"></output></span>
+        <div class="stepper">
+          <button type="button" id="rotL" aria-label="Rotate left">◀</button>
+          <input type="range" id="rot" min="-180" max="180" step="15" value="30" aria-label="Rotation around the brain">
+          <button type="button" id="rotR" aria-label="Rotate right">▶</button>
+        </div>
+      </div>
+      <div class="field" id="elevField" hidden>
+        <span>Camera height <output id="elevOut"></output></span>
+        <div class="stepper">
+          <button type="button" id="elevD" aria-label="Lower the camera">▼</button>
+          <input type="range" id="elev" min="0" max="75" step="15" value="30" aria-label="Camera height above the horizontal">
+          <button type="button" id="elevU" aria-label="Raise the camera">▲</button>
+        </div>
+      </div>
+      <p class="hint" id="view3dNote" hidden>Drag the drawing to rotate (or use the arrow keys). Oblique view of the unscaled Allen CCF; for straight down use Dorsal. Markers are converted from the chosen coordinate system to the atlas. Each implant's tip sits at its ML/AP/depth target and runs up its tilt axis. Highlighted regions that are not on the surface show as silhouettes through the brain.</p>
       <label class="field" id="posField">
         <span id="posLabel">AP from bregma (mm)</span>
         <input type="number" id="pos" step="0.01" value="-6.36" inputmode="decimal">
@@ -129,7 +127,7 @@
         <datalist id="regionList"></datalist>
         <button type="button" id="addRegion">Add</button>
       </div>
-      <p class="hint">Or click a region in the drawing. Highlighting a parent (e.g. CBN) colours all of its parts.</p>
+      <p class="hint">Or click a region in the drawing; <kbd>Ctrl</kbd>/<kbd>⌘</kbd>-click colours only the side you click. Highlighting a parent (e.g. CBN) colours all of its parts.</p>
       <ul class="chips" id="hlList"></ul>
     </fieldset>
 
