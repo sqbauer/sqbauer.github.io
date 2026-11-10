@@ -89,8 +89,9 @@
           <button type="button">Harder</button>
           <button type="button">Easier</button>
         </div>
-        <p><button type="button" class="btn" id="shake-btn" disabled>Shake the line for 5 seconds</button></p>
-        <p class="hint" id="shake-note" hidden>Your device asks for reduced motion, so the page will not shake the line unless you press the button again.</p>
+        <p class="hint" id="shake-note" hidden>Your device is set to reduce motion. The button below still shakes the line, because the movement is the demonstration. If motion bothers you, use the skip link instead.</p>
+        <p><button type="button" class="btn" id="shake-btn">Shake the line for 5 seconds</button></p>
+        <p class="status" id="shake-status" role="status"></p>
         <p><button type="button" class="linklike" data-skip="r1">Skip and show the explanation</button></p>
       </div>
     </div>
@@ -149,12 +150,12 @@
           <button type="button">Hold the pace but wobble</button>
         </div>
         <p class="controls">
-          <button type="button" class="btn" id="tap-start" disabled>Start the beat</button>
+          <button type="button" class="btn" id="tap-start">Start the beat</button>
           <label class="check"><input type="checkbox" id="tap-sound" checked> Sound</label>
         </p>
         <button type="button" class="pad tap-pad" id="tap-pad" disabled>
           <span class="pulse" id="tap-pulse" aria-hidden="true"></span>
-          <span class="pad-label" id="tap-label">Tap here, or press the space bar</span>
+          <span class="pad-label" id="tap-label">Start the beat, then tap here or press the space bar</span>
         </button>
         <div class="bar" aria-hidden="true"><span id="tap-bar"></span></div>
         <p class="status" id="tap-status" role="status"></p>
@@ -445,7 +446,7 @@
           <button type="button" data-k="1" disabled>1</button><button type="button" data-k="2" disabled>2</button><button type="button" data-k="3" disabled>3</button><button type="button" data-k="4" disabled>4</button>
         </div>
         <div class="bar" aria-hidden="true"><span id="seq-bar"></span></div>
-        <p class="controls"><button type="button" class="btn" id="seq-start" disabled>Start 30 seconds</button></p>
+        <p class="controls"><button type="button" class="btn" id="seq-start">Start 30 seconds</button></p>
         <p class="status" id="seq-status" role="status"></p>
         <div class="result" id="seq-result" hidden></div>
         <p><button type="button" class="linklike" data-skip="r6">Skip and show the explanation</button></p>
