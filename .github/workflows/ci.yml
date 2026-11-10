@@ -24,9 +24,11 @@ jobs:
           node scripts/render.mjs
           git diff --exit-code -- index.html sitemap.xml || { echo "::error::index.html is stale: run 'npm run render' and commit."; exit 1; }
       - name: html-validate
-        run: npx html-validate index.html
+        run: npx html-validate index.html hidden-conductor/index.html
       - name: W3C Nu validator
-        run: java -jar node_modules/vnu-jar/build/dist/vnu.jar --errors-only index.html
+        run: |
+          java -jar node_modules/vnu-jar/build/dist/vnu.jar --errors-only index.html hidden-conductor/index.html
+          java -jar node_modules/vnu-jar/build/dist/vnu.jar --css --errors-only hidden-conductor/style.css
 
   links:
     name: Link check
@@ -35,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: lycheeverse/lychee-action@v2
         with:
-          args: --config lychee.toml --no-progress index.html
+          args: --config lychee.toml --no-progress index.html hidden-conductor/index.html
           fail: true
 
   lighthouse:
