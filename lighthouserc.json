@@ -2,7 +2,7 @@
   "ci": {
     "collect": {
       "staticDistDir": ".",
-      "url": ["http://localhost/index.html"],
+      "url": ["http://localhost/index.html", "http://localhost/hidden-conductor/index.html"],
       "numberOfRuns": 3,
       "settings": { "formFactor": "mobile" }
     },

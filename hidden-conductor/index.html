@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One Ordinary Day, Run on Predictions</title>
+<meta name="description" content="Six things your cerebellum is thought to do before you notice, tried on your own body. A ten-minute interactive companion to The Hidden Conductor, a book in progress by Staf Bauer.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101214" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://sqbauer.github.io/hidden-conductor/">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="One ordinary day, run on predictions">
+<meta property="og:description" content="Six things your cerebellum is thought to do before you notice, tried on your own body. About ten minutes.">
+<meta property="og:url" content="https://sqbauer.github.io/hidden-conductor/">
+<meta property="og:image" content="https://sqbauer.github.io/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<script>document.documentElement.className="js";try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="preload" href="../assets/fonts/newsreader.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="rail" aria-label="Stops in the day">
+  <a class="rail-home" href="../">Staf Bauer</a>
+  <ol>
+    <li><a href="#stop-1"><span class="rail-time">07:10</span><span class="rail-name">Reading</span></a></li>
+    <li><a href="#stop-2"><span class="rail-time">08:20</span><span class="rail-name">Walking</span></a></li>
+    <li><a href="#stop-3"><span class="rail-time">10:30</span><span class="rail-name">Coffee</span></a></li>
+    <li><a href="#stop-4"><span class="rail-time">17:00</span><span class="rail-name">Practice</span></a></li>
+    <li><a href="#stop-5"><span class="rail-time">19:30</span><span class="rail-name">Dinner</span></a></li>
+    <li><a href="#stop-6"><span class="rail-time">23:00</span><span class="rail-name">Bed</span></a></li>
+  </ol>
+</nav>
+
+<main id="main">
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">A companion to <cite>The Hidden Conductor</cite>, a book in progress</p>
+    <h1>One ordinary day, run on predictions</h1>
+    <p class="lede">Six things your cerebellum is thought to do before you notice, tried on your own body. About ten minutes.</p>
+    <p class="byline">By <a href="../">Staf Bauer</a></p>
+  </div>
+  <svg class="arc" viewBox="0 0 1200 150" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path class="arc-line" d="M0 150Q600 -110 1200 150"/>
+  </svg>
+</header>
+
+<section class="intro wrap" aria-labelledby="intro-title">
+  <h2 id="intro-title">First, a scan that should not exist</h2>
+  <p>A radiologist opens a routine brain scan of a 24-year-old woman with a lifetime of poor balance and occasional slurred speech.</p>
+  <blockquote class="book">
+    <p>Where there should have been a structure — the dense, tightly folded, walnut-like mass known as the cerebellum, which sits at the base of the skull behind the brainstem — there was nothing.</p>
+    <p>The organ containing more neurons than the whole of the rest of her brain put together had never formed, and for twenty-four years nobody had known.</p>
+    <footer><cite>The Hidden Conductor</cite>, chapter 1</footer>
+  </blockquote>
+  <p>She is a real patient, described in a <a href="https://doi.org/10.1093/brain/awu239">2015 case report</a>. The book calls her Mei; the name is invented. Her case raises the question the book spends ten chapters on:</p>
+  <blockquote class="book">
+    <p>If an organ this large could be absent without catastrophe, what exactly was it doing when present?</p>
+  </blockquote>
+  <p>One way to find out is to catch it at work. The rest of this page is one ordinary day, with six stops. At each one you do something first and read the explanation afterwards.</p>
+  <div class="notice">
+    <p><strong>These are demonstrations, not tests.</strong> A web page cannot measure your cerebellum, and nothing here says anything about your health. Nothing you do on this page leaves your device.</p>
+  </div>
+  <p class="nojs-note">This page works best with JavaScript switched on. Without it you can still read every explanation and do the parts that need only your own body.</p>
+</section>
+
+<!-- ============ STOP 1 ============ -->
+<section class="stop" id="stop-1" aria-labelledby="s1-title">
+  <div class="wrap">
+    <header class="stop-head">
+      <svg class="sun" viewBox="0 0 64 44" aria-hidden="true" focusable="false"><path d="M6 30A26 26 0 0 1 58 30"/><line x1="2" y1="30" x2="62" y2="30"/><circle cx="6.9" cy="23.3" r="4.5"/></svg>
+      <p class="time">07:10 <span>Breakfast, reading the news</span></p>
+      <h2 id="s1-title">The words stay still</h2>
+    </header>
+
+    <div class="do">
+      <p class="step"><span class="step-n">1</span> Read the line in the box while doing what it says.</p>
+      <p class="readline" id="shake-line">Shake your head gently from side to side while you read this line. The words stay still.</p>
+
+      <div data-js>
+        <p class="step"><span class="step-n">2</span> Now the other way round: you keep your head still and the page shakes the line, about as fast. Guess first. Will the line be as easy to read?</p>
+        <div class="guess" data-guess="shake" role="group" aria-label="Your guess">
+          <button type="button">Just as easy</button>
+          <button type="button">Harder</button>
+          <button type="button">Easier</button>
+        </div>
+        <p><button type="button" class="btn" id="shake-btn" disabled>Shake the line for 5 seconds</button></p>
+        <p class="hint" id="shake-note" hidden>Your device asks for reduced motion, so the page will not shake the line unless you press the button again.</p>
+        <p><button type="button" class="linklike" data-skip="r1">Skip and show the explanation</button></p>
+      </div>
+    </div>
+
+    <div class="reveal" id="r1">
+      <p class="said" data-said="shake"></p>
+      <p>For most people the line blurs when the page moves, yet stays sharp when the head moves just as much. The difference is a reflex.</p>
+      <blockquote class="book">
+        <p>The flocculonodular lobe watches the eyes and tracks head movement detected by the inner ear, using one to compensate for the other. […] Your eyes are counter-rotating in their sockets, precisely and automatically, at exactly the speed your head is turning. That is the vestibulo-ocular reflex, and it is one of the easiest cerebellar demonstrations available to a reader in an armchair.</p>
+        <footer><cite>The Hidden Conductor</cite>, chapter 1</footer>
+      </blockquote>
+
+      <h3>How much brain is that?</h3>
+      <p>The cerebellum takes up about a tenth of the brain’s volume. Guess what share of your neurons sit inside it.</p>
+      <div class="neurons" data-js>
+        <p class="neuron-row"><label for="neuron-guess">Your guess:</label> <output id="neuron-out" for="neuron-guess">10%</output></p>
+        <input type="range" id="neuron-guess" min="0" max="100" step="5" value="10">
+        <button type="button" class="btn" id="neuron-show">Show me</button>
+        <div class="grid" id="neuron-grid" aria-hidden="true"></div>
+      </div>
+      <div class="reveal" id="r1b">
+        <p class="said" id="neuron-said"></p>
+        <blockquote class="book">
+          <p>The cerebellum holds something like 69 billion neurons — some four in every five you own.</p>
+          <footer><cite>The Hidden Conductor</cite>, chapter 1</footer>
+        </blockquote>
+        <p>That is 69 billion out of roughly 86 billion, from a study that dissolved brain tissue and counted cell nuclei (<a href="https://doi.org/10.1002/cne.21974">Azevedo and colleagues, 2009</a>). The book notes that other counting methods give somewhat different totals.</p>
+      </div>
+
+      <div class="limits">
+        <h3 id="s1-limits">What this shows, and what it doesn’t</h3>
+        <ul>
+          <li>You felt a reflex work. You did not see which part of the brain did the work: the reflex’s fastest route runs through the brainstem, and the cerebellum’s part is keeping it tuned.</li>
+          <li>The shaking line is this page’s addition. The head-shake is the book’s.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STOP 2 ============ -->
+<section class="stop" id="stop-2" aria-labelledby="s2-title">
+  <div class="wrap">
+    <header class="stop-head">
+      <svg class="sun" viewBox="0 0 64 44" aria-hidden="true" focusable="false"><path d="M6 30A26 26 0 0 1 58 30"/><line x1="2" y1="30" x2="62" y2="30"/><circle cx="9.5" cy="17" r="4.5"/></svg>
+      <p class="time">08:20 <span>Walking to the bus</span></p>
+      <h2 id="s2-title">Keep the beat when it stops</h2>
+    </header>
+
+    <div class="do">
+      <div data-js>
+        <p class="step"><span class="step-n">1</span> A beat will play 12 times. Tap along with it. Then it goes silent: keep tapping at the same pace until the bar is full. Guess first. When the beat disappears, what will your taps do?</p>
+        <div class="guess" data-guess="tap" role="group" aria-label="Your guess">
+          <button type="button">Speed up</button>
+          <button type="button">Slow down</button>
+          <button type="button">Hold the pace but wobble</button>
+        </div>
+        <p class="controls">
+          <button type="button" class="btn" id="tap-start" disabled>Start the beat</button>
+          <label class="check"><input type="checkbox" id="tap-sound" checked> Sound</label>
+        </p>
+        <button type="button" class="pad tap-pad" id="tap-pad" disabled>
+          <span class="pulse" id="tap-pulse" aria-hidden="true"></span>
+          <span class="pad-label" id="tap-label">Tap here, or press the space bar</span>
+        </button>
+        <div class="bar" aria-hidden="true"><span id="tap-bar"></span></div>
+        <p class="status" id="tap-status" role="status"></p>
+        <div class="result" id="tap-result" hidden></div>
+        <p><button type="button" class="linklike" data-skip="r2">Skip and show the explanation</button></p>
+      </div>
+      <p class="nojs-note">Without JavaScript: tap a slow, steady beat on the table and notice how even your taps are. Nobody’s are perfectly even.</p>
+    </div>
+
+    <div class="reveal" id="r2">
+      <p class="said" data-said="tap"></p>
+      <p>Two different things can go wrong when you keep time. You can drift, so that every gap is a little too long or too short. Or you can scatter, so that the gaps are right on average but uneven. The laboratory version of what you just did was run with people who had damage in one part of the cerebellum (<a href="https://doi.org/10.1007/BF00279670">Ivry, Keele and Diener, 1988</a>).</p>
+      <blockquote class="book">
+        <p>The intervals were not systematically too long or too short. They were noisy: scattered around the intended moment like shots clustered loosely around a target without hitting it. That is the cerebellar signature: imprecision, with the speed intact.</p>
+        <footer><cite>The Hidden Conductor</cite>, chapter 2</footer>
+      </blockquote>
+      <p>Everyone scatters a little. In that study, each patient’s taps scattered more in the hand on the damaged side than in the other hand. The book’s Marta, a concert pianist with a small bleed in her cerebellum, puts it this way:</p>
+      <blockquote class="book">
+        <p>“I can find the bar,” she said. “I cannot find anything inside it.”</p>
+        <footer><cite>The Hidden Conductor</cite>, chapter 2. Marta is a composite of published cases; her words are written, not recorded.</footer>
+      </blockquote>
+      <details class="more">
+        <summary>A harder version to try on the table</summary>
+        <blockquote class="book">
+          <p>Tap a slow, steady beat on the table with one hand: about one tap a second, the pace of a comfortable walk. […] Now keep that hand going and fit exactly three even taps of the other hand into each gap — not three taps somewhere in the gap, but three evenly spaced ones, the third landing just before the left hand comes down again.</p>
+          <p>Most untrained people find the second collapses within a few cycles […]. It is not a clean test: three against one is hard partly because the hands interfere with each other and the task loads attention.</p>
+          <footer><cite>The Hidden Conductor</cite>, chapter 2</footer>
+        </blockquote>
+      </details>
+      <div class="limits">
+        <h3 id="s2-limits">What this shows, and what it doesn’t</h3>
+        <ul>
+          <li>Your scatter here is not a measurement of your brain. Phones, keyboards and browsers add timing errors of their own, often tens of milliseconds, and 20 taps is a small sample.</li>
+          <li>The study compared groups of people under controlled conditions. One person’s number on one device cannot be compared with it.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STOP 3 ============ -->
+<section class="stop" id="stop-3" aria-labelledby="s3-title">
+  <div class="wrap">
+    <header class="stop-head">
+      <svg class="sun" viewBox="0 0 64 44" aria-hidden="true" focusable="false"><path d="M6 30A26 26 0 0 1 58 30"/><line x1="2" y1="30" x2="62" y2="30"/><circle cx="18.1" cy="8" r="4.5"/></svg>
+      <p class="time">10:30 <span>Coffee</span></p>
+      <h2 id="s3-title">Is that still your hand?</h2>
+    </header>
+
+    <div class="do">
+      <div data-js>
+        <p class="step"><span class="step-n">1</span> In four short rounds you move a dot around the box. In some rounds the page delays the dot. Guess first. At what delay will the dot stop feeling like your own movement?</p>
+        <div class="guess" data-guess="delay" role="group" aria-label="Your guess">
+          <button type="button">A tenth of a second</button>
+          <button type="button">A quarter of a second</button>
+          <button type="button">Half a second</button>
+          <button type="button">It always will</button>
+        </div>
+        <div class="pad delay-pad" id="delay-pad" tabindex="0" role="application" aria-label="Movement box. Move the pointer or a finger inside it, or use the arrow keys.">
+          <span class="dot" id="delay-dot" aria-hidden="true"></span>
+          <span class="pad-label" id="delay-label">Make your guess, then move inside this box</span>
+        </div>
+        <div class="bar" aria-hidden="true"><span id="delay-bar"></span></div>
+        <p class="status" id="delay-status" role="status"></p>
+        <div class="rate" id="delay-rate" role="group" aria-label="How much did the dot feel like your own movement?" hidden>
+          <span>Not mine</span>
+          <button type="button" data-v="1">1</button><button type="button" data-v="2">2</button><button type="button" data-v="3">3</button><button type="button" data-v="4">4</button><button type="button" data-v="5">5</button>
+          <span>Completely mine</span>
+        </div>
+        <div class="result" id="delay-result" hidden></div>
+        <p><button type="button" class="linklike" data-skip="r3">Skip and show the explanation</button></p>
+      </div>
+      <p class="step"><span class="step-n" data-js>2</span> Then one with no screen at all: try to tickle your own palm.</p>
+    </div>
+
+    <div class="reveal" id="r3">
+      <p class="said" data-said="delay"></p>
+      <p>You cannot tickle yourself, and the book’s account of why is a prediction.</p>
+      <blockquote class="book">
+        <p>When motor cortex issues a command it simultaneously sends a copy […] to the cerebellum. Think of it as the brain filing a flight plan: before the instructions go down to the body, the same message goes sideways, saying <em>here is what I am about to do; tell me what it will feel like.</em></p>
+        <footer><cite>The Hidden Conductor</cite>, chapter 2</footer>
+      </blockquote>
+      <p>A touch that was predicted is turned down. A touch that arrives off schedule is not, which is what the delay does. The original experiment used a robot to deliver a touch to the palm that the person’s other hand controlled (<a href="https://doi.org/10.1162/089892999563607">Blakemore, Frith and Wolpert, 1999</a>).</p>
+      <blockquote class="book">
+        <p>In a follow-up study, introducing a delay between movement and touch, or rotating the touch’s direction slightly, made it feel more ticklish again, the worse the prediction fitted.</p>
+        <footer><cite>The Hidden Conductor</cite>, chapter 10</footer>
+      </blockquote>
+      <p>You meet the same machinery whenever a prediction fails:</p>
+      <blockquote class="book">
+        <p>When you lift a glass you expect to be full and it turns out to be empty, your hand flies upward: a forward model error, felt as surprise, which is what a prediction error feels like from the inside. You notice the model only when it is wrong.</p>
+        <footer><cite>The Hidden Conductor</cite>, chapter 2</footer>
+      </blockquote>
+      <div class="limits">
+        <h3 id="s3-limits">What this shows, and what it doesn’t</h3>
+        <ul>
+          <li>The experiment delayed a touch on the skin. This page delays a dot on a screen, which is a looser relative of it and this page’s own adaptation.</li>
+          <li>The book is careful about the anatomy: <q>The imaging shows that the size of the attenuation tracks cerebellar activity; it does not show that the cerebellum is necessary for it.</q></li>
+          <li>People differ. In the book’s words, <q>the effect is a tendency, not a law.</q></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STOP 4 ============ -->
+<section class="stop" id="stop-4" aria-labelledby="s4-title">
+  <div class="wrap">
+    <header class="stop-head">
+      <svg class="sun" viewBox="0 0 64 44" aria-hidden="true" focusable="false"><path d="M6 30A26 26 0 0 1 58 30"/><line x1="2" y1="30" x2="62" y2="30"/><circle cx="52.4" cy="13.8" r="4.5"/></svg>
+      <p class="time">17:00 <span>Practice</span></p>
+      <h2 id="s4-title">Learning from a miss</h2>
+    </header>
+
+    <div class="do">
+      <div data-js>
+        <p class="step"><span class="step-n">1</span> Press on the grey circle, flick the dot through the ring in one quick movement, and let go. There are 30 reaches, and the page will change a rule along the way.</p>
+        <div class="pad reach-pad" id="reach-pad" role="application" aria-label="Reaching game. It needs a mouse, trackpad or touchscreen.">
+          <span class="ring" id="reach-ring" aria-hidden="true"></span>
+          <span class="home" id="reach-home" aria-hidden="true"></span>
+          <span class="dot" id="reach-dot" aria-hidden="true"></span>
+          <div class="ask" id="reach-q1" hidden>
+            <p>From now on the dot veers 30° to the side of where you push. How many reaches until you hit the ring again?</p>
+            <div class="guess" data-guess="reach1" role="group" aria-label="Your guess">
+              <button type="button">One or two</button>
+              <button type="button">Five to ten</button>
+              <button type="button">I won’t</button>
+            </div>
+          </div>
+          <div class="ask" id="reach-q2" hidden>
+            <p>The veer is now switched off. Where will your next reach go?</p>
+            <div class="guess" data-guess="reach2" role="group" aria-label="Your guess">
+              <button type="button">Straight to the ring</button>
+              <button type="button">Off to the old side</button>
+              <button type="button">Off to the other side</button>
+            </div>
+          </div>
+        </div>
+        <div class="bar" aria-hidden="true"><span id="reach-bar"></span></div>
+        <p class="status" id="reach-status" role="status">Reach 1 of 30. Press on the grey circle to begin.</p>
+        <div class="result" id="reach-result" hidden></div>
+        <p><button type="button" class="linklike" data-skip="r4">No pointer, or no patience? Skip and show the explanation</button></p>
+      </div>
+      <p class="nojs-note">This demonstration needs JavaScript. The explanation below does not.</p>
+    </div>
+
+    <div class="reveal" id="r4">
+      <p class="said" data-said="reach2"></p>
+      <p>When the dot starts veering, each miss tells you which way you were wrong, and for most people the misses shrink within a handful of reaches. When the veer is removed, many people miss the other way for a reach or two: the correction keeps running after the reason for it has gone. That lingering miss is the part of the learning you did not choose.</p>
+      <p>The book follows the same process at full scale in Elena, a nineteen-year-old gymnast who falls 247 times while learning a vault, with a signal from the brainstem to the cerebellum marking each error. It also explains why progress slows just when the work feels hardest:</p>
+      <blockquote class="book">
+        <p>Smaller errors are smaller violations of prediction, so the climbing fibres fire less often; and as the error signal fades, new LTD slows. The system turns itself down as it gets things right. This is the biology of the plateau […]. Her cerebellum has begun to run out of the thing it learns from.</p>
+        <footer><cite>The Hidden Conductor</cite>, chapter 3. Elena is a composite, and the tally of falls is illustrative. LTD, long-term depression, is the weakening of a connection between two neurons.</footer>
+      </blockquote>
+      <p>A version of your game has been played by people with cerebellar damage, pointing at targets while the view of their hand was rotated (<a href="https://doi.org/10.1016/j.cub.2008.04.071">Synofzik, Lindner and Thier, 2008</a>). With the rotated view in front of them, they noticed the distortion as well as healthy volunteers did. When the view was taken away, they went back to expecting the old, unrotated result: in the book’s reading, they could not keep the prediction about their own movement current.</p>
+      <div class="limits">
+        <h3 id="s4-limits">What this shows, and what it doesn’t</h3>
+        <ul>
+          <li>Your curve shows learning from error. It cannot show where in your brain the learning happened, and part of your correction was probably deliberate re-aiming.</li>
+          <li>The book says of that patient study: <q>It is also a small study that has not been widely replicated</q>.</li>
+          <li>Elena’s story from the inside is, in the book’s words, <q>an illustration assembled from animal work</q>; nobody has recorded these signals in a person learning a skill.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STOP 5 ============ -->
+<section class="stop" id="stop-5" aria-labelledby="s5-title">
+  <div class="wrap">
+    <header class="stop-head">
+      <svg class="sun" viewBox="0 0 64 44" aria-hidden="true" focusable="false"><path d="M6 30A26 26 0 0 1 58 30"/><line x1="2" y1="30" x2="62" y2="30"/><circle cx="57.8" cy="27.1" r="4.5"/></svg>
+      <p class="time">19:30 <span>Dinner, conversation</span></p>
+      <h2 id="s5-title">The clock inside a sentence</h2>
+    </header>
+
+    <div class="do">
+      <p>Four things to say out loud. No microphone is involved; the only listener is you.</p>
+
+      <div class="mini">
+        <p class="step"><span class="step-n">1</span> Say <strong>pat</strong>, then <strong>bat</strong>. What is different between them?</p>
+        <div class="guess" data-guess="pat" data-open="m1" role="group" aria-label="Your guess" data-js>
+          <button type="button">What my lips do</button>
+          <button type="button">When my voice switches on</button>
+          <button type="button">How hard I push the air</button>
+        </div>
+        <div class="reveal" id="m1">
+          <blockquote class="book">
+            <p>Your lips do the same thing both times: they close, pressure builds, they release. What differs is when, relative to that release, your vocal folds begin to vibrate. In “bat” the voicing starts almost immediately. In “pat” it is withheld — for fifty milliseconds or more, a delay you hear as a small puff of air.</p>
+            <footer><cite>The Hidden Conductor</cite>, chapter 5</footer>
+          </blockquote>
+        </div>
+      </div>
+
+      <div class="mini">
+        <p class="step"><span class="step-n">2</span> Read this aloud, giving each syllable the same length and the same stress, with a very slight pause between all of them.</p>
+        <p class="scan" id="scan-line"><span>The.</span> <span>Ro.</span> <span>man.</span> <span>tic.</span> <span>po.</span> <span>ets.</span> <span>were.</span> <span>not.</span> <span>in.</span> <span>ter.</span> <span>es.</span> <span>ted.</span> <span>in.</span> <span>rules.</span></p>
+        <p data-js><button type="button" class="btn" id="scan-btn" data-open="m2">Pace me</button></p>
+        <div class="reveal" id="m2">
+          <blockquote class="book">
+            <p>That is roughly what Robert sounded like. Every word is correct. Nothing is missing. And a listener has to work, because all the information that normally rides on top of the words — which one matters, where the thought is going, whether this is a statement or a joke — is sanded off.</p>
+            <footer><cite>The Hidden Conductor</cite>, chapter 5. Robert, a teacher who has a bleed in his cerebellum, is a composite of published cases.</footer>
+          </blockquote>
+        </div>
+      </div>
+
+      <div class="mini">
+        <p class="step"><span class="step-n">3</span> Say <strong>she’s leaving tomorrow</strong> three times: as a flat statement, as a question, as an accusation.</p>
+        <div class="said-it" id="prosody" role="group" aria-label="Tick each one when you have said it" data-js>
+          <button type="button" aria-pressed="false">Statement</button>
+          <button type="button" aria-pressed="false">Question</button>
+          <button type="button" aria-pressed="false">Accusation</button>
+        </div>
+        <div class="reveal" id="m3">
+          <blockquote class="book">
+            <p>The words never change. Everything that changed was prosody.</p>
+            <footer><cite>The Hidden Conductor</cite>, chapter 5</footer>
+          </blockquote>
+        </div>
+      </div>
+
+      <div class="mini">
+        <p class="step"><span class="step-n">4</span> Finish the sentence with the first word that comes.</p>
+        <form class="cat" id="cat-form" data-js>
+          <label for="cat-word">The cat sat on the</label>
+          <input type="text" id="cat-word" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20" size="8">
+          <button type="submit" class="btn">Done</button>
+        </form>
+        <p class="nojs-note">The cat sat on the …</p>
+        <div class="reveal" id="m4">
+          <p class="said" id="cat-said"></p>
+          <blockquote class="book">
+            <p>Read <em>the cat sat on the</em> and you have already narrowed the next word to a small set, mostly nouns, probably concrete, quite likely <em>mat</em>. You did not decide to do that. Comprehension is a prediction task run continuously and below awareness […].</p>
+            <footer><cite>The Hidden Conductor</cite>, chapter 5</footer>
+          </blockquote>
+        </div>
+      </div>
+      <p data-js><button type="button" class="linklike" data-skip="r5">Skip and show the explanation</button></p>
+    </div>
+
+    <div class="reveal" id="r5">
+      <h3>Why conversation needs a forecast</h3>
+      <p>Across the languages studied, the gap between one speaker finishing and the next starting clusters around a fifth of a second (<a href="https://doi.org/10.1073/pnas.0903616106">Stivers and colleagues, 2009</a>). Getting a word ready to say takes longer than that.</p>
+      <div class="gapchart" role="img" aria-label="The gap between turns is about 200 milliseconds. Preparing a word takes about 300 to 600 milliseconds.">
+        <div><span class="gap-label">Gap between turns</span><span class="gap-bar gap-a"></span><span class="gap-n">about 200 ms</span></div>
+        <div><span class="gap-label">Preparing a word</span><span class="gap-bar gap-b"></span><span class="gap-n">about 300 to 600 ms</span></div>
+      </div>
+      <blockquote class="book">
+        <p>There is simply not enough time to wait for the previous speaker to finish and only then begin to prepare a reply. The process requires prediction. […] We know when a turn will end because we know how it will end.</p>
+        <footer><cite>The Hidden Conductor</cite>, chapter 4</footer>
+      </blockquote>
+      <p>The book’s Marcus, a composite of published descriptions of autistic children, answers sometimes inside that window and sometimes a beat outside it. The book does not conclude that his timing is broken.</p>
+      <blockquote class="book">
+        <p>A mechanism is not a verdict. […] None of that requires his brain to change. It requires the room to change its rhythm.</p>
+        <footer><cite>The Hidden Conductor</cite>, chapter 4</footer>
+      </blockquote>
+      <div class="limits">
+        <h3 id="s5-limits">What this shows, and what it doesn’t</h3>
+        <ul>
+          <li>These four exercises show that speech runs on fine timing and prediction. They do not show that the cerebellum supplies either one.</li>
+          <li>On language, the book’s verdict: <q>the cerebellum does not own the rules. Whether it owns the clock they run on is still open.</q></li>
+          <li>On autism: <q>The computation shows up here; that it explains what happens here is a further claim, and so far an unsupported one.</q></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STOP 6 ============ -->
+<section class="stop" id="stop-6" aria-labelledby="s6-title">
+  <div class="wrap">
+    <header class="stop-head">
+      <svg class="sun night" viewBox="0 0 64 44" aria-hidden="true" focusable="false"><path d="M6 30A26 26 0 0 1 58 30"/><line x1="2" y1="30" x2="62" y2="30"/><circle cx="44" cy="38" r="4.5"/></svg>
+      <p class="time">23:00 <span>Before bed</span></p>
+      <h2 id="s6-title">Practice that continues without you</h2>
+    </header>
+
+    <div class="do">
+      <div data-js>
+        <p class="status" id="seq-back" hidden></p>
+        <p class="step"><span class="step-n">1</span> Type the sequence <strong>4 1 3 2 4</strong> over and over, as fast and as accurately as you can, for 30 seconds. Use the number keys or the buttons. Guess first. If you come back after a night’s sleep, without practising, will you be:</p>
+        <div class="guess" data-guess="seq" role="group" aria-label="Your guess">
+          <button type="button">Faster</button>
+          <button type="button">About the same</button>
+          <button type="button">Slower</button>
+        </div>
+        <p class="seq-show" id="seq-show" aria-hidden="true"><span>4</span><span>1</span><span>3</span><span>2</span><span>4</span></p>
+        <div class="seq-keys" id="seq-keys" role="group" aria-label="Number keys">
+          <button type="button" data-k="1" disabled>1</button><button type="button" data-k="2" disabled>2</button><button type="button" data-k="3" disabled>3</button><button type="button" data-k="4" disabled>4</button>
+        </div>
+        <div class="bar" aria-hidden="true"><span id="seq-bar"></span></div>
+        <p class="controls"><button type="button" class="btn" id="seq-start" disabled>Start 30 seconds</button></p>
+        <p class="status" id="seq-status" role="status"></p>
+        <div class="result" id="seq-result" hidden></div>
+        <p><button type="button" class="linklike" data-skip="r6">Skip and show the explanation</button></p>
+      </div>
+      <p class="nojs-note">This demonstration needs JavaScript. The explanation below does not.</p>
+    </div>
+
+    <div class="reveal" id="r6">
+      <p class="said" data-said="seq"></p>
+      <p>This is the task from a well-known sleep study, which ran twelve 30-second rounds in the evening and tested again the next morning (<a href="https://doi.org/10.1016/s0896-6273(02)00746-8">Walker and colleagues, 2002</a>).</p>
+      <blockquote class="book">
+        <p>And in the morning you are roughly a fifth faster. You did not practise. You slept. […] Practice does not end when you stop practising.</p>
+        <footer><cite>The Hidden Conductor</cite>, chapter 6</footer>
+      </blockquote>
+      <p>The book then does something popular accounts of this study usually skip:</p>
+      <blockquote class="book">
+        <p>The result is also contested. Rickard and colleagues argued that part of the apparent overnight gain in this kind of task reflects fatigue building up during massed practice and the time of day at testing, and that when these are controlled the sleep effect disappears.</p>
+        <footer><cite>The Hidden Conductor</cite>, chapter 6, on <a href="https://doi.org/10.1037/0278-7393.34.4.834">Rickard and colleagues, 2008</a></footer>
+      </blockquote>
+      <p>The chapter goes on to ask what the cerebellum does during the night, and is as plain about the gap in the evidence: <q>No one has yet shown that the day’s learning leaves a trace in the sleeping cerebellum.</q></p>
+      <div class="limits">
+        <h3 id="s6-limits">What this shows, and what it doesn’t</h3>
+        <ul>
+          <li>If you come back tomorrow, your two numbers will be one person, one night and two 30-second rounds, with no comparison group. Whatever they do, they cannot settle the argument above.</li>
+          <li>The book says it about a patient tracking her own walking during a trial: <q>Her numbers are not evidence. They are one thread of the fabric from which evidence is eventually woven.</q></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ END ============ -->
+<section class="ending" id="end" aria-labelledby="end-title">
+  <div class="wrap">
+    <h2 id="end-title">You notice it only when it falters</h2>
+    <p>One last thing to do, with no screen involved. It is part of a neurologist’s examination, and the book hands it to the reader:</p>
+    <blockquote class="book">
+      <p>Close your eyes, hold an arm out, and bring one fingertip to the tip of your nose. Most people land within a centimetre or two, without thinking about it. The landing is the part the cerebellum has been arranging all along: how hard to start, when to begin braking.</p>
+      <footer><cite>The Hidden Conductor</cite>, chapter 8</footer>
+    </blockquote>
+    <p>Tom, in the book, has an inherited disease in which the cerebellum slowly degenerates, and his hand no longer gets that arrangement for free. Asked whether reaching for a mug still feels like him, he says:</p>
+    <blockquote class="book">
+      <p>“Yes,” he says at last. “But different. Before, my reach was a commitment. I decided to pick something up and it was picked up. Now it’s more like a negotiation. I know what I want to happen. I just can’t guarantee it.”</p>
+      <footer><cite>The Hidden Conductor</cite>, chapter 10. Tom is a composite drawn from published accounts of spinocerebellar ataxia type 1; his words are written, not recorded.</footer>
+    </blockquote>
+    <p>Everything you did today went the way Tom’s reach used to: the line stayed still, the beat held, the dot was yours, the miss corrected itself, the sentence finished on time. None of it asked for your attention.</p>
+    <blockquote class="book">
+      <p>The book’s conductor has an odd property for a conductor: you notice it only when it falters.</p>
+      <footer><cite>The Hidden Conductor</cite>, epilogue</footer>
+    </blockquote>
+
+    <div class="recap" id="recap" hidden>
+      <h3>Your day</h3>
+      <ul id="recap-list"></ul>
+      <p class="hint">These are souvenirs, not scores. They stay on this device.</p>
+    </div>
+
+    <h3>Two cautions the book insists on</h3>
+    <ul class="plain">
+      <li><strong>The title is a metaphor, and it breaks.</strong> <q>The cerebellum conducts the clock. It does not read the score</q>. No cell in it hears the whole orchestra.</li>
+      <li><strong>Mei’s life does not show the cerebellum is optional.</strong> <q>Her compensation should not be mistaken for equivalence.</q> She walked with ataxia and spoke with slurred speech, and in the book’s words <q>she carried measurable intellectual impairment.</q></li>
+    </ul>
+
+    <h3>Where the book goes that this page does not</h3>
+    <p>The later chapters follow the same circuit into fear, addiction, autism, the inherited ataxias and the attempts to treat them, and the sense of being the author of your own actions. None of those can honestly be turned into a thirty-second exercise, and the book marks several of its own central ideas there as hypotheses. On whether a brain-stimulation treatment now being tried for ataxia does anything, for example, its answer is: <q>we do not know.</q></p>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <h2>About this page</h2>
+    <p>Text in quotation boxes is from the manuscript of <cite>The Hidden Conductor</cite>, a book in progress, © Staf Bauer. Apart from the woman in the scan, the people named are composites built from published clinical descriptions, as the book states where each first appears. This page is for general interest and is not medical advice.</p>
+    <h3>Studies named on this page</h3>
+    <ul class="refs">
+      <li>Yu F, Jiang QJ, Sun XY, Zhang RW. A new case of complete primary cerebellar agenesis: clinical and imaging findings in a living patient. <cite>Brain</cite> 2015. <a href="https://doi.org/10.1093/brain/awu239">doi:10.1093/brain/awu239</a></li>
+      <li>Azevedo FA and colleagues. Equal numbers of neuronal and nonneuronal cells make the human brain an isometrically scaled-up primate brain. <cite>Journal of Comparative Neurology</cite> 2009. <a href="https://doi.org/10.1002/cne.21974">doi:10.1002/cne.21974</a></li>
+      <li>Ivry RB, Keele SW, Diener HC. Dissociation of the lateral and medial cerebellum in movement timing and movement execution. <cite>Experimental Brain Research</cite> 1988. <a href="https://doi.org/10.1007/BF00279670">doi:10.1007/BF00279670</a></li>
+      <li>Blakemore SJ, Frith CD, Wolpert DM. Spatio-temporal prediction modulates the perception of self-produced stimuli. <cite>Journal of Cognitive Neuroscience</cite> 1999. <a href="https://doi.org/10.1162/089892999563607">doi:10.1162/089892999563607</a></li>
+      <li>Synofzik M, Lindner A, Thier P. The cerebellum updates predictions about the visual consequences of one’s behavior. <cite>Current Biology</cite> 2008. <a href="https://doi.org/10.1016/j.cub.2008.04.071">doi:10.1016/j.cub.2008.04.071</a></li>
+      <li>Stivers T and colleagues. Universals and cultural variation in turn-taking in conversation. <cite>PNAS</cite> 2009. <a href="https://doi.org/10.1073/pnas.0903616106">doi:10.1073/pnas.0903616106</a></li>
+      <li>Walker MP and colleagues. Practice with sleep makes perfect: sleep-dependent motor skill learning. <cite>Neuron</cite> 2002. <a href="https://doi.org/10.1016/s0896-6273(02)00746-8">doi:10.1016/s0896-6273(02)00746-8</a></li>
+      <li>Rickard TC and colleagues. Sleep does not enhance motor sequence learning. <cite>Journal of Experimental Psychology: Learning, Memory, and Cognition</cite> 2008. <a href="https://doi.org/10.1037/0278-7393.34.4.834">doi:10.1037/0278-7393.34.4.834</a></li>
+    </ul>
+    <p class="foot-nav"><a href="../">Back to sqbauer.github.io</a></p>
+  </div>
+</footer>
+
+<p class="sr-only" id="live" aria-live="polite"></p>
+</body>
+</html>
