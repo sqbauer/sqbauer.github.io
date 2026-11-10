@@ -67,11 +67,22 @@
       b.addEventListener("click", function () {
         buttons.forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
         guesses[key] = b.textContent.trim();
+        g.classList.remove("nudge");
         if (g.dataset.open) reveal(g.dataset.open);
         if (onGuess[key]) onGuess[key]();
       });
     });
   });
+
+  // A start button pressed before guessing does not go dead: it says what is missing and points at the guesses.
+  function needGuess(key, statusEl) {
+    if (guesses[key]) return false;
+    var g = $('.guess[data-guess="' + key + '"]');
+    statusEl.textContent = "Make a guess first: pick one of the answers just above.";
+    g.classList.add("nudge");
+    $("button", g).focus();
+    return true;
+  }
 
   // ---------- Day rail: mark the stop in view ----------
   if ("IntersectionObserver" in window) {
@@ -92,16 +103,22 @@
   // Stop 1: the shaking line, and the neuron count
   // =====================================================================
   (function () {
-    var line = $("#shake-line"), btn = $("#shake-btn"), note = $("#shake-note"), warned = false;
-    onGuess.shake = function () { btn.disabled = false; };
+    var line = $("#shake-line"), btn = $("#shake-btn"), note = $("#shake-note"), status = $("#shake-status"), timer = null;
+    if (reduce.matches) note.hidden = false;
+    onGuess.shake = function () { status.textContent = ""; };
+    function stop() {
+      clearTimeout(timer); timer = null;
+      line.classList.remove("shaking");
+      btn.textContent = "Shake the line again";
+      reveal("r1");
+    }
     btn.addEventListener("click", function () {
-      if (reduce.matches && !warned) {
-        warned = true; note.hidden = false; btn.textContent = "Shake it anyway for 5 seconds";
-        return;
-      }
-      btn.disabled = true;
+      if (timer) return stop();                      // a second press stops it early
+      if (needGuess("shake", status)) return;
+      status.textContent = "";
       line.classList.add("shaking");
-      setTimeout(function () { line.classList.remove("shaking"); btn.disabled = false; reveal("r1"); }, 5000);
+      btn.textContent = "Stop";
+      timer = setTimeout(stop, 5000);
     });
 
     var grid = $("#neuron-grid"), range = $("#neuron-guess"), out = $("#neuron-out"), dots = [];
@@ -130,7 +147,7 @@
     var start = $("#tap-start"), pad = $("#tap-pad"), pulse = $("#tap-pulse"), label = $("#tap-label");
     var bar = $("#tap-bar"), status = $("#tap-status"), box = $("#tap-result"), sound = $("#tap-sound");
     var run = null, timers = [];
-    onGuess.tap = function () { if (!run) start.disabled = false; };
+    onGuess.tap = function () { if (!run) status.textContent = ""; };
 
     function flash(cls) {
       pulse.classList.remove("beat", "mine");
@@ -150,6 +167,7 @@
     function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
 
     start.addEventListener("click", function () {
+      if (needGuess("tap", status)) return;
       var lead = 800, ctx = null, AC = window.AudioContext || window.webkitAudioContext;
       if (sound.checked && AC) { try { ctx = new AC(); } catch (e) { ctx = null; } }
       var t0 = now() + lead;
@@ -483,9 +501,8 @@
     if (prior) {
       back.hidden = false;
       back.textContent = "Welcome back. On " + nice(prior.d) + " you typed " + prior.n + " complete sequences in 30 seconds. Run it once now, without warming up.";
-      start.disabled = false;
     }
-    onGuess.seq = function () { if (!S.running) start.disabled = false; };
+    onGuess.seq = function () { if (!S.running) status.textContent = ""; };
 
     // Scoring: a sequence counts whenever the last five keys are 4-1-3-2-4. After a slip the reader
     // can simply carry on; the highlighted digit shows which key the page expects next.
@@ -525,6 +542,7 @@
     });
 
     start.addEventListener("click", function () {
+      if (!prior && needGuess("seq", status)) return;
       start.disabled = true; box.hidden = true;
       var n = 3;
       (function count() {

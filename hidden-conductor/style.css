@@ -156,6 +156,7 @@ q { quotes: "\201C" "\201D" "\2018" "\2019"; font-family: var(--serif); font-siz
 }
 .guess button:hover, .said-it button:hover, .rate button:hover { border-color: var(--accent); }
 .guess button[aria-pressed="true"], .said-it button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.guess.nudge { outline: 2px dashed var(--warm); outline-offset: 6px; border-radius: 14px; }
 .said { font-weight: 500; color: var(--accent-ink); }
 .said:empty { display: none; }
 
