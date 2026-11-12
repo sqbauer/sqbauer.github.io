@@ -91,7 +91,6 @@ Playwright with Chromium; local only).
 - **Privacy:** nothing is sent anywhere. The only stored value is the typing score of stop 6, in the
   browser's `localStorage` under `hc-sequence-runs`, so a reader can compare after a night's sleep.
 - **CI** validates this page alongside the home page (html-validate, W3C validator, link check, Lighthouse).
-- `hidden-conductor/game/` holds **The Loop Line**, a browser game built from the same manuscript. It has its own README.
 - The page is not linked from the home page yet. To list it there, add an entry to `tools` in
   `_data/site.json` (or a new section in `scripts/render.mjs`) and run `npm run render`.
 
