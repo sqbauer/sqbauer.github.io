@@ -13,5 +13,6 @@ exclude = [
   "^https://fonts\\.",
   # a page's own canonical address 404s on the pull request that first adds it
   "^https://sqbauer\\.github\\.io/hidden-conductor/$",
+  "^https://sqbauer\\.github\\.io/hidden-conductor/game/$",
   "^mailto:"
 ]
