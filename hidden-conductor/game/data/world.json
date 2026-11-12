@@ -15,13 +15,13 @@
     "subtitle": "A walk through the cerebellum, built from The Hidden Conductor, a book in progress by Staf Bauer.",
     "intro": [
       "You are a signal. The cerebellum is your hub: walk it, then ride the lines out to the rest of the brain and back.",
-      "Everything you collect is a card. Each card quotes the book, word for word, with its chapter and page.",
-      "Green cards are what the book states as established. Amber cards are hypotheses or revisions. Violet cards are open questions."
+      "Everything you collect is a card. Each card quotes the book, word for word, with its chapter and page. Small type above a quote is the game's lead-in, not a quotation.",
+      "Green cards are what the book states, amber what it marks as a hypothesis or a revision, violet what it leaves open. The sorting is the game's."
     ],
     "disclaimer": "The layout is a route map, not anatomy. Apart from the woman in the scan, the people you meet are composite characters, as the book states. This is not medical advice.",
     "controls": "Move: W A S D or the arrow keys. Act: E, Enter or Space. Notebook: N. Map: M.",
     "types": {
-      "mechanism": "Mechanism",
+      "mechanism": "Stated in the book",
       "hypothesis": "Hypothesis",
       "open_question": "Open question"
     },
@@ -761,10 +761,10 @@
         "###############",
         "#b.....p.....h#",
         "#.............#",
-        "#......g......#",
+        "#N.....g.....O#",
         "#.............#",
         "#.f...i...e...#",
-        "#.F...I...D...#",
+        "#.F.......D...#",
         "#.............#",
         "#.R....T....M.#",
         "###############"
@@ -876,30 +876,11 @@
           "kind": "door",
           "sprite": "door",
           "_label_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
-          "label": "Take the Night line",
+          "label": "Take the Night line's fastigial branch",
           "to": "night_line",
           "at": [
-            7.5,
+            8.5,
             2.5,
-            90
-          ],
-          "requires": {
-            "done": [
-              "nuclei_gate.g"
-            ]
-          },
-          "_locked_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
-          "lockedText": "The gate is shut. Time the pause first."
-        },
-        "I": {
-          "kind": "door",
-          "sprite": "door",
-          "_label_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
-          "label": "Take the Motor line",
-          "to": "motor_line",
-          "at": [
-            1.5,
-            1.5,
             0
           ],
           "requires": {
@@ -983,8 +964,47 @@
           },
           "_locked_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
           "lockedText": "Walk the Fading Rows first."
+        },
+        "N": {
+          "kind": "door",
+          "sprite": "door",
+          "_label_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
+          "label": "Take the Night line",
+          "to": "night_line",
+          "at": [
+            1.5,
+            2.5,
+            0
+          ],
+          "requires": {
+            "done": [
+              "nuclei_gate.g"
+            ]
+          },
+          "_locked_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
+          "lockedText": "The gate is shut. Time the pause first."
+        },
+        "O": {
+          "kind": "door",
+          "sprite": "door",
+          "_label_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
+          "label": "Take the Motor line",
+          "to": "motor_line",
+          "at": [
+            1.5,
+            1.5,
+            0
+          ],
+          "requires": {
+            "done": [
+              "nuclei_gate.g"
+            ]
+          },
+          "_locked_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
+          "lockedText": "The gate is shut. Time the pause first."
         }
-      }
+      },
+      "_layout_note": "Only two doors stand at a nucleus: F at the fastigial plaque (its outputs, Chapter 6, Part 2 PDF p. 12) and D at the dentate plaque (the loop, Chapter 1, Part 1 PDF p. 3). The Night line (N), Motor line (O) and Reward line (R) doors stand apart from the three plaques because the book does not tie those routes to one nucleus. [NEEDS SOURCE]: which nucleus carries the forward-model prediction, and which carries sleep-spindle traffic. No line starts at the interposed plaque."
     },
     {
       "id": "motor_line",
@@ -1036,9 +1056,9 @@
           "label": "Back to the Nuclei Gate",
           "to": "nuclei_gate",
           "at": [
-            6.5,
-            7.5,
-            -90
+            12.5,
+            3.5,
+            180
           ]
         },
         "e": {
@@ -1428,13 +1448,25 @@
       },
       "grid": [
         "###############",
-        "#..a...h...y..#",
-        "#.............#",
-        "#.s..b...f..d.#",
+        "#h.a...#H..y..#",
+        "#......#......#",
+        "#.s..b.#.f..d.#",
         "###############"
       ],
       "things": {
         "h": {
+          "kind": "door",
+          "sprite": "door",
+          "_label_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
+          "label": "Back to the Nuclei Gate",
+          "to": "nuclei_gate",
+          "at": [
+            2.5,
+            3.5,
+            0
+          ]
+        },
+        "H": {
           "kind": "door",
           "sprite": "door",
           "_label_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
@@ -1453,7 +1485,8 @@
           "label": "Read the plaque",
           "cards": [
             "sleep_traffic"
-          ]
+          ],
+          "sign": "Thalamus"
         },
         "a": {
           "kind": "plaque",
@@ -1499,7 +1532,8 @@
           ],
           "sign": "Towards the amygdala"
         }
-      }
+      },
+      "_layout_note": "Two chambers with a wall between them. Left: the sleep plaques, entered from the Night line door, which stands at no nucleus; the book routes spindle traffic 'through the thalamus' and names no nucleus (Chapter 6, Part 2 PDF p. 5). Right: the fastigial outputs, entered from the door at the fastigial plaque (Chapter 6, Part 2 PDF p. 12)."
     },
     {
       "id": "reward_line",

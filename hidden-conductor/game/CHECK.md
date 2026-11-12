@@ -10,12 +10,13 @@ Pages are PDF pages: P1 is the chapters 1–5 file, P2 is the chapters 6–10 fi
 - **Four quotes are not one unbroken passage**; each is marked in the tables below.
 - **The 15 figure briefs** stored in the data file also match the manuscript, after three hyphens lost in PDF extraction were restored.
 - **Everything else in the game is written for it** and is listed in sections 4 to 6 as [NOT IN SOURCE]. Seven of those items stated or implied a fact; they were corrected during this check (section 10).
-- **Of 14 things the game shows through its layout and mechanics,** 4 are supported by the book, 1 is an inference and 9 go beyond it or lose a hedge (section 5).
+- **Fourteen cards carry a one-line lead-in** written for the game. Each restates the page it names and is not a quotation (section 4h).
+- **Of 14 things the game shows through its layout and mechanics,** 5 are supported by the book, 1 is an inference and 8 go beyond it, lose a hedge or mark a gap (section 5). Two placements that implied anatomy the book does not give were changed after the check (section 10).
 - **No drawn figure exists to check.** Section 8 lists the briefs and the game's own drawings that the author should look at.
 
 ## 2. Cards: every quoted claim
 
-Type: M = mechanism, H = hypothesis, Q = open question. The type is the game's classification, not the book's (see section 6).
+Type: M = shown as "Stated in the book" (data key `mechanism`), H = hypothesis, Q = open question. The type is the game's classification, not the book's (see section 6).
 
 | Zone | Card | Type | Opening words | Source | Check |
 |---|---|---|---|---|---|
@@ -195,6 +196,7 @@ These are the game's names. Two carry a metaphor the book qualifies: "Clock Room
 | Nuclei Gate | Too early. | mini-interaction text |
 | Nuclei Gate | Too late. | mini-interaction text |
 | Nuclei Gate | The gate is open. | mini-interaction text |
+| Nuclei Gate | Take the Night line's fastigial branch | label |
 | Nuclei Gate | Take the Night line | label |
 | Nuclei Gate | The gate is shut. Time the pause first. | locked message |
 | Nuclei Gate | Take the Motor line | label |
@@ -256,12 +258,33 @@ Structure names used as signs, all of which appear in the book: Amygdala, Dentat
 - The layout is a route map, not anatomy. Apart from the woman in the scan, the people you meet are composite characters, as the book states. This is not medical advice.
 - Move: W A S D or the arrow keys. Act: E, Enter or Space. Notebook: N. Map: M.
 - You are a signal. The cerebellum is your hub: walk it, then ride the lines out to the rest of the brain and back.
-- Everything you collect is a card. Each card quotes the book, word for word, with its chapter and page.
-- Green cards are what the book states as established. Amber cards are hypotheses or revisions. Violet cards are open questions.
+- Everything you collect is a card. Each card quotes the book, word for word, with its chapter and page. Small type above a quote is the game's lead-in, not a quotation.
+- Green cards are what the book states, amber what it marks as a hypothesis or a revision, violet what it leaves open. The sorting is the game's.
 - You have walked every line and come back to the scan.
 - The last card is from the book's epilogue.
 
 The intro calls the player "a signal" and the cerebellum a "hub" with "lines". That framing is the game's own metaphor.
+
+### 4h. Lead-ins shown above a quote
+
+Fourteen quotes point at something outside themselves ("they", "this pathway"). Each of those cards has one line of small type above the quote. The lines are written for the game and are not quotations; each restates the manuscript page named, using the book's terms and numbers. Please read them against those pages.
+
+| Card | Lead-in | Restates |
+|---|---|---|
+| What does the complex spike say? | The second open question in the chapter's list. | Ch. 3, P1 p. 48 |
+| Necessary but not sufficient | Kakegawa and colleagues (2018) blocked AMPA receptor removal acutely in the living animal, and motor learning was impaired. | Ch. 3, P1 p. 44 |
+| Noise, not bias | The intervals are those of patients with focal cerebellar lesions in a tapping task: tap along with a metronome, then carry on at the same rate once it is switched off. | Ch. 2, P1 p. 31 |
+| Brakes | The vault is Elena's. The book has just asked why weakening a synapse makes a movement better. | Ch. 3, P1 p. 45 |
+| What the tickling result does not show | “The attenuation” is of self-touch, which is reliably rated as less ticklish than the identical touch delivered by a machine. | Ch. 2, P1 p. 33 |
+| Dysmetria of thought | “He” is Schmahmann, who proposed that the algorithm the cerebellum uses in motor control could apply to cognition and emotion. | Ch. 4, P1 p. 58 |
+| The timescale gap | The gap: the LTD mechanism and the climbing fibre error signal operate on timescales of milliseconds to seconds, while the processes of Part II unfold over seconds to minutes. | Ch. 3, P1 p. 48 |
+| Two directions | “They” are Xu, De Carvalho, Clarke and Jackson, who recorded from motor cortex and cerebellum in monkeys sleeping naturally. | Ch. 6, P2 p. 5 |
+| Dysmetria of emotion | What is missing: a vermal error signal time-locked to an emotional prediction failure. In the published record reviewed for the chapter, none has been reported. | Ch. 6, P2 p. 14 |
+| The timetable | On this reading, David's craving is a timed prediction: an expectation that a reward of a specific magnitude will arrive at a specific interval. | Ch. 7, P2 p. 21 |
+| Not shown in a person | “This pathway” is the cerebellar–VTA pathway. | Ch. 7, P2 p. 21 |
+| The ratchet | When a cell copies DNA, the copying machinery occasionally slips on a run of identical triplets, adding a few repeats or losing them. The longer the run, the more often it slips. | Ch. 8, P2 p. 39 |
+| Does stimulation do anything? | Patricia is the book's composite patient with spinocerebellar ataxia type 3, enrolled in a double-blind trial. tDCS is transcranial direct current stimulation. | Ch. 9, P2 p. 52 |
+| Agency as precision | The view: what has been lost is the precision that made the prediction feel like a guarantee rather than a guess. | Ch. 10, P2 p. 76 |
 
 
 ## 5. What the game shows through layout and mechanics
@@ -274,8 +297,8 @@ These are not sentences, so they have no quote behind them. Each is either suppo
 | 2 | The Thought line runs dentate, thalamus, prefrontal cortex, pons, and back. | Supported (Ch. 1, P1 p. 3; Ch. 4, P1 p. 58–59). |
 | 3 | The Reward line is one stop to the VTA, with four onward stations. | Supported (Ch. 7, P2 p. 18–19). |
 | 4 | The Night line's fastigial branch reaches the hypothalamus and periaqueductal grey, with a dashed, closed route towards the amygdala. | Supported (Ch. 6, P2 p. 12–13). |
-| 5 | The sleep plaques sit on the Night line, behind the fastigial door. | **[NOT IN SOURCE]** The book routes spindle traffic through the thalamus and does not involve the fastigial nucleus in sleep (Ch. 6, P2 p. 5). |
-| 6 | The Motor line starts at the interposed door and carries the prediction to sensory cortex. | **[NEEDS SOURCE]** The book does not say which nucleus carries the prediction; it says the interposed nucleus projects chiefly to the red nucleus and motor thalamus (Ch. 6, P2 p. 12). |
+| 5 | The sleep plaques stand in their own chamber of the Night line, entered by a door that stands at no nucleus; the traffic plaque carries a "Thalamus" sign. A wall separates it from the fastigial chamber. | Supported: spindle influence runs "from the cerebellum to the motor cortex, routed through the thalamus" (Ch. 6, P2 p. 5). The book names no nucleus, and the game now shows none. |
+| 6 | The Motor line door stands at no nucleus, and no line starts at the interposed plaque. The line carries the prediction to sensory cortex. | **[NEEDS SOURCE]** The book does not say which nucleus carries the prediction, so the game no longer picks one. The gap is recorded in `_layout_note` of the Nuclei Gate in `data/world.json`. |
 | 7 | The Language branch leaves the Thought line at the thalamus. | Inference from the dentate-thalamo-cortical pathway (Ch. 1, P1 p. 7; Ch. 5, P1 p. 79). The branch point is the game's. |
 | 8 | Timing a pause opens the Nuclei Gate, shown as a plain fact. | **Hedge lost.** The book says the pause "is thought to work" at these intervals (Ch. 1, P1 p. 14) and introduces the brake account with "In this picture" (Ch. 3, P1 p. 45). |
 | 9 | In Fading Rows every tree flickers irregularly while Tom stands among them. | **Goes beyond the book.** Irregular firing before cell death is from SCA1 mouse models, and the book calls Tom's diary "imagination rather than evidence" (Ch. 8, P2 p. 41–42). |
@@ -289,14 +312,14 @@ These are not sentences, so they have no quote behind them. Each is either suppo
 
 The book does not sort its statements into three kinds; the game does. These are the calls most open to challenge.
 
-**Shown as "Mechanism" although the quote or its context is hedged**
+**Green ("Stated in the book") although the quote or its context is hedged**
 - *Why you cannot tickle yourself*: the quote itself says "in all likelihood". Its caveat is a separate Hypothesis card.
 - *Brakes*: the book frames this account with "the model says" and "In this picture".
 - *Before any cell death is detectable*: from mouse models; its second sentence calls one step "an inference rather than a measurement".
 - *Two directions* (sleep traffic): rests on one study in monkeys.
 - *A direct line*: the connection was shown in mice.
 
-**Shown as "Mechanism" although they are not mechanisms**
+**Green although they are not mechanisms**
 - History: *What the wounded soldiers showed*.
 - Case facts: *The scan*, *Not equivalence*.
 - The book's own caveats and stances: *Where the title metaphor breaks*, *A mechanism is not a verdict*, *Not a moral event*, *When it falters*.
@@ -306,30 +329,30 @@ The book does not sort its statements into three kinds; the game does. These are
 - *A fifth faster* is filed as Hypothesis because the book calls the result contested on the same page.
 - *The question* is filed as Open question although it is the book's opening question, not an item from "What We Still Don't Know".
 
-A simple remedy is to rename the green type from "Mechanism" to "Stated in the book", or to add a fourth, neutral type for the seven cards in the second group.
+Decision after the check: the green type is now labelled "Stated in the book" instead of "Mechanism", and the title screen says the sorting is the game's. The second group is therefore no longer mislabelled. The first group stays green: the hedge is inside the quote or on a neighbouring card, but a reader may still take green for "established", so these five are the ones to re-file as Hypothesis if you want a stricter rule. The data key is still `mechanism`; only the label shown changed.
 
 ## 7. Cards that read incompletely on their own
 
-Each of these is word for word, but the quote points at something the card does not contain.
+Fourteen quotes are word for word but point at something the card does not contain. Decision after the check: each now has a one-line lead-in above the quote, written for the game and listed with its page in section 4h. The quotes themselves are unchanged.
 
-| Card | What is missing |
+| Card | What was missing |
 |---|---|
-| Two directions | "they replicated": who "they" are (the monkey study) |
-| The timescale gap | "It is the largest open question": what "It" is; only the title says |
+| Two directions | "they replicated": who "they" are |
+| The timescale gap | "It is the largest open question": what "It" is |
 | Necessary but not sufficient | "This is why": the reason comes before the quote |
-| The ratchet | "That is a ratchet": what "That" is (the repeat tending to lengthen between generations) |
+| The ratchet | "That is a ratchet": what "That" is |
 | Dysmetria of emotion | "Until it is": until what is done |
 | What does the complex spike say? | Opens with "Second:" from the book's numbered list |
 | Dysmetria of thought | "he named the result": who "he" is |
 | The timetable | "The difference is the one between": which difference |
-| Not shown in a person | "this pathway": which pathway (only the zone tells you) |
+| Not shown in a person | "this pathway": which pathway |
 | What the tickling result does not show | "the attenuation": of what |
-| Noise, not bias | "The intervals": whose intervals (patients with cerebellar lesions, tapping) |
-| Brakes | "of the vault": Elena's vault, which the card does not mention |
+| Noise, not bias | "The intervals": whose intervals |
+| Brakes | "of the vault": whose vault |
 | Does stimulation do anything? | "Patricia's question" and "tDCS": neither is introduced in the game |
 | Agency as precision | "On this view": which view |
 
-These can be fixed in `data/concepts.json` by lengthening the quote or by adding a one-line lead-in marked as written for the game.
+To remove a lead-in, delete the card's `lead`, `_lead_note` and `lead_source` fields in `data/concepts.json`.
 
 ## 8. Figures to double-check
 
@@ -380,11 +403,21 @@ No drawn figure exists, so there is no image to compare with an original. What n
 | The ending said the last card is "the book's own answer". | Now "The last card is from the book's epilogue." |
 | Two button labels ("Parallel fibre", "Climbing fibre") were marked as quotes. | Marked as game labels that use the book's terms. |
 
+### Changes made after the check, on the author's decision
+
+| Open point | Change |
+|---|---|
+| The green card type was labelled "Mechanism", which did not fit history, case facts or the book's own caveats (section 6). | Label changed to "Stated in the book". The title screen now says the sorting into three kinds is the game's. |
+| Fourteen quotes pointed at something outside the card (section 7). | One-line lead-ins added above the quote, marked as written for the game, each tied to a page (section 4h). |
+| The sleep plaques stood behind the fastigial door, although the book does not involve the fastigial nucleus in sleep. | The Night line now has two walled-off chambers. The sleep plaques are entered by a door that stands at no nucleus; the fastigial outputs are entered by the door at the fastigial plaque. |
+| The Motor line started at the interposed door, although the book does not say which nucleus carries the prediction. | The Motor line door now stands at no nucleus, and no line starts at the interposed plaque. Marked [NEEDS SOURCE] in `data/world.json`. |
+| Amount of quoted text. | Accepted as is: 67 cards. |
+
 ## 11. How the check was done
 
 1. Every string marked `"origin": "book"` was searched for, word for word, in a second text extraction of the manuscript (layout mode), after removing footnote numbers and line breaks. 96 strings: 92 matched as one passage; 4 matched in pieces for a stated reason.
 2. Every other string in the two data files, the page and the code was listed and read for stated or implied facts.
 3. Each mechanic and each part of the layout was compared with the passage it rests on.
-4. The game was replayed end to end after the corrections: 67 of 67 cards, no errors.
+4. The game was replayed end to end after the corrections, and again after the later changes in section 10: 67 of 67 cards, 5 of 5 lines, no errors. The replay enters both Night line chambers through their own doors and confirms the wall between them stops the player.
 
 Limits of this check: it confirms that quotes match the manuscript and are attributed to the right page. It does not check the manuscript against the published literature, and the classification in section 6 is one reader's judgement.

@@ -207,7 +207,8 @@
       S.cards[id] = true;
       var c = cards[id];
       // [NOT IN SOURCE] "Added to your notebook" is an interface label
-      pages.push({ kind: c.type, title: c.title, text: c.text, source: c._source_note + " · Added to your notebook" });
+      // c.lead, where a card has one, is a lead-in written for the game, not a quotation (see its _lead_note in concepts.json)
+      pages.push({ kind: c.type, title: c.title, note: c.lead, text: c.text, source: c._source_note + " · Added to your notebook" });
     });
     save(); hud();
     showPages(pages, function () {
@@ -255,7 +256,9 @@
         var t = document.createElement("h4"); t.textContent = c.title;
         var p = document.createElement("p"); p.textContent = c.text;
         var s = document.createElement("p"); s.className = "small"; s.textContent = c._source_note;
-        a.appendChild(t); a.appendChild(p); a.appendChild(s); list.appendChild(a);
+        a.appendChild(t);
+        if (c.lead) { var l = document.createElement("p"); l.className = "small"; l.textContent = c.lead; a.appendChild(l); }
+        a.appendChild(p); a.appendChild(s); list.appendChild(a);
       });
     });
     if (!owned()) { var e = document.createElement("p"); e.textContent = "Nothing yet."; list.appendChild(e); }

@@ -1,5 +1,5 @@
 {
-  "_about": "All book-derived text for The Loop Line. Every \"text\" and \"brief\" with \"origin\": \"book\" is quoted word for word from the manuscript of The Hidden Conductor (V26). The \"_source_note\" above each one gives chapter and PDF page (Part 1 = chapters 1-5 file, Part 2 = chapters 6-10 file). \"title\" fields are short labels written for the game and state no facts. Edit text here; the game code never needs to change.",
+  "_about": "All book-derived text for The Loop Line. Every \"text\" and \"brief\" with \"origin\": \"book\" is quoted word for word from the manuscript of The Hidden Conductor (V26). The \"_source_note\" above each one gives chapter and PDF page (Part 1 = chapters 1-5 file, Part 2 = chapters 6-10 file). \"title\" fields are short labels written for the game and state no facts. Edit text here; the game code never needs to change. A \"lead\" is a one-line lead-in written for the game and shown in small type above the quote; it is not a quotation, and its \"_lead_note\" names the page it restates.",
   "concepts": [
     {
       "id": "agenesis",
@@ -244,6 +244,13 @@
       "type": "open_question",
       "zone": "olive",
       "title": "What does the complex spike say?",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 3, Part 1 PDF p. 48 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "The second open question in the chapter's list.",
+      "lead_source": {
+        "chapter": 3,
+        "part": 1,
+        "page": 48
+      },
       "_source_note": "Source: Chapter 3, Part 1 PDF p. 48",
       "text": "Second: what exactly does the complex spike encode? A binary flag reading you made a mistake is almost certainly too crude.",
       "source": {
@@ -272,6 +279,13 @@
       "type": "hypothesis",
       "zone": "synapse_bench",
       "title": "Necessary but not sufficient",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 3, Part 1 PDF p. 44 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "Kakegawa and colleagues (2018) blocked AMPA receptor removal acutely in the living animal, and motor learning was impaired.",
+      "lead_source": {
+        "chapter": 3,
+        "part": 1,
+        "page": 44
+      },
       "_source_note": "Source: Chapter 3, Part 1 PDF p. 44",
       "text": "This is why LTD is now often described as necessary but not sufficient, and no longer as merely dispensable.",
       "source": {
@@ -342,6 +356,13 @@
       "type": "mechanism",
       "zone": "clock_room",
       "title": "Noise, not bias",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 2, Part 1 PDF p. 31 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "The intervals are those of patients with focal cerebellar lesions in a tapping task: tap along with a metronome, then carry on at the same rate once it is switched off.",
+      "lead_source": {
+        "chapter": 2,
+        "part": 1,
+        "page": 31
+      },
       "_source_note": "Source: Chapter 2, Part 1 PDF p. 31",
       "text": "The intervals were not systematically too long or too short. They were noisy: scattered around the intended moment like shots clustered loosely around a target without hitting it.",
       "source": {
@@ -413,6 +434,13 @@
       "type": "mechanism",
       "zone": "nuclei_gate",
       "title": "Brakes",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 3, Part 1 PDF p. 45 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "The vault is Elena's. The book has just asked why weakening a synapse makes a movement better.",
+      "lead_source": {
+        "chapter": 3,
+        "part": 1,
+        "page": 45
+      },
       "_source_note": "Source: Chapter 3, Part 1 PDF p. 45",
       "text": "Because Purkinje cells are brakes. Their only output is inhibition, applied to the deep cerebellar nuclei, which are what actually issue the corrective motor commands. A Purkinje cell firing less at millisecond 340 of the vault is a brake released at millisecond 340.",
       "source": {
@@ -483,6 +511,13 @@
       "type": "hypothesis",
       "zone": "motor_line",
       "title": "What the tickling result does not show",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 2, Part 1 PDF p. 33 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "“The attenuation” is of self-touch, which is reliably rated as less ticklish than the identical touch delivered by a machine.",
+      "lead_source": {
+        "chapter": 2,
+        "part": 1,
+        "page": 33
+      },
       "_source_note": "Source: Chapter 2, Part 1 PDF p. 33",
       "text": "The imaging shows that the size of the attenuation tracks cerebellar activity; it does not show that the cerebellum is necessary for it.",
       "source": {
@@ -511,6 +546,13 @@
       "type": "mechanism",
       "zone": "thought_line",
       "title": "Dysmetria of thought",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 4, Part 1 PDF p. 58 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "“He” is Schmahmann, who proposed that the algorithm the cerebellum uses in motor control could apply to cognition and emotion.",
+      "lead_source": {
+        "chapter": 4,
+        "part": 1,
+        "page": 58
+      },
       "_source_note": "Source: Chapter 4, Part 1 PDF p. 58",
       "text": "By analogy with motor dysmetria — the overshooting or undershooting of a reach — he named the result “dysmetria of thought,” a term he had been developing since the early 1990s.",
       "source": {
@@ -581,6 +623,13 @@
       "type": "open_question",
       "zone": "thought_line",
       "title": "The timescale gap",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 3, Part 1 PDF p. 48 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "The gap: the LTD mechanism and the climbing fibre error signal operate on timescales of milliseconds to seconds, while the processes of Part II unfold over seconds to minutes.",
+      "lead_source": {
+        "chapter": 3,
+        "part": 1,
+        "page": 48
+      },
       "_source_note": "Source: Chapter 3, Part 1 PDF p. 48",
       "text": "It is the largest open question in the argument this book is making; Part II has to confront it, and Chapter 10 has to add up the answers.",
       "source": {
@@ -680,6 +729,13 @@
       "type": "mechanism",
       "zone": "night_line",
       "title": "Two directions",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 6, Part 2 PDF p. 5 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "“They” are Xu, De Carvalho, Clarke and Jackson, who recorded from motor cortex and cerebellum in monkeys sleeping naturally.",
+      "lead_source": {
+        "chapter": 6,
+        "part": 2,
+        "page": 5
+      },
       "_source_note": "Source: Chapter 6, Part 2 PDF p. 5",
       "text": "For slow waves they replicated the downward direction: cortex to cerebellum. But sleep spindles, the brief NREM bursts linked to procedural consolidation, ran the other way. The directional influence during spindles went from the cerebellum to the motor cortex, routed through the thalamus.",
       "source": {
@@ -708,6 +764,13 @@
       "type": "hypothesis",
       "zone": "night_line",
       "title": "Dysmetria of emotion",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 6, Part 2 PDF p. 14 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "What is missing: a vermal error signal time-locked to an emotional prediction failure. In the published record reviewed for the chapter, none has been reported.",
+      "lead_source": {
+        "chapter": 6,
+        "part": 2,
+        "page": 14
+      },
       "_source_note": "Source: Chapter 6, Part 2 PDF p. 14",
       "text": "Until it is, dysmetria of emotion remains a well-motivated hypothesis rather than a finding.",
       "source": {
@@ -750,6 +813,13 @@
       "type": "hypothesis",
       "zone": "reward_line",
       "title": "The timetable",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 7, Part 2 PDF p. 21 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "On this reading, David's craving is a timed prediction: an expectation that a reward of a specific magnitude will arrive at a specific interval.",
+      "lead_source": {
+        "chapter": 7,
+        "part": 2,
+        "page": 21
+      },
       "_source_note": "Source: Chapter 7, Part 2 PDF p. 21",
       "text": "The difference is the one between knowing a train will come and knowing it arrives at 8:14; the cerebellum would be the timetable. The picture breaks where the timetable would have to span years, which nothing known about the cerebellum suggests it can hold.",
       "source": {
@@ -764,6 +834,13 @@
       "type": "open_question",
       "zone": "reward_line",
       "title": "Not shown in a person",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 7, Part 2 PDF p. 21 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "“This pathway” is the cerebellar–VTA pathway.",
+      "lead_source": {
+        "chapter": 7,
+        "part": 2,
+        "page": 21
+      },
       "_source_note": "Source: Chapter 7, Part 2 PDF p. 26",
       "text": "I know of no study showing, in a person, that this pathway does anything to craving.",
       "source": {
@@ -806,6 +883,13 @@
       "type": "mechanism",
       "zone": "fading_rows",
       "title": "The ratchet",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 8, Part 2 PDF p. 39 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "When a cell copies DNA, the copying machinery occasionally slips on a run of identical triplets, adding a few repeats or losing them. The longer the run, the more often it slips.",
+      "lead_source": {
+        "chapter": 8,
+        "part": 2,
+        "page": 39
+      },
       "_source_note": "Source: Chapter 8, Part 2 PDF p. 39",
       "text": "That is a ratchet, and it turns in one direction more often than the other — in SCA1 particularly when the gene passes through a father.",
       "source": {
@@ -862,6 +946,13 @@
       "type": "open_question",
       "zone": "fading_rows",
       "title": "Does stimulation do anything?",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 9, Part 2 PDF p. 52 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "Patricia is the book's composite patient with spinocerebellar ataxia type 3, enrolled in a double-blind trial. tDCS is transcranial direct current stimulation.",
+      "lead_source": {
+        "chapter": 9,
+        "part": 2,
+        "page": 52
+      },
       "_source_note": "Source: Chapter 9, Part 2 PDF p. 65",
       "text": "And there is Patricia’s question, which is also the question that matters most right now: does tDCS do anything? Her trial results are not yet available. The answer, where the field stands, is that we do not know.",
       "source": {
@@ -905,6 +996,13 @@
       "type": "hypothesis",
       "zone": "mirror",
       "title": "Agency as precision",
+      "_lead_note": "Lead-in written for the game. Not a quotation: it restates Chapter 10, Part 2 PDF p. 76 in the game's words. [NOT IN SOURCE as worded]",
+      "lead": "The view: what has been lost is the precision that made the prediction feel like a guarantee rather than a guess.",
+      "lead_source": {
+        "chapter": 10,
+        "part": 2,
+        "page": 76
+      },
       "_source_note": "Source: Chapter 10, Part 2 PDF p. 76",
       "text": "On this view, agency is not a faculty one either has or lacks. It is a matter of precision, and precision is what cerebellar damage would take away. That is a hypothesis, not a finding.",
       "source": {

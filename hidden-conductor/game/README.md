@@ -26,8 +26,14 @@ Live at <https://sqbauer.github.io/hidden-conductor/game/> once this folder is o
   Part 2 = chapters 6-10 file). JSON has no comments, so these `_..._note` fields are the comments.
 - **`"origin": "book"`** marks text quoted from the manuscript. **`"origin": "game"`** marks text
   written for the game; those lines are also tagged `[NOT IN SOURCE]` and state no science.
-- **Card types:** `mechanism` (the book states it as established), `hypothesis` (the book marks it
-  unproven or revised), `open_question` (from "What We Still Don't Know").
+- **Card types:** `mechanism` (shown as "Stated in the book": the book states it without marking it
+  as a hypothesis or an open question), `hypothesis` (the book marks it unproven or revised),
+  `open_question` (the book leaves it open). The sorting is the game's, not the book's. The label
+  shown for each type is under `ui.types` in `data/world.json`.
+- **Lead-ins:** a card may have a `"lead"`: one line shown in small type above the quote, for quotes
+  that point at something outside themselves ("they", "this pathway"). A lead is written for the
+  game and is not a quotation; its `"_lead_note"` names the page it restates. If you change the
+  quote so that it stands alone, delete the three `lead` fields.
 - **Move or add a thing in a zone:** edit the zone's `"grid"` in `data/world.json`. `#` and `%` are
   walls, `.` is floor, and each letter is defined under that zone's `"things"`.
 - **Timing values** such as `windowMs` are game parameters. Where the book gives a number, the
@@ -73,6 +79,9 @@ Then open `http://localhost:8000/hidden-conductor/game/`.
 - The layout is a route map and claims no anatomy. The book gives little spatial detail beyond the
   cerebellum itself.
 - The Night line has no return route in the book, so the player walks back the way they came.
+- In the Nuclei Gate only two doors stand at a nucleus: the fastigial branch and the Thought line
+  (dentate). The Night, Motor and Reward line doors stand apart, and no line starts at the
+  interposed plaque, because the book does not tie those routes to one nucleus. [NEEDS SOURCE]
 - The first-person view is not usable with a screen reader. Every card can be read in the notebook,
   and all card text is in `data/concepts.json`.
 - `window.__loopline` is a small debugging handle used by the automated play-through.
