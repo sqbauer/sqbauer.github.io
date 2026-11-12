@@ -355,7 +355,7 @@
       "id": "leave",
       "type": "mechanism",
       "zone": "nuclei_gate",
-      "title": "The only way out",
+      "title": "The way out",
       "_source_note": "Source: Chapter 1, Part 1 PDF p. 2",
       "text": "Deep inside sit three pairs of neuron clusters: the deep cerebellar nuclei. Almost every signal the cerebellar cortex computes leaves through them, and they are arranged in a row running from the midline outward, in a single memorable sequence.",
       "source": {
@@ -833,7 +833,7 @@
       "id": "irregular",
       "type": "mechanism",
       "zone": "fading_rows",
-      "title": "Before any cell is lost",
+      "title": "Before any cell death is detectable",
       "_source_note": "Source: Chapter 8, Part 2 PDF p. 41",
       "text": "In SCA1 mouse models, the regularity is disrupted well before any cell death is detectable: firing becomes irregular and erratic. Plausibly, the steady inhibition the cell holds on its targets in the deep cerebellar nuclei weakens with it, though that step is an inference rather than a measurement.",
       "source": {
@@ -847,7 +847,7 @@
       "id": "no_treatment",
       "type": "mechanism",
       "zone": "fading_rows",
-      "title": "No approved treatment",
+      "title": "None approved for the polyglutamine ataxias",
       "_source_note": "Source: Chapter 8, Part 2 PDF p. 47",
       "text": "No disease-modifying treatment has been approved for any of the polyglutamine spinocerebellar ataxias.",
       "source": {
@@ -953,7 +953,7 @@
       "lines": [
         {
           "_source_note": "Written for the game. Contains no science. [NOT IN SOURCE]",
-          "text": "You came in through the mossy fibres? Everyone does. Mind the shutter over there.",
+          "text": "You found the room. Mind the shutter over there.",
           "origin": "game"
         },
         {
@@ -1204,7 +1204,7 @@
       ],
       "image": null,
       "_source_note": "Source: Chapter 4, Part 1 PDF p. 59. Verbatim figure brief; no drawn figure exists.",
-      "brief": "FIGURE: The cerebellar-prefrontal loop. Outgoing limb: cerebellar cortex -> dentate nucleus -> thalamus -> prefrontal/parietal/temporal association cortex (the dentatethalamo-cortical tract). Return limb: cortex -> pontine nuclei -> mossy fibres -> cerebellar cortex. Drawn as a closed loop, to show that cerebellar “cognition” is participation in a circuit, not a one-way output.",
+      "brief": "FIGURE: The cerebellar-prefrontal loop. Outgoing limb: cerebellar cortex -> dentate nucleus -> thalamus -> prefrontal/parietal/temporal association cortex (the dentate-thalamo-cortical tract). Return limb: cortex -> pontine nuclei -> mossy fibres -> cerebellar cortex. Drawn as a closed loop, to show that cerebellar “cognition” is participation in a circuit, not a one-way output.",
       "source": {
         "chapter": 4,
         "part": 1,
@@ -1284,7 +1284,7 @@
       ],
       "image": null,
       "_source_note": "Source: Chapter 7, Part 2 PDF p. 20. Verbatim figure brief; no drawn figure exists.",
-      "brief": "FIGURE: The cerebellar–VTA pathway. Deep cerebellar nuclei sending a direct, singlesynapse excitatory projection into the ventral tegmental area, contacting dopamineproducing neurons among others, which in turn broadcast to the nucleus accumbens, prefrontal cortex, amygdala and hippocampus. Show the return limb as well: VTA dopaminergic fibres to cerebellar cortex, non-dopaminergic fibres to the deep nuclei The novelty to highlight: a structure long filed under “motor” wired into the brain’s reward broadcaster in both directions.",
+      "brief": "FIGURE: The cerebellar–VTA pathway. Deep cerebellar nuclei sending a direct, single-synapse excitatory projection into the ventral tegmental area, contacting dopamine-producing neurons among others, which in turn broadcast to the nucleus accumbens, prefrontal cortex, amygdala and hippocampus. Show the return limb as well: VTA dopaminergic fibres to cerebellar cortex, non-dopaminergic fibres to the deep nuclei The novelty to highlight: a structure long filed under “motor” wired into the brain’s reward broadcaster in both directions.",
       "source": {
         "chapter": 7,
         "part": 2,

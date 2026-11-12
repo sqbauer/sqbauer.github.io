@@ -16,6 +16,7 @@ Live at <https://sqbauer.github.io/hidden-conductor/game/> once this folder is o
 | `game.js` | The engine: first-person view on a plain canvas, movement, cards, the mini-interactions, saving. No libraries. |
 | `data/concepts.json` | **All book-derived text**: the 67 cards, the characters' lines, and the 15 figure briefs. |
 | `data/world.json` | The 14 zones: maps, what stands where, door rules, the mini-interaction texts and parameters, and the interface text. |
+| `CHECK.md` | The source check: every claim in the game with its chapter and page, and everything that is not from the book. |
 | `assets/` | Reserved for figure images. Empty: no drawn figures exist yet (see `assets/README.md`). |
 
 ## Editing content without touching code

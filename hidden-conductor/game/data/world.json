@@ -29,7 +29,7 @@
     "zoneDone": "Everything here is collected.",
     "ending": [
       "You have walked every line and come back to the scan.",
-      "The book's own answer is the last card."
+      "The last card is from the book's epilogue."
     ]
   },
   "zones": [
@@ -221,7 +221,7 @@
           "kind": "plaque",
           "sprite": "plaque",
           "_label_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
-          "label": "Visit the Hall of Wrong Answers",
+          "label": "Visit the history alcove",
           "cards": [
             "holmes"
           ]
@@ -558,24 +558,14 @@
               "origin": "game"
             },
             "pf": {
-              "_source_note": "Source: Chapter 3, Part 1 PDF p. 43",
+              "_note": "Button label written for the game, using the book's term (Chapter 3, Part 1 PDF p. 43).",
               "text": "Parallel fibre",
-              "source": {
-                "chapter": 3,
-                "part": 1,
-                "page": 43
-              },
-              "origin": "book"
+              "origin": "game"
             },
             "cf": {
-              "_source_note": "Source: Chapter 3, Part 1 PDF p. 43",
+              "_note": "Button label written for the game, using the book's term (Chapter 3, Part 1 PDF p. 43).",
               "text": "Climbing fibre",
-              "source": {
-                "chapter": 3,
-                "part": 1,
-                "page": 43
-              },
-              "origin": "book"
+              "origin": "game"
             },
             "weakened": {
               "_source_note": "Source: Chapter 3, Part 1 PDF p. 43",
@@ -1749,7 +1739,7 @@
             },
             "after": {
               "_note": "Written for the game. States no fact from the book. [NOT IN SOURCE]",
-              "text": "Nothing you do here changes it.",
+              "text": "This control does nothing.",
               "origin": "game"
             }
           },
