@@ -20,31 +20,41 @@
 
 <div class="app" id="app">
   <div style="min-width:0">
-    <header class="top">
+    <header class="top" id="top">
       <div class="top-row">
         <button class="brand" id="brandBtn" type="button" title="Back to your library"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Panelwise</button>
+        <button class="backlink" id="backBtn" type="button" hidden>Library</button>
         <div class="paper-id"><span class="t" id="pTitle"></span><span class="s"><span id="pSub"></span><span id="pTags" class="tags"></span></span></div>
         <input type="file" id="fileIn" accept="application/pdf,.pdf" hidden>
         <input type="file" id="dirIn" hidden>
         <button class="btn" id="libBtn" type="button">Library</button>
         <button class="btn" id="openBtn" type="button">Open PDF</button>
-        <button class="btn" id="chatBtn" type="button" aria-expanded="false">Ask about the paper</button>
+        <button class="btn" id="chatBtn" type="button" aria-expanded="false" title="Ask about the paper">Ask</button>
         <button class="btn ghost iconbtn" id="setBtn" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.5 7.5 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.5 7.5 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg></button>
+        <button class="btn quiet icon" id="moreBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More actions for this paper" title="More" hidden><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg></button>
       </div>
-      <nav class="steps" role="tablist" id="steps"></nav>
     </header>
+    <!-- the paper screen's head: title, authors and topics, then the steps (render.js fills it; hidden elsewhere) -->
+    <div class="paperhead" id="paperHead" hidden>
+      <div class="ph-in">
+        <div class="ph-meta" id="phMeta"></div>
+        <h1 class="ph-title" id="phTitle"></h1>
+        <div class="ph-tags tags" id="phTags"></div>
+        <nav class="steps" role="tablist" id="steps" aria-label="Steps for this paper"></nav>
+      </div>
+    </div>
     <main id="main"></main>
   </div>
   <aside class="chat" id="chat" hidden>
     <div class="chat-h"><div><strong>Ask about this paper</strong><div class="ctx" id="chatCtx"></div></div><button class="btn ghost" id="chatClose" type="button" aria-label="Close chat">Close</button></div>
     <div class="msgs" id="msgs"></div>
     <div class="sugs" id="sugs"></div>
-    <form class="composer" id="composer"><textarea id="chatIn" placeholder="Ask about methods, results, a panel…" rows="1"></textarea><button class="btn primary" id="sendBtn" type="submit">Send</button></form>
+    <form class="composer" id="composer"><textarea id="chatIn" aria-label="Your question about the paper" placeholder="Ask about methods, results, a panel…" rows="1"></textarea><button class="btn primary" id="sendBtn" type="submit">Send</button></form>
   </aside>
 </div>
 <div class="drop" id="drop" hidden>Drop the PDF to read it</div>
-<div class="progress" id="progress" hidden><div class="card"><strong id="progTitle">Reading paper</strong><ul id="progList"></ul><div class="note" id="progNote"></div></div></div>
-<div class="toast" id="toast" hidden></div>
+<div class="progress" id="progress" hidden><div class="card" role="status" aria-live="polite"><strong id="progTitle">Reading paper</strong><ul id="progList"></ul><div class="note" id="progNote"></div></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <div class="offline" id="offline" role="status" hidden>Offline · reading works, Claude needs a connection</div>
 <!-- platform adapter: Anthropic SDK, SQLite, Papers folder (replaces claude.ai's window.claude.use) -->
 <script src="vendor/deps.js"></script>
@@ -69,7 +79,6 @@
 <script src="js/card.js"></script>
 <script src="js/review.js"></script>
 <script src="js/palace.js"></script>
-<script src="js/assets.js"></script>
 <script src="js/render.js"></script>
 <script src="js/events.js"></script>
 <script src="js/figview.js"></script>
@@ -79,7 +88,10 @@
 <script src="js/readside.js"></script>
 <script src="js/readwords.js"></script>
 <script src="js/feed.js"></script>
+<script src="js/wikiterms.js"></script>
+<script src="js/wikicore.js"></script>
 <script src="js/connect.js"></script>
+<script src="js/wiki.js"></script>
 <script src="js/chat.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/web.js"></script>

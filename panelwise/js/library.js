@@ -1,8 +1,17 @@
 "use strict";
 /* ---------- library ---------- */
 const L = { files: new Map(), meta: store.get("pw:lib") || { folder: "", scannedAt: 0, items: [] }, q: "", field: "all", folderSel: "*", sort: "added", queue: false };
-function saveLib() { store.set("pw:lib", L.meta); }
-function onFolderPicked(list) {
+function openFromLibrary(keyOrId) {
+  const groups = buildGroups();
+  const gr = groups.find(g => g.key === keyOrId) || groups.find(g => g.id === keyOrId || g.members.some(m => m.id === keyOrId));
+  const f = gr ? fileForGroup(gr) : null;
+  if (!f) { toast(PW.native ? "This paper isn't in your Papers folder." : "Re-select the folder to open this paper."); if (!PW.native) pickFolderAction(); return; }
+  handleFile(f, gr.id);
+}
+function saveLib() { BG_MEMO = null; store.set("pw:lib", L.meta); }
+// quiet: a rescan while a paper is open updates the library without switching the screen to it
+function onFolderPicked(list, { quiet = false } = {}) {
+  BG_MEMO = null; L.scanning = false; L.lost = false;
   // skip helper folders such as _duplicates (anything starting with "_") and "Claude outputs"
   const pdfs = [...list].filter(f => /\.pdf$/i.test(f.name) && !(f.webkitRelativePath || "").split("/").slice(1, -1).some(seg => seg.startsWith("_") || seg === "Claude outputs"));
   if (!pdfs.length) { toast("No PDFs found in that folder."); return; }
@@ -15,7 +24,10 @@ function onFolderPicked(list) {
     return { id, path: rel, name: f.name, folder: parts.slice(1, -1).join(" / "), size: f.size, mtime: f.lastModified, title: o.title || null, year: o.year || null, authors: o.authors || [], head: o.head || "", doi: o.doi || null, tried: o.tried || false, mv: o.mv || 0 };
   });
   L.meta = { folder: (pdfs[0].webkitRelativePath || "").split("/")[0] || "Papers", scannedAt: Date.now(), items };
-  saveLib(); S.view = "library"; render(); runMetaQueue();
+  saveLib();
+  if (!quiet) { S.view = "library"; render(); }
+  else if (S.view === "library") renderLibList();
+  runMetaQueue();
 }
 const pathOf = it => it.path || it.id;
 const hasFile = it => L.files.has(pathOf(it));
@@ -26,7 +38,14 @@ function groupKey(it) {
   if (it.doi) return "doi:" + it.doi;
   return "f:" + it.id;
 }
+// a render asks for the groups several times; build them once per task (never across tasks, so they can't go stale)
+let BG_MEMO = null;
 function buildGroups() {
+  if (BG_MEMO) return BG_MEMO;
+  BG_MEMO = buildGroupsNow(); setTimeout(() => { BG_MEMO = null; }, 0);
+  return BG_MEMO;
+}
+function buildGroupsNow() {
   const g = new Map();
   for (const it of L.meta.items) { const k = groupKey(it); if (!g.has(k)) g.set(k, []); g.get(k).push(it); }
   // a DOI group and a title-only group can be the same paper: merge by title
@@ -61,7 +80,7 @@ function guessFromName(name) {
 }
 async function extractMeta(file) {
   const lib = await ensurePdfJs();
-  const doc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
+  const doc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), ...PDF_OPTS }).promise;
   try {
     const tc = await (await doc.getPage(1)).getTextContent();
     const lines = []; let cur = null;
@@ -126,7 +145,7 @@ function parseAuthors(raw) {
   }
   return [...new Set(out)].slice(0, 60);
 }
-const shortAuthors = a => !a || !a.length ? "" : a.length <= 3 ? a.join(", ") : `${a[0]}, ${a[1]} … ${a[a.length - 1]} (${a.length})`;
+const libShortAuthors = a => !a || !a.length ? "" : a.length <= 3 ? a.join(", ") : `${a[0]}, ${a[1]} … ${a[a.length - 1]} (${a.length})`;
 async function runMetaQueue() {
   if (L.queue) return; L.queue = true;
   let n = 0;
@@ -151,7 +170,8 @@ function progressOf(id) {
   if (c.revealed) return { cls: "p1", label: "Question done", last: c.lastOpened || 0 };
   return { cls: "p1", label: "Started", last: c.lastOpened || 0 };
 }
-const fmtDate = t => t ? new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
+const FMT_DATE = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" });   // one formatter for every row
+const fmtDate = t => t ? FMT_DATE.format(new Date(t)) : "";
 function libItems() {
   const q = L.q.trim().toLowerCase();
   const groups = buildGroups();
@@ -172,6 +192,132 @@ function libItems() {
   const by = { added: (a, b) => b.mtime - a.mtime, read: (a, b) => b.prog.last - a.prog.last || b.mtime - a.mtime, title: (a, b) => a.label.localeCompare(b.label), year: (a, b) => (b.year || 0) - (a.year || 0) }[L.sort];
   return items.sort(by);
 }
+/* ---- the library screen (design A, plus the Continue card and universal search from B) ----
+   one primary action per state: Continue (normal), Choose Papers folder (first launch), Re-select Papers folder
+   (folder access lost); rare actions sit in the More menu */
+const LIB_MAC = /Mac/.test(navigator.platform || "") && matchMedia("(hover: hover)").matches;   // the Mac (not the iPhone/iPad)
+const libKey = k => LIB_MAC ? k : "";
+const LIB_SVG = {
+  search: `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>`,
+  more: `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>`,
+  alert: `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg>`,
+  lock: `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`,
+};
+const relTime = t => {
+  if (!t) return ""; const m = (Date.now() - t) / 6e4;
+  if (m < 1) return "just now"; if (m < 60) return `${Math.round(m)} min ago`;
+  const h = m / 60; if (h < 24) return `${Math.round(h)} h ago`;
+  const d = h / 24; if (d < 7) return `${Math.round(d)} day${Math.round(d) === 1 ? "" : "s"} ago`;
+  return fmtDate(t);
+};
+// L.scanning, L.lost and L.booted are set by platform/files.js (scan, restore)
+const libLost = () => !!PW.native && L.meta.items.length > 0 && !L.scanning && (L.lost || (L.booted && !PW.files.folderName));
+// where you were in a paper: the step (render.js) and the reading position (readmode.js)
+function libWhere(r) {
+  const w = typeof stepLoad === "function" ? stepLoad(r.id) : null;
+  const nums = Object.keys(r.figs || {}).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+  let step = 0, label = "Background";
+  if (w && w.view === "question") { step = 1; label = "Goal & question"; }
+  else if (w && w.view === "figures") { step = 2; const n = nums[w.fig || 0] || (w.fig || 0) + 1; label = `Figure ${n}${r.nfig ? ` of ${r.nfig}` : ""}`; }
+  else if (w && w.view === "card") { step = 3; label = "Your card"; }
+  const read = typeof rmProgressLabel === "function" ? rmProgressLabel(r.id) : "";
+  const rm = typeof rmLoad === "function" ? rmLoad(r.id) : null;
+  return { step, label, read, t: Math.max(r.lastOpened || 0, (w && w.t) || 0, (rm && rm.t) || 0) };
+}
+// papers you've started and not finished (no card yet), most recent first
+function libInProgress() {
+  const groups = buildGroups();
+  return allRecs().filter(r => r.id && r.lastOpened && !(r.card && r.card.finding) && r.id !== "demo")
+    .map(r => {
+      const nt = normTitle(r.title);
+      const g = groups.find(x => x.id === r.id || x.members.some(m => m.id === r.id)) || (nt.length >= 25 ? groups.find(x => normTitle(x.title) === nt) : null);
+      return { r, g, w: libWhere(r), canOpen: !!(g && g.file) };
+    })
+    .sort((a, b) => b.w.t - a.w.t);
+}
+const libMeter = step => `<span class="lmeter" aria-hidden="true">${[0, 1, 2, 3].map(i => `<i class="${i < step ? "on" : i === step ? "cur" : ""}"></i>`).join("")}</span>`;
+function continueCard(list) {
+  if (!list.length) return "";
+  const [c, ...more] = list, r = c.r, g = c.g || {};
+  const au = (g.authors && g.authors.length ? g.authors : r.authors) || [];
+  const sur = s => String(s || "").trim().split(/\s+/).pop();
+  const who = au.length ? sur(au[0]) + (au.length > 2 ? " et al." : au.length === 2 ? " & " + sur(au[1]) : "") : "";
+  const year = g.year || r.year;
+  const openAttr = x => x.canOpen ? `data-open="${esc(x.g.key)}"` : `data-record="${esc(x.r.id)}"`;
+  const btn = c.canOpen ? `<button type="button" class="btn primary" data-open="${esc(g.key)}">Continue reading <span aria-hidden="true">›</span></button>`
+    : `<button type="button" class="btn" data-record="${esc(r.id)}">Your saved work</button>`;
+  return `<article class="card lcont" aria-labelledby="lcontT">
+    <div class="eyebrow">Continue where you left off</div>
+    <h3 class="lcont-t" id="lcontT">${esc(r.title || guessFromName(g.name || r.name || r.id).label)}</h3>
+    <div class="lcont-m">${esc([who, year, relTime(c.w.t)].filter(Boolean).join(" · "))}</div>
+    <div class="lcont-w">${libMeter(c.w.step)}<span>You were on <b>${esc(c.w.label)}</b>${c.w.read ? ` · ${esc(c.w.read)}` : ""}</span></div>
+    <div class="lcont-a">${btn}</div>
+    ${more.length ? `<div class="lcont-more"><div class="eyebrow">Also in progress</div>${more.slice(0, 2).map(x => `<button type="button" class="lcont-row" ${openAttr(x)}><span class="t">${esc(x.r.title || x.r.name || x.r.id)}</span><span class="m">${esc(x.w.label)} · ${esc(relTime(x.w.t))}</span></button>`).join("")}</div>` : ""}
+  </article>`;
+}
+function libMoreMenu(btn) {
+  const native = !!PW.native, folder = native && PW.files.folderName;
+  openMenu(btn, [
+    { label: folder || L.files.size ? "Rescan folder" : L.meta.items.length ? "Re-select Papers folder" : "Choose Papers folder", key: libKey(native ? "⌘R" : ""), run: () => folder ? PW.files.scan() : pickFolderAction() },
+    { label: "Open one PDF…", key: libKey("⌘O"), run: () => $("#fileIn").click() },
+    { label: "Example paper", run: () => openPaper(DEMO) },
+    "-",
+    { label: "Settings", key: libKey("⌘,"), run: () => { S.view = "settings"; render(); window.scrollTo(0, 0); } },
+  ]);
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest('[data-act="libmore"]'); if (b) libMoreMenu(b);
+});
+// the library's shortcuts on the Mac (labels in the More menu): ⌘O open a PDF, ⌘, settings, ⌘R rescan (the app only)
+document.addEventListener("keydown", e => {
+  if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || S.view !== "library" || PW.single) return;
+  if (document.documentElement.classList.contains("rdm-open") || document.documentElement.classList.contains("fd-on") || openMenu.cur) return;
+  if (e.key === "o") { e.preventDefault(); $("#fileIn").click(); }
+  else if (e.key === ",") { e.preventDefault(); S.view = "settings"; render(); window.scrollTo(0, 0); }
+  else if (e.key === "r" && PW.native && PW.files.folderName) { e.preventDefault(); PW.files.scan(); }
+});
+// the library's search field: typing on another tab shows the papers; Enter searches everything
+document.addEventListener("input", e => {
+  if (e.target.id !== "libQ" || S.view !== "library" || L.tab === "papers") return;
+  L.q = e.target.value; L.tab = "papers"; renderLibrary();
+  const i = $("#libQ"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+});
+document.addEventListener("keydown", e => {
+  if (e.target.id === "libQ" && e.key === "Enter" && !e.isComposing && typeof lsOpen === "function") { e.preventDefault(); lsOpen(e.target.value); }
+});
+function libSearchHTML(n) {
+  return `<div class="lsearch-row"><div class="lfield">${LIB_SVG.search}
+      <label for="libQ" class="sr-only">Search papers</label>
+      <input id="libQ" type="search" autocomplete="off" spellcheck="false" enterkeyhint="search" value="${esc(L.q)}" placeholder="${L.field === "authors" ? "Author name, e.g. Romano" : `Search ${n ? n + " papers" : "papers"} by title, author or topic`}">
+      <button type="button" class="chip lfield-all" data-act="lsearch" title="Search papers, wiki terms and the text of every paper">Everything${LIB_MAC ? ` <kbd>⌘K</kbd>` : matchMedia("(hover: hover)").matches ? ` <kbd>Ctrl K</kbd>` : ""}</button></div></div>`;
+}
+function libWelcome() {
+  const tap = PW_TOUCH_LIB ? "Tap" : "Click";
+  return `<section class="view lwelcome">
+    <span class="lbigmark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <h2>Point Panelwise at your papers folder</h2>
+    <p class="lede">Panelwise lists every PDF in the folder and its subfolders, reads each title and author, and remembers how far you got in each paper.</p>
+    <ol class="lsteps">
+      <li><div>${tap} <strong>Choose Papers folder</strong>.</div></li>
+      <li><div>${PW.native ? "In Files, open iCloud Drive and select the folder where your PDFs end up, for example" : "Pick the folder where your PDFs end up, for example"}<span class="path">${PW.native ? "iCloud Drive / Papers" : "Documents / Papers"}</span></div></li>
+      <li><div>${PW.native ? "Panelwise keeps access and rescans it each time it opens. New PDFs simply appear." : "Your browser asks to “upload” the files. They are only read on this page; pick the folder again next time."}</div></li>
+    </ol>
+    <div class="lacts"><button class="btn primary" type="button" data-act="pickdir">Choose Papers folder</button><button class="btn" type="button" data-act="demo">Try the example paper</button><button class="btn quiet" type="button" data-act="pickfile">Open one PDF</button></div>
+    <p class="note lprivacy">${LIB_SVG.lock}<span>PDFs stay on this device. Only text you choose to send to Claude leaves it.</span></p>
+  </section>`;
+}
+const PW_TOUCH_LIB = matchMedia("(hover: none)").matches;
+const libSkel = n => [70, 55, 80, 62, 48].slice(0, n).map(w => `<div class="lskel" aria-hidden="true"><div><span class="sk" style="width:${w}%"></span><span class="sk sm" style="width:${w - 25}%"></span></div><span class="sk" style="width:60%"></span></div>`).join("");
+function libLostCard() {
+  const f = L.meta.folder || "Papers";
+  return `<section class="card lalert" role="alert">
+    <span class="lalert-i">${LIB_SVG.alert}</span>
+    <div><h3>Papers folder access lost</h3>
+      <p class="note">Panelwise can't reach <span class="path">${esc(f)}</span>, so PDFs can't be opened right now. Your notes, cards and progress are saved, and review still works.</p>
+      <div class="lacts"><button class="btn primary" type="button" data-act="pickdir">Re-select Papers folder</button><button class="btn" type="button" data-act="pickfile">Open one PDF</button></div>
+      <details><summary>Why did this happen?</summary><ul><li>The system can drop folder access after an update.</li><li>The folder was moved, renamed, or is still downloading from iCloud.</li><li>Re-selecting the same folder restores everything; nothing is imported twice.</li></ul></details>
+    </div></section>`;
+}
 function renderLibrary() {
   $("#pTitle").textContent = "Library";
   const M = L.meta, have = L.files.size > 0;
@@ -179,72 +325,75 @@ function renderLibrary() {
   $("#pSub").textContent = M.items.length ? `${M.folder} · ${nPapers} papers${nPapers !== M.items.length ? ` in ${M.items.length} PDFs` : ""}` : "Your papers, read figure by figure";
   L.tab = L.tab || "papers";
   const m = $("#main");
-  if (!M.items.length && allRecs().some(r => r.phone?.bundle) && L.tab === undefined) L.tab = "papers";
-  if (!M.items.length && !allRecs().length) {
-    m.innerHTML = `<section class="view">
-      <div class="eyebrow">Library</div><h2>Point Panelwise at your papers folder</h2>
-      <p class="lede">Choose the folder where your PDFs end up. Panelwise lists every PDF in it and its subfolders, reads each title, and tracks how far you got with each paper.</p>
-      <div class="libempty">
-        <div class="card"><h3>Your folder</h3>
-          ${PW.native
-            ? `<ol><li>Tap <strong>Choose Papers folder</strong>.</li><li>In Files, open iCloud Drive and select your Papers folder, for example<div class="path">iCloud Drive / Papers</div></li><li>Panelwise keeps access to it and rescans it every time it opens. PDFs stay on your phone; only the text you send to Claude leaves it.</li></ol>`
-            : `<ol><li>Click <strong>Choose Papers folder</strong>.</li><li>Pick the folder, for example<div class="path">Documents / Papers</div></li><li>Your browser asks to "upload" the files. They are only read on this page; only the text you send to Claude leaves it.</li></ol>`}
-          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn primary" type="button" data-act="pickdir">Choose Papers folder</button><button class="btn" type="button" data-act="pickfile">Open one PDF</button></div>
-        </div>
-        <div class="card"><h3>Try it first</h3><p class="note" style="margin:6px 0 12px">A short fictional paper with two figures, to see how panels link to text.</p><button class="btn" type="button" data-act="demo">Open the example paper</button></div>
-      </div></section>`;
+  // first scan of a newly picked folder (the app): a progress line and placeholder rows
+  if (!M.items.length && L.scanning) {
+    m.innerHTML = `<section class="view lib"><div class="libhead"><div><div class="eyebrow">${esc(PW.files.folderName || "Papers")}</div><h2>Library</h2></div></div>
+      <div class="card lstatus" role="status" aria-live="polite"><span class="lspin" aria-hidden="true"></span><div><b>Scanning your Papers folder</b><div class="note">Listing the PDFs in ${esc(PW.files.folderName || "the folder")} and its subfolders…</div></div><div class="lbar ind"><i></i></div></div>
+      <div class="liblist" aria-busy="true">${libSkel(5)}</div></section>`;
     return;
   }
+  if (!M.items.length && !allRecs().length) { m.innerHTML = libWelcome(); return; }
+  const lost = libLost();
   const groups = buildGroups(), nDup = groups.filter(g => g.copies > 1).length;
   const folders = new Map(); for (const gr of groups) for (const f of gr.folders) folders.set(f, (folders.get(f) || 0) + 1);
   const fl = [...folders.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  m.innerHTML = `<section class="view">
-    <div class="libhead"><div><div class="eyebrow">Library${M.folder ? " · " + esc(M.folder) : ""}</div><h2>Your papers</h2></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">${have && M.items.length ? `<button class="btn primary" type="button" data-act="feed">Feed</button><button class="btn" type="button" data-act="lsearch">Search inside</button>` : ""}<button class="btn ${have ? "" : "primary"}" type="button" data-act="pickdir">${have ? "Rescan folder" : "Re-select folder"}</button><button class="btn" type="button" data-act="pickfile">Open one PDF</button><button class="btn ghost" type="button" data-act="demo">Example paper</button></div></div>
-    ${reviewBanner()}
-    ${have || !M.items.length ? "" : `<div class="scanbar">Showing your last scan from ${fmtDate(M.scannedAt)}. To open a PDF, re-select the folder (browsers don't let pages keep folder access). Papers you've worked on open as a read-back of your notes and chat.</div>`}
-    ${libTabs()}
-    ${L.tab === "topics" ? topicsTab() : L.tab === "notebook" ? `<div id="nbBox" style="margin-top:16px"><div class="thinking"><span class="dot"></span>Gathering your notes…</div></div>` : `
-    <div class="libtools"><input class="search" id="libQ" type="search" placeholder="${L.field === "authors" ? "Author name, e.g. Romano" : "Search titles, authors, file names, topics"}" value="${esc(L.q)}" aria-label="Search papers">
-      <select class="sort" id="libField" aria-label="Search in">${[["all", "Search everything"], ["authors", "Authors only"], ["title", "Titles only"]].map(([v, l]) => `<option value="${v}" ${L.field === v ? "selected" : ""}>${l}</option>`).join("")}</select>
-      <select class="sort" id="libSort" aria-label="Sort papers">${[["added", "Recently added"], ["read", "Recently read"], ["title", "Title A–Z"], ["year", "Year"]].map(([v, l]) => `<option value="${v}" ${L.sort === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
-    ${fl.length > 1 || nDup ? `<div class="fchips"><button class="fold" type="button" data-folder="*" aria-pressed="${L.folderSel === "*"}">All <span class="c">${groups.length}</span></button>${fl.length > 1 ? fl.map(([f, c]) => `<button class="fold" type="button" data-folder="${esc(f)}" aria-pressed="${L.folderSel === f}">${esc(f || "Top level")} <span class="c">${c}</span></button>`).join("") : ""}${nDup ? `<button class="fold" type="button" data-folder="~dup" aria-pressed="${L.folderSel === "~dup"}">Duplicates <span class="c">${nDup}</span></button>` : ""}</div>` : ""}
-    <div class="scanbar" id="libScan"></div>
-    <div class="liblist" id="libList"></div>`}</section>`;
-  if (L.tab === "notebook") renderNotebook(); else if (L.tab !== "topics") renderLibList();
+  const prog = libInProgress(), cont = continueCard(prog);
+  const rev = typeof reviewBanner === "function" ? reviewBanner({ primary: !cont && !lost }) : "";
+  const sub = [M.folder || (M.items.length ? "" : "Saved work"), lost ? `last scan ${fmtDate(M.scannedAt)}` : M.scannedAt ? `scanned ${relTime(M.scannedAt)}` : ""].filter(Boolean).join(" · ");
+  m.innerHTML = `<section class="view lib">
+    <div class="libhead"><div><div class="eyebrow">${esc(sub || "Library")}</div><h2>Library</h2></div>
+      <div class="libacts">${have && M.items.length ? `<button class="btn" type="button" data-act="feed">Feed</button>` : ""}<button class="btn quiet icon" type="button" data-act="libmore" aria-haspopup="menu" aria-expanded="false" aria-label="More" title="More">${LIB_SVG.more}</button></div></div>
+    ${libSearchHTML(nPapers)}
+    ${lost ? libLostCard() : ""}
+    ${!have && !lost && M.items.length && !L.scanning ? `<div class="lnote note">Showing your last scan from ${fmtDate(M.scannedAt)}. To open a PDF, <button type="button" class="linkbtn" data-act="pickdir">re-select the folder</button> (browsers don't let pages keep folder access). Papers you've worked on open as a read-back of your notes and chat.</div>` : ""}
+    ${cont || rev ? `<div class="libtop ${cont && rev ? "two" : ""}">${cont}${rev}</div>` : ""}
+    <div class="libnav">${libTabs()}${L.tab === "papers" ? `<div class="lsorts"><select class="sort" id="libField" aria-label="Search in">${[["all", "All fields"], ["authors", "Authors only"], ["title", "Titles only"]].map(([v, l]) => `<option value="${v}" ${L.field === v ? "selected" : ""}>${l}</option>`).join("")}</select><select class="sort" id="libSort" aria-label="Sort papers">${[["added", "Recently added"], ["read", "Recently read"], ["title", "Title A–Z"], ["year", "Year"]].map(([v, l]) => `<option value="${v}" ${L.sort === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>` : ""}</div>
+    ${L.tab === "wiki" ? `<div id="wkBox" style="margin-top:16px"></div>` : L.tab === "topics" ? topicsTab() : L.tab === "notebook" ? `<div id="nbBox" style="margin-top:16px"><div class="thinking"><span class="dot"></span>Gathering your notes…</div></div>` : `
+    ${fl.length > 1 || nDup ? `<div class="lchips" role="group" aria-label="Folders"><button class="chip" type="button" data-folder="*" aria-pressed="${L.folderSel === "*"}">All <span class="c">${groups.length}</span></button>${fl.length > 1 ? fl.map(([f, c]) => `<button class="chip" type="button" data-folder="${esc(f)}" aria-pressed="${L.folderSel === f}">${esc(f || "Top level")} <span class="c">${c}</span></button>`).join("") : ""}${nDup ? `<button class="chip" type="button" data-folder="~dup" aria-pressed="${L.folderSel === "~dup"}">Duplicates <span class="c">${nDup}</span></button>` : ""}</div>` : ""}
+    <div id="libScan" class="lscan"></div>
+    <div class="liblist ${lost ? "lost" : ""}" id="libList"></div>`}</section>`;
+  if (L.tab === "notebook") renderNotebook(); else if (L.tab === "wiki") renderWikiTab(); else if (L.tab !== "topics") renderLibList();
+}
+// the status above the list: scanning, reading titles (with a count), or how many are shown
+function libStatusHTML(shown) {
+  const n = L.meta.items.length;
+  const pending = L.meta.items.filter(it => !metaDone(it) && hasFile(it)).length;
+  const unread = L.meta.items.filter(it => !metaDone(it)).length;
+  if (L.scanning) return `<div class="card lstatus" role="status" aria-live="polite"><span class="lspin" aria-hidden="true"></span><div><b>Rescanning your Papers folder</b><div class="note">The papers below can be opened now. New PDFs appear when the scan finishes.</div></div><div class="lbar ind"><i></i></div></div>`;
+  if (pending) { const done = n - pending;
+    return `<div class="card lstatus" role="status" aria-live="polite"><span class="lspin" aria-hidden="true"></span><div><b>Reading titles and authors</b><div class="note">${done} of ${n} PDFs · papers already listed can be opened now. Author search is complete when this finishes.</div></div><div class="lbar"><i style="width:${Math.round(done / Math.max(1, n) * 100)}%"></i></div></div>`; }
+  if (unread && !libLost()) return `<p class="note lcount"><span class="pill p2">Authors not read for ${unread} of ${n} papers</span> Author search only covers file names for those. <button type="button" class="linkbtn" data-act="pickdir">Re-select the folder</button> to read them.</p>`;
+  return `<p class="note lcount" role="status">${shown} shown</p>`;
 }
 function authorsHTML(a) {
-  const q = (L.q || "").trim().toLowerCase(), norm = x => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  if (!q || L.field === "title") return esc(shortAuthors(a));
+  const q = (L.q || "").trim().toLowerCase(), norm = x => x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  if (!q || L.field === "title") return esc(libShortAuthors(a));
   const hit = a.filter(n => norm(n).includes(norm(q)));
-  if (!hit.length) return esc(shortAuthors(a));
+  if (!hit.length) return esc(libShortAuthors(a));
   const pos = a.indexOf(hit[0]) + 1;
-  return esc(shortAuthors(a)) + ` <span class="pill p2" style="margin-left:4px">${esc(hit[0])} · author ${pos} of ${a.length}${pos === a.length && a.length > 1 ? " (last)" : ""}</span>`;
+  return esc(libShortAuthors(a)) + ` <span class="pill p2" style="margin-left:4px">${esc(hit[0])} · author ${pos} of ${a.length}${pos === a.length && a.length > 1 ? " (last)" : ""}</span>`;
 }
 function renderLibList() {
   if (S.view !== "library") return;
   const box = $("#libList"); if (!box) return;
   const items = libItems();
   { const np = buildGroups().length, M = L.meta; if (M.items.length) $("#pSub").textContent = `${M.folder} · ${np} papers${np !== M.items.length ? ` in ${M.items.length} PDFs` : ""}`; }
-  const pending = L.meta.items.filter(it => !metaDone(it) && hasFile(it)).length;
-  const unread = L.meta.items.filter(it => !metaDone(it)).length;
   const sc = $("#libScan");
-  if (sc) sc.innerHTML = pending ? `<span class="dot"></span>Reading titles and authors… ${L.meta.items.length - pending} of ${L.meta.items.length}. Author search is incomplete until this finishes.`
-    : unread ? `<span class="pill p2">Authors not read for ${unread} of ${L.meta.items.length} papers</span> Author search only covers file names for those. <button type="button" class="linkbtn" data-act="pickdir">Re-select the folder</button> to read them.`
-    : `${items.length} shown`;
-  if (sc && A.api) { sc.innerHTML += ` <span id="storeMeter" style="margin-left:auto">${usageHTML()}</span>`; sc.style.display = "flex"; refreshUsage(); }
+  if (sc) sc.innerHTML = libStatusHTML(items.length);
+  const lost = libLost();
   box.innerHTML = items.length ? items.slice(0, 400).map(it => {
     const g = guessFromName(it.name), off = !it.file && !it.synced, hasRec = it.prog.last > 0;
     const extras = [it.nNotes ? `${it.nNotes} note${it.nNotes > 1 ? "s" : ""}` : "", it.nChat ? `${it.nChat} chat` : "", it.synced ? "on phone" : "", it.notInFolder && !it.synced ? "not in folder" : ""].filter(Boolean).join(" · ");
     const dup = it.copies > 1 ? `<div class="rm"><span class="pill p2">${it.copies} copies${it.versions > 1 ? " · files differ" : ""}</span> ${esc(it.members.map(m => (m.folder || "Top level") + " / " + m.name).join("  ·  "))}</div>` : "";
-    return `<button type="button" class="row ${off && !hasRec ? "off" : ""}" ${off && hasRec ? `data-record="${esc(it.id)}"` : `data-open="${esc(it.key)}"`}><div style="min-width:0"><div class="rt">${esc(it.label)}</div>${it.authors && it.authors.length ? `<div class="rm" style="color:var(--ink);opacity:.8">${authorsHTML(it.authors)}</div>` : ""}<div class="rm">${esc([it.year, it.copies > 1 ? null : (it.title ? g.label : null), it.copies > 1 ? null : it.folders[0], extras].filter(Boolean).join(" · "))}</div>${dup}${it.tags.length ? `<div class="tags" style="margin-top:5px">${it.tags.map(t => `<span class="tchip ro">${esc(t)}</span>`).join("")}</div>` : ""}</div>
-      <div class="rr"><span class="pill ${it.prog.cls}">${esc(it.prog.label)}</span><span>${it.prog.last ? "read " + fmtDate(it.prog.last) : "added " + fmtDate(it.mtime)}</span>${typeof rmProgressLabel === "function" && rmProgressLabel(it.id) ? `<span class="pill">${esc(rmProgressLabel(it.id))}</span>` : ""}</div></button>`;
-  }).join("") + (items.length > 400 ? `<div class="row note">Showing 400 of ${items.length}. Search to narrow down.</div>` : "") : `<div class="row note">No papers match.</div>`;
+    return `<button type="button" class="row ${off && (!hasRec || lost) ? "off" : ""}" ${off && hasRec ? `data-record="${esc(it.id)}"` : `data-open="${esc(it.key)}"`}><div style="min-width:0"><div class="rt">${esc(it.label)}</div>${it.authors && it.authors.length ? `<div class="rm" style="color:var(--ink);opacity:.8">${authorsHTML(it.authors)}</div>` : ""}<div class="rm">${esc([it.year, it.copies > 1 ? null : (it.title ? g.label : null), it.copies > 1 ? null : it.folders[0], extras].filter(Boolean).join(" · "))}</div>${dup}${it.tags.length ? `<div class="tags" style="margin-top:5px">${it.tags.map(t => `<span class="tchip ro">${esc(t)}</span>`).join("")}</div>` : ""}</div>
+      <div class="rr">${lost && !it.synced ? `<span class="loff">${LIB_SVG.lock}Re-select to open</span>` : `<span class="pill ${it.prog.cls}">${esc(it.prog.label)}</span>`}<span>${it.prog.last ? "read " + fmtDate(it.prog.last) : "added " + fmtDate(it.mtime)}</span>${typeof rmProgressLabel === "function" && rmProgressLabel(it.id) ? `<span class="pill">${esc(rmProgressLabel(it.id))}</span>` : ""}</div></button>`;
+  }).join("") + (items.length > 400 ? `<div class="row note">Showing 400 of ${items.length}. Search to narrow down.</div>` : "") + (L.scanning ? libSkel(3) : "")
+    : `<div class="row note lnone">No papers match${L.q.trim() ? ` “${esc(L.q.trim())}”` : ""}.${L.q.trim().length >= 2 ? ` <button type="button" class="linkbtn" data-act="lsearch">Search everything, including the text of every paper</button>` : ""}</div>`;
 }
 function libTabs() {
   const recs = allRecs(), nNotes = recs.reduce((a, r) => a + (r.nNotes || 0), 0);
-  const tabs = [["papers", "Papers", L.meta.items.length ? buildGroups().length : recs.length], ["topics", "Topics", allTopics().length], ["notebook", "Notebook", nNotes]];
-  return `<div class="ltabs" role="tablist">${tabs.map(([k, l, c]) => `<button type="button" class="ltab" role="tab" data-ltab="${k}" aria-selected="${L.tab === k}">${l} <span class="c">${c}</span></button>`).join("")}</div>`;
+  const tabs = [["papers", "Papers", L.meta.items.length ? buildGroups().length : recs.length], ["topics", "Topics", allTopics().length], ["notebook", "Notebook", nNotes], ["wiki", "Wiki", WKI.agg ? [...WKI.agg.values()].filter(a => a.show).length : "…"]];
+  return `<div class="seg lseg" role="tablist" aria-label="Library sections">${tabs.map(([k, l, c]) => `<button type="button" role="tab" data-ltab="${k}" aria-selected="${L.tab === k}">${l} <span class="c">${c}</span></button>`).join("")}</div>`;
 }
 function papersInTopic(name) {
   const n = name.toLowerCase(), sur = r => ((r.authors || [])[0] || r.title || "").trim().split(/\s+/).pop().toLowerCase();
@@ -275,7 +424,7 @@ function renderTopic() {
   const name = S.topic, ps = papersInTopic(name), tv = D.topics.get(topicKey(name)) || {};
   $("#pTitle").textContent = name; $("#pSub").textContent = `Topic · ${ps.length} paper${ps.length === 1 ? "" : "s"}`;
   $("#main").innerHTML = `<section class="view" style="max-width:980px">
-    <button class="linkbtn" type="button" data-ltab="topics">← All topics</button>
+    <button class="backlink" type="button" data-ltab="topics">All topics</button>
     <div class="eyebrow" style="margin-top:12px">Topic</div><h2>${esc(name)}</h2>
     <div class="box" style="margin-top:18px"><h3><span>Overview across papers</span>${tv.synthAt ? `<span class="savebadge">written ${fmtDate(tv.synthAt)}</span>` : ""}</h3>
       <div id="synthBox" class="synth">${tv.synthesis ? md(tv.synthesis) : `<p class="note">Claude can compare these papers' questions, approaches and findings, and fold in your notes and saved answers: where they agree, where they conflict, and what's still open.</p>`}</div>
@@ -323,11 +472,11 @@ ${blocks}`.slice(0, 200000);
 }
 async function renderRecord() {
   const r = recOf(S.recId); if (!r) { S.view = "library"; renderLibrary(); return; }
-  const canOpen = buildGroups().some(g => (g.id === r.id || g.members.some(m => m.id === r.id) || normTitle(g.title) === normTitle(r.title)) && g.file) || !!r.phone?.bundle;
+  const canOpen = buildGroups().some(g => (g.id === r.id || g.members.some(m => m.id === r.id) || (normTitle(r.title).length >= 25 && normTitle(g.title) === normTitle(r.title))) && g.file) || !!r.phone?.bundle;
   $("#pTitle").textContent = r.title; $("#pSub").textContent = "Your saved work";
   const pr = r.primer || {};
   $("#main").innerHTML = `<section class="view" style="max-width:980px">
-    <button class="linkbtn" type="button" data-act="tolib">← Library</button>
+    <button class="backlink" type="button" data-act="tolib">Library</button>
     <div class="libhead" style="margin-top:12px"><div style="min-width:0"><div class="eyebrow">Read-back · last opened ${fmtDate(r.lastOpened)}</div><h2>${esc(r.title)}</h2>
       ${(r.tags || []).length ? `<div class="tags" style="margin-top:8px">${r.tags.map(t => `<button type="button" class="tchip ro" data-topic="${esc(t)}" style="border:0">${esc(t)}</button>`).join("")}</div>` : ""}</div>
       <button class="btn ${canOpen ? "primary" : ""}" type="button" data-act="openrec">${canOpen ? (r.phone?.bundle && !buildGroups().some(g => g.id === r.id && g.file) ? "Open synced copy" : "Open the PDF") : "Re-select folder to open the PDF"}</button></div>
@@ -351,6 +500,7 @@ async function addNote(figN) {
   if (!text) { toast("Write the note first."); return; }
   const panel = figN && S.pinned && S.pinned.fig === figN ? S.pinned.panel : null;
   const n = await addChild(P, "notes", { kind: "note", text, fig: figN, panel });
+  draftsClear(["noteIn"]);
   P.notes = [...(P.notes || []), n]; persistPaper(P); render();
   toast(P.demo ? "Note added (example paper: not saved)" : "Note saved");
 }

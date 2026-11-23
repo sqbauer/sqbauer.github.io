@@ -14,10 +14,16 @@ function interleave(items) {
   while (a.length) { const last = out[out.length - 1]; let k = a.findIndex(x => !last || x.r.id !== last.r.id); if (k < 0) k = 0; out.push(a.splice(k, 1)[0]); }
   return out;
 }
-function reviewBanner() {
+// the library's review card: what's due, about how long it takes, and one button; the memory palace as a quiet link
+function reviewBanner({ primary = false } = {}) {
   const n = processedRecs().length; if (!n) return "";
-  const d = dueItems().length;
-  return `<div class="duebanner"><div><strong>${d ? `${d} review card${d === 1 ? "" : "s"} due` : "Review: all caught up"}</strong><div class="note">${n} processed paper${n === 1 ? "" : "s"} · quizzes on findings, labs, key panels and caveats</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ${d ? "primary" : ""}" type="button" data-act="review">${d ? "Start review" : "Open review"}</button><button class="btn" type="button" data-act="palace">Memory palace · ${pal().pts - pal().spent} pts</button></div></div>`;
+  const d = dueItems().length, papers = new Set(dueItems().map(i => i.r.id)).size;
+  const mins = Math.max(1, Math.round(d * 30 / 60));   // about 30 seconds a card
+  const pts = pal().pts - pal().spent;
+  return `<article class="card lrev" aria-label="Review">
+    <div class="lrev-t"><b>${d ? `${d} review card${d === 1 ? "" : "s"} due` : "Review: all caught up"}</b><span class="note">${d ? `From ${papers} paper${papers === 1 ? "" : "s"} · about ${mins} min` : `${n} processed paper${n === 1 ? "" : "s"} · practise any time`}</span></div>
+    <div class="lrev-a"><button class="btn ${primary && d ? "primary" : ""}" type="button" data-act="review">${d ? "Review" : "Open review"}</button><button class="btn quiet" type="button" data-act="palace">Memory palace${pts ? ` · ${pts} pts` : ""}</button></div>
+  </article>`;
 }
 function schedule(s, g) {
   s = { ...s };
@@ -87,20 +93,35 @@ function renderReview() {
       <div class="rvtype">${esc(cu.type)}</div>
       <div class="rvq">${cu.q}</div>
       ${cu.cue}
-      ${R.shown ? ans : `<textarea id="rvIn" placeholder="Type your answer (optional, but recalling it in words sticks better)">${esc(R.typed || "")}</textarea>
-        <div><button class="btn primary" type="button" data-act="reveal-card">Show answer</button> <span class="note">or press Space</span></div>`}
+      ${R.shown ? ans : `<textarea id="rvIn" aria-label="Your answer" placeholder="Type your answer (optional, but recalling it in words sticks better)">${esc(R.typed || "")}</textarea>
+        <div><button class="btn primary" type="button" data-act="reveal-card">Show answer</button> <span class="note">or press Enter</span></div>`}
     </div>${labsOverview()}</div></section>`;
-  if (!R.shown) setTimeout(() => $("#rvIn")?.focus(), 0);
+  // the answer box takes focus on a computer; on a touch screen that would pop up the keyboard for every card
+  if (!R.shown && !matchMedia("(hover:none) and (pointer:coarse)").matches) setTimeout(() => $("#rvIn")?.focus(), 0);
 }
 function gradeCard(g) {
   const R = S.rv; if (!R || !R.shown) return;
   const it = R.q[R.i];
+  const before = { srs: it.r.srs, qLen: R.q.length, earned: R.earned || 0, typed: R.typed };   // for Undo
+  let earned = 0;
   if (!R.practice) {
     const ns = schedule(it.s, g), srs = { ...(it.r.srs || {}), [it.t]: ns };
     patchRec(it.r.id, { srs }); it.r.srs = srs;
     if (g === 1) R.q.push({ ...it, s: ns });
-    const earned = [0, 0, 1, 2, 3][g]; if (earned) { const P = pal(); P.pts += earned; R.earned = (R.earned || 0) + earned; savePalace(); }
+    earned = [0, 0, 1, 2, 3][g]; if (earned) { const P = pal(); P.pts += earned; R.earned = (R.earned || 0) + earned; savePalace(); }
   }
   R.done++; R.i++; R.shown = false; R.typed = "";
   renderReview(); window.scrollTo(0, 0);
+  // a mis-tap on the wrong grade: put the card and its schedule back
+  toastUndo(`Graded ${["", "Again", "Hard", "Good", "Easy"][g]}.`, () => {
+    if (S.rv !== R) return;
+    if (!R.practice) {
+      patchRec(it.r.id, { srs: before.srs || {} }); it.r.srs = before.srs;
+      R.q.length = before.qLen;
+      if (earned) { const P = pal(); P.pts -= earned; savePalace(); }
+      R.earned = before.earned;
+    }
+    R.done--; R.i--; R.shown = true; R.typed = before.typed;
+    if (S.view === "review") { renderReview(); window.scrollTo(0, 0); }
+  }, null, 5000);
 }

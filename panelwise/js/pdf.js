@@ -1,13 +1,16 @@
 "use strict";
 /* ---------- PDF parsing ---------- */
 let pdfLibReady = null;
+// options for every getDocument: the standard fonts let pdf.js draw PDFs that use the built-in Symbol/Dingbats fonts
+const PDF_OPTS = { isEvalSupported: false, disableFontFace: false, standardFontDataUrl: "vendor/pdfjs/standard_fonts/" };
 function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("load " + src)); document.head.appendChild(s); }); }
 function ensurePdfJs() {
   if (!pdfLibReady) pdfLibReady = (async () => {
     const base = "vendor/pdfjs/"; // bundled locally (was cdnjs), works offline
     await loadScript(base + "pdf.min.js");
-    await loadScript(base + "pdf.worker.min.js");
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = base + "pdf.worker.min.js";
+    // pdf.js parses in its own worker thread, so reading a PDF doesn't freeze the screen. (Loading the worker file
+    // as a page script, as before, made pdf.js fall back to a "fake worker" on the main thread.)
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(base + "pdf.worker.min.js", document.baseURI).href;
     return window.pdfjsLib;
   })();
   return pdfLibReady;
@@ -82,7 +85,7 @@ function graphicsOf(ol, vp, O, imgOps) {
 async function parsePdf(file, prog) {
   const lib = await ensurePdfJs(); prog(0);
   const data = new Uint8Array(await file.arrayBuffer());
-  const doc = await lib.getDocument({ data, isEvalSupported: false, disableFontFace: false }).promise;
+  const doc = await lib.getDocument({ data, ...PDF_OPTS }).promise;
   prog(1);
   const lines = [], pageInfo = [], OPS = lib.OPS;
   const imgOps = new Set([OPS.paintImageXObject, OPS.paintInlineImageXObject, OPS.paintImageXObjectRepeat, OPS.paintJpegXObject].filter(v => v !== undefined));

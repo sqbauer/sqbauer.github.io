@@ -176,8 +176,8 @@ function rmVoice() {
 function rmSpeakBtn() {
   const b = RM.el && RM.el.querySelector('[data-rm="speak"]'); if (!b) return;
   const on = !!(RM.tts && RM.tts.on);
-  b.textContent = on ? "Pause" : "Listen"; b.classList.toggle("on", on);
-  b.setAttribute("aria-label", on ? "Pause reading aloud" : "Read aloud");
+  b.innerHTML = rmIc(on ? "pause" : "speaker") + `<span class="lbl">${on ? "Pause" : "Listen"}</span>`;
+  b.classList.toggle("on", on); b.setAttribute("aria-label", on ? "Pause reading aloud" : "Listen: read aloud");
 }
 function rmSpeakToggle() {
   if (!rmCanSpeak()) { toast("This device can't read aloud."); return; }
@@ -242,20 +242,17 @@ function rmSpeakStop(keep) {
 }
 function rmSpeakRestart() { if (RM.tts && RM.tts.on) { const i = RM.tts.cur; rmSpeakStop(true); if (i != null) rmWordKeep(i); rmSpeakStart(); } }
 
-/* ---- settings in the Display sheet ---- */
-function rmWordsLookHTML(seg) {
-  let h = "";
-  if (rmPref("focus", "0") === "word")
-    h += `<div class="lbl">Words per minute</div>${seg("wpm", RM_WPM.map(v => [String(v), String(v)]), String(rmWpm()))}`;
-  if (rmCanSpeak()) {
-    const vs = rmVoices(), cur = rmVoice();
-    h += `<h4 class="rdm-toc-h">Read aloud</h4>
-      <p class="rdm-aid">Listen (top of the page) reads from where you are, with your device's own voice: free and offline. The text follows along.</p>
-      <div class="lbl">Speed</div>${seg("rate", RM_RATES, RM_RATES.some(([v]) => v === rmPref("rate", "1")) ? rmPref("rate", "1") : "1")}
-      <div class="lbl">Voice</div>${vs.length ? `<select class="rdm-voice" id="rmVoice">${vs.map(v => `<option value="${esc(v.voiceURI)}"${cur && v.voiceURI === cur.voiceURI ? " selected" : ""}>${esc(v.name)} (${esc(v.lang)})</option>`).join("")}</select>` : `<p class="rdm-aid">Loading the voices…</p>`}
-      <p class="rdm-aid">Better voices: download an Enhanced or Premium English voice in Settings → Accessibility → Spoken Content → Voices (iPhone and Mac).</p>`;
-  }
-  return h;
+/* ---- settings in the Display sheet (js/readmode.js rmShowLook) ---- */
+function rmWordsWpmHTML(seg, row) {           // with the word guide on: its speed
+  return rmPref("focus", "0") === "word" ? row("Words per minute", seg("wpm", RM_WPM.map(v => [String(v), String(v)]), String(rmWpm()))) : "";
+}
+function rmWordsLookHTML(seg, row) {          // the Read aloud group
+  if (!rmCanSpeak()) return `<p class="rdm-aid">This device can't read aloud.</p>`;
+  const vs = rmVoices(), cur = rmVoice();
+  return `<p class="rdm-aid rdm-aid-top">Listen (at the top) reads from where you are, with your device's own voice: free and offline. The text follows along.</p>`
+    + row("Speed", seg("rate", RM_RATES, RM_RATES.some(([v]) => v === rmPref("rate", "1")) ? rmPref("rate", "1") : "1"))
+    + row("Voice", vs.length ? `<select class="rdm-voice" id="rmVoice" aria-label="Voice">${vs.map(v => `<option value="${esc(v.voiceURI)}"${cur && v.voiceURI === cur.voiceURI ? " selected" : ""}>${esc(v.name)} (${esc(v.lang)})</option>`).join("")}</select>` : `<p class="rdm-aid">Loading the voices…</p>`,
+      "Better voices: download an Enhanced or Premium English voice in Settings → Accessibility → Spoken Content → Voices (iPhone and Mac).");
 }
 function rmWordsPref(k, v) {               // speed and voice: no new layout needed
   rmSetPref(k, v); rmShowLook();

@@ -46,6 +46,7 @@ function recordFor(P) {
 }
 function persistPaper(P) {
   if (!P || P.demo) return;
+  if (typeof BG_MEMO !== "undefined") BG_MEMO = null;   // the library groups look at saved records
   const rec = recordFor(P);
   const { kind, ...local } = rec; if (D.col) delete local.cardImg; store.set("pw:" + P.id, local);
   if (!D.col) return;
@@ -74,17 +75,23 @@ async function listChildren(id, sub) {
 async function hydrate(P) {
   const r = D.recs.get(keyOf(P.id));
   if (r) {
-    P.primer = P.primer || r.primer; P.briefs = { ...(r.briefs || {}), ...(P.briefs || {}) }; P.restate = P.restate || r.restate; P.verdict = P.verdict || r.verdict;
-    P.revealed = P.revealed || r.revealed; P.tags = r.tags || P.tags || []; (r.seen || []).forEach(n => P.seen.add(n));
-    P.figures.forEach(f => { if (!f.det && r.figs && r.figs[f.n]) f.det = r.figs[f.n]; });
-    P.card = P.card || r.card || null; P.cardImg = P.cardImg || r.cardImg || null; P.srs = r.srs || P.srs || {};
+    // the saved record is the newest truth: every change here goes through persistPaper into it, and sync writes
+    // the other device's newer edits into it. So it wins over what this open paper still holds in memory.
+    P.primer = r.primer || P.primer; P.briefs = { ...(P.briefs || {}), ...(r.briefs || {}) }; P.restate = r.restate || P.restate; P.verdict = r.verdict || P.verdict;
+    P.revealed = r.revealed || P.revealed; P.tags = r.tags || P.tags || []; (r.seen || []).forEach(n => P.seen.add(n));
+    P.figures.forEach(f => { if (r.figs && r.figs[f.n]) f.det = r.figs[f.n]; });
+    P.card = r.card || P.card || null; P.cardImg = r.cardImg || P.cardImg || null; P.srs = r.srs || P.srs || {};
     if (P.phone === undefined) P.phone = r.phone || null; P.phoneOff = !!r.phoneOff;
   }
   const [chat, notes] = await Promise.all([listChildren(P.id, "chat"), listChildren(P.id, "notes")]);
   if (S.paper !== P) return;
   if (chat.length && !S.chat.length) S.chat = chat.map(m => ({ role: m.role, content: m.content, at: m.at, saved: m.saved, _id: m._id, old: true }));
   P.notes = notes; P.hydrated = true;
-  persistPaper(P);                                   // the library card shows the right note and chat counts again
+  // the library card shows the right note and chat counts again; only the counts, so re-saving doesn't stamp
+  // older content with a newer time (which would undo the other device's edits on the next sync)
+  const nNotes = notes.length, nChat = S.chat.filter(m => m.content && !m.err).length;
+  if (!r) persistPaper(P);
+  else if (r.nNotes !== nNotes || r.nChat !== nChat) patchRec(P.id, { nNotes, nChat });
   render(); renderChat();
 }
 async function setTags(P, tags) {
@@ -93,25 +100,30 @@ async function setTags(P, tags) {
   persistPaper(P); renderTags();
 }
 function renderTags() {
-  const P = S.paper, box = $("#pTags");
-  if (!P || P.demo || ["library", "topic", "record", "review", "palace"].includes(S.view)) { box.innerHTML = ""; return; }
+  // on a paper the topics sit under its title (#phTags); the bar's #pTags stays for the other views' own use
+  const P = S.paper, onPaper = !!P && ["background", "question", "figures", "card"].includes(S.view);
+  const old = $("#pTags"); if (old && old.querySelector(".tchip, [data-act=addtag], .taginput")) old.innerHTML = "";
+  const box = $("#phTags"); if (!box) return;
+  if (!onPaper || P.demo) { box.innerHTML = ""; box.hidden = true; return; }
+  box.hidden = false;
   const tags = P.tags || [];
   box.innerHTML = tags.map(t => `<span class="tchip">${esc(t)}<button type="button" data-untag="${esc(t)}" aria-label="Remove topic ${esc(t)}">×</button></span>`).join("") +
     (S.tagEdit ? `<input class="taginput" id="tagIn" list="tagList" placeholder="Topic, then Enter" aria-label="Add topic"><datalist id="tagList">${allTopics().filter(t => !tags.includes(t)).map(t => `<option value="${esc(t)}">`).join("")}</datalist>`
-      : `<button type="button" class="linkbtn" data-act="addtag" style="font-size:12px">+ topic</button>`) +
-    (P.synced ? `<span class="pill p1" title="Synced copy from your PC">Synced copy</span>`
-      : A.api && P.doc ? (P.syncing ? `<span class="pill">Syncing to phone…</span>` : P.syncErr ? `<button type="button" class="pill" data-act="phonetoggle" title="Retry">${esc(P.syncErr)}</button>` : P.phoneOff ? `<button type="button" class="linkbtn" data-act="phonetoggle" style="font-size:12px">Not on phone · sync</button>` : P.phone?.bundle ? `<button type="button" class="pill p3" data-act="phonetoggle" title="Click to remove from phone">On phone ✓</button>` : "") : "");
+      : `<button type="button" class="btn quiet addtag" data-act="addtag"><span aria-hidden="true">+</span> Topic</button>`) +
+    (P.synced ? `<span class="pill p1" title="Synced copy from your PC">Synced copy</span>` : "");
   if (S.tagEdit) setTimeout(() => $("#tagIn")?.focus(), 0);
 }
 function notesBox(P, figN) {
   const list = (P.notes || []).filter(n => figN === null ? true : n.fig === figN);
-  const pinTxt = figN && S.pinned && S.pinned.fig === figN ? ` on ${figN}${S.pinned.panel}` : "";
-  return `<div class="box"><h3><span>${figN ? `Your notes on Figure ${figN}` : "Your notes on this paper"}</span><span class="savebadge">${P.demo ? "example paper: not saved" : D.col ? "saved to your account" : "saved in this browser"}</span></h3>
-    <div class="notes">${list.map(n => noteHTML(n, true)).join("") || `<p class="note" style="margin:0">Nothing yet. Write what you conclude, doubt or want to check. Chat answers you save land here too.</p>`}
-    <div class="note-add"><textarea id="noteIn" placeholder="Your note${esc(pinTxt)}…"></textarea><div><button class="btn" type="button" data-act="addnote" data-fig="${figN || ""}">Save note${esc(pinTxt)}</button></div></div></div></div>`;
+  const pinOn = figN && S.pinned && S.pinned.fig === figN ? `${figN}${S.pinned.panel}` : "";
+  const where = P.demo ? "example paper: not kept" : D.col ? "saved to your account" : "saved in this browser";
+  return `<div class="box notesbox"><h3><span>${figN ? `Your notes on Figure ${figN}` : "Your notes on this paper"}</span>${list.length ? `<span class="c">${list.length}</span>` : ""}</h3>
+    <div class="notes">${list.map(n => noteHTML(n, true)).join("") || `<p class="note" style="margin:0">Nothing yet. Write what you conclude, doubt or want to check. Chat answers you save land here too.</p>`}</div>
+    <div class="note-add"><textarea id="noteIn" aria-label="Your note" placeholder="${pinOn ? `A note on panel ${esc(pinOn)}…` : figN ? `A note on Figure ${figN}…` : "A note on this paper…"}"></textarea>
+      <div class="nrow"><span class="note"><span id="noteWhere">${figN ? `Saved with ${pinOn ? `panel ${esc(pinOn)}` : `Figure ${figN}`}` : "Saved with this paper"}</span> · ${where}</span><button class="btn" type="button" data-act="addnote" data-fig="${figN || ""}">${pinOn ? `Save note on ${esc(pinOn)}` : "Save note"}</button></div></div></div>`;
 }
 function noteHTML(n, canDel, paperTitle) {
   const where = [n.fig ? `Fig. ${n.fig}${n.panel || ""}` : "", n.kind === "saved" ? "from chat" : "", fmtDate(n.at)].filter(Boolean).join(" · ");
-  return `<div class="note-item"><div class="nm"><span>${paperTitle ? esc(paperTitle) + " · " : ""}${esc(where)}</span>${canDel ? `<button type="button" class="linkbtn" data-delnote="${esc(n._id)}" style="font-size:12px">Delete</button>` : ""}</div>${n.q ? `<div class="q">${esc(n.q)}</div>` : ""}<div>${n.kind === "saved" ? md(n.text) : esc(n.text).replace(/\n/g, "<br>")}</div></div>`;
+  return `<div class="note-item"><div class="nm"><span>${paperTitle ? esc(paperTitle) + " · " : ""}${esc(where)}</span>${canDel ? `<button type="button" class="linkbtn danger" data-delnote="${esc(n._id)}" style="font-size:12px">Delete</button>` : ""}</div>${n.q ? `<div class="q">${esc(n.q)}</div>` : ""}<div>${n.kind === "saved" ? md(n.text) : esc(n.text).replace(/\n/g, "<br>")}</div></div>`;
 }
 

@@ -18,7 +18,7 @@ function buildPaper(raw) {
   return P;
 }
 function paperText(P) {
-  const name = { intro: "Introduction", results: "Results", discussion: "Discussion", methods: "Methods", other: "Other text" };
+  const name = SEC_NAMES;
   let t = `TITLE: ${P.title}\n\nABSTRACT:\n${P.abstract || ""}\n`;
   for (const k of ["intro", "results", "discussion", "methods", "other"]) if (P.sections[k] && P.sections[k].length) t += `\n${name[k].toUpperCase()}:\n` + P.sections[k].join("\n\n") + "\n";
   t += "\nFIGURE LEGENDS:\n" + P.figures.map(f => f.legend).join("\n\n");

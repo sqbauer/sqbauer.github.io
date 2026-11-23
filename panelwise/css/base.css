@@ -8,17 +8,27 @@
   --f-read:"Source Serif 4",Georgia,"Times New Roman",serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
   --r:10px;
+  --line-strong:#808a9c;  /* input boundaries: at least 3:1 on surface and sunk */
+  /* design tokens: the scales the app already uses (see AUDIT.md / CHANGES.md) */
+  --s-1:2px; --s-2:4px; --s-3:6px; --s-4:8px; --s-5:10px; --s-6:12px; --s-7:16px; --s-8:20px; --s-9:28px;
+  --r-xs:4px; --r-sm:8px; --r-lg:14px; --r-pill:999px;          /* --r (10px) stays the card radius */
+  --t-2xs:11px; --t-xs:12px; --t-sm:13px; --t-md:14.5px; --t-base:15px; --t-read:17px; --t-lg:20px; --t-xl:22px; --t-2xl:26px;
+  --sh-1:0 1px 4px rgba(0,0,0,.25); --sh-2:0 4px 14px rgba(0,0,0,.18); --sh-3:0 8px 24px rgba(0,0,0,.22);
+  --figure-bg:#fff;       /* figures and page images are always on white */
+  --amber:#e0a800; --amber-deep:#e0a400; --hot-fill:#ffd84a;
+  --hl-y:rgba(255,212,0,.42); --hl-g:rgba(64,192,87,.32); --hl-p:rgba(240,101,149,.32); --hl-b:rgba(77,148,255,.32);
+  --hit:rgba(255,212,0,.45);
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0e1218; --surface:#161b24; --sunk:#11161e; --ink:#e5e9f0; --muted:#97a1b3; --line:#283141;
   --accent:#8aa5ff; --accent-weak:rgba(138,165,255,.13); --accent-ink:#0e1218;
   --mark:rgba(255,220,60,.30); --mark-pin:rgba(255,200,40,.48); --mark-ink:#fff8d6;
-  --good:#5fd39a; --warn:#f0b35a; --bad:#ff8a80; color-scheme:dark;}}
+  --good:#5fd39a; --warn:#f0b35a; --bad:#ff8a80; --line-strong:#5d6a80; color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#0e1218; --surface:#161b24; --sunk:#11161e; --ink:#e5e9f0; --muted:#97a1b3; --line:#283141;
   --accent:#8aa5ff; --accent-weak:rgba(138,165,255,.13); --accent-ink:#0e1218;
   --mark:rgba(255,220,60,.30); --mark-pin:rgba(255,200,40,.48); --mark-ink:#fff8d6;
-  --good:#5fd39a; --warn:#f0b35a; --bad:#ff8a80; color-scheme:dark;}
+  --good:#5fd39a; --warn:#f0b35a; --bad:#ff8a80; --line-strong:#5d6a80; color-scheme:dark;}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:15px;line-height:1.5}
@@ -34,13 +44,13 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,summary:focus-vi
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .top-row{display:flex;align-items:center;gap:14px;min-height:56px;flex-wrap:wrap;padding-block:8px}
 .brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:-.01em;font-size:16px}
-.brand-mark{width:22px;height:22px;border-radius:5px;background:var(--ink);display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px}
+.brand-mark{width:22px;height:22px;border-radius:var(--r-xs);background:var(--ink);display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px}
 .brand-mark i{background:var(--surface);border-radius:1px}.brand-mark i:nth-child(2){background:var(--mark-pin)}
 .paper-id{min-width:0;flex:1;display:flex;flex-direction:column}
 .paper-id .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .paper-id .s{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tag{display:inline-block;font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);margin-right:6px}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.tag{display:inline-block;font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:var(--r-xs);background:var(--accent-weak);color:var(--accent);margin-right:6px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-sm);padding:7px 12px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .btn:hover{border-color:var(--accent)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.primary:hover{filter:brightness(1.08)}
@@ -49,7 +59,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,summary:focus-vi
 .btn[disabled]{opacity:.5;cursor:default}
 .steps{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
 .step{border:0;background:none;padding:10px 12px 11px;color:var(--muted);font-weight:500;border-bottom:2px solid transparent;display:flex;gap:8px;align-items:center;white-space:nowrap}
-.step .n{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.step .n{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-radius:var(--r-xs);padding:0 5px}
 .step[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
 .step[aria-selected="true"] .n{border-color:var(--accent);color:var(--accent)}
 .step .ok{color:var(--good);font-size:12px}
@@ -62,3 +72,40 @@ h2{font-size:26px;line-height:1.2;font-weight:600}
 h3{font-size:17px;font-weight:600}
 .lede{color:var(--muted);max-width:62ch;margin:6px 0 0}
 
+/* focus moved by the app (new view heading, feed list): no ring, it was not the user tabbing there */
+h2[tabindex="-1"]:focus,.fd-list:focus{outline:none}
+
+/* ---- components (design A): four button roles, chips, segmented control, back link ----
+   primary  .btn.primary   one per screen: the next step
+   secondary .btn          other actions
+   quiet    .btn.quiet     low-emphasis actions (same as .btn.ghost)
+   chip     .chip          filters and choices; selected = aria-pressed="true" (accent fill) */
+.btn.quiet{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.quiet:hover{color:var(--ink);border-color:var(--line)}
+.btn.icon{padding:7px;min-width:36px;justify-content:center}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--r-pill);padding:5px 12px;font:inherit;font-size:var(--t-sm);cursor:pointer;white-space:nowrap}
+.chip .c{color:var(--muted);font-size:var(--t-xs)}
+.chip[aria-pressed="true"],.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip[aria-pressed="true"] .c,.chip.on .c{color:inherit;opacity:.8}
+:not(span).seg{display:inline-flex;gap:2px;padding:3px;border-radius:var(--r-sm);background:var(--sunk);border:1px solid var(--line)}
+:not(span).seg>button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:var(--t-sm);font-weight:500;padding:6px 12px;border-radius:6px;cursor:pointer;white-space:nowrap}
+:not(span).seg>button[aria-selected="true"],:not(span).seg>button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--sh-1)}
+.backlink{display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:var(--accent);font:inherit;font-size:var(--t-sm);font-weight:500;padding:4px 0;cursor:pointer}
+.backlink::before{content:"‹";font-size:1.3em;line-height:1;margin-top:-2px}
+.backlink:hover{text-decoration:underline}
+/* the More menu (js/util.js openMenu): a popover by its button, a bottom sheet on a phone */
+.pwmenu-scrim{position:fixed;inset:0;z-index:80;background:transparent}
+.pwmenu{position:fixed;z-index:81;min-width:220px;max-width:min(320px,calc(100vw - 24px));background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh-3);padding:6px;display:flex;flex-direction:column}
+.pwmenu button{display:flex;align-items:center;justify-content:space-between;gap:16px;border:0;background:none;color:inherit;font:inherit;font-size:var(--t-base);text-align:left;padding:10px 12px;border-radius:6px;cursor:pointer;min-height:40px}
+.pwmenu button:hover,.pwmenu button:focus-visible{background:var(--sunk);outline:none}
+.pwmenu button.danger{color:var(--bad)}
+.pwmenu .k{font:var(--t-xs) var(--f-mono);color:var(--muted)}
+.pwmenu hr{border:0;border-top:1px solid var(--line);margin:4px 6px}
+@media (max-width:640px) and (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pwmenu-scrim{background:rgba(0,0,0,.6)!important}}
+@media (max-width:640px){
+  .pwmenu-scrim{background:rgba(0,0,0,.28)}
+  :root[data-theme="dark"] .pwmenu-scrim{background:rgba(0,0,0,.6)}
+  .pwmenu{left:8px!important;right:8px;top:auto!important;bottom:calc(8px + env(safe-area-inset-bottom,0px));max-width:none;border-radius:var(--r-lg);padding:8px}
+  .pwmenu button{min-height:48px}
+  .pwmenu .k{display:none}
+}

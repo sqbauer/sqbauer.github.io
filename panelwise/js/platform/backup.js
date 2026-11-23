@@ -10,7 +10,9 @@ PW.backup = {
   async hasPapers() { return (await PW.be.all(PW.USER_COL)).some(r => r.data && r.data.kind === "paper"); },
 
   // merge: keep whichever copy of a record was updated last
-  async importData(json) {
+  // manual (Settings): the copy updated last wins, also over changes made since sync began, and the result syncs.
+  // automatic (first run on a new device): never over anything changed here or synced in.
+  async importData(json, { manual = false } = {}) {
     const d = typeof json === "string" ? JSON.parse(json) : json;
     let n = 0;
     const metas = PW.be.metas ? await PW.be.metas() : new Map();
@@ -18,8 +20,8 @@ PW.backup = {
       const cur = await PW.be.get(parent, id);
       if (cur && (cur.updated || 0) > (data.updated || 0)) return;
       // changed on this device (or synced from another) since sync began: that copy is newer than any backup
-      const m = PW.be.key && metas.get(PW.be.key(parent, id)); if (m && m.t > 0) return;
-      await PW.be.putAt(parent, id, data, 0); n++;          // time 0: newer work on any device wins
+      if (!manual) { const m = PW.be.key && metas.get(PW.be.key(parent, id)); if (m && m.t > 0) return; }
+      await PW.be.putAt(parent, id, data, manual ? Date.now() : 0); n++;   // automatic: time 0, newer work on any device wins
     };
     if (d.reading) this.restoreReading(d.reading);
     if (Array.isArray(d.docs)) {

@@ -78,11 +78,13 @@ document.addEventListener("submit", async e => {
   e.preventDefault();
   const v = $("#keyIn").value.trim(); $("#keyIn").value = "";
   if (!/^sk-ant-/.test(v)) { toast("That doesn't look like an Anthropic API key (it starts with sk-ant-)."); return; }
-  await PW.keys.set(v, !!$("#keyRemember")?.checked); await PW.reloadClaude(); toast("API key saved"); renderSettings();
+  try { await PW.keys.set(v, !!$("#keyRemember")?.checked); }
+  catch (err) { toast("Couldn't save the key" + (err && err.message ? `: ${err.message}` : "."), 6000); return; }
+  await PW.reloadClaude(); toast("API key saved"); renderSettings();
 });
 document.addEventListener("change", async e => {
   if (e.target.id !== "importIn" || !e.target.files[0]) return;
   const f = e.target.files[0]; e.target.value = "";
-  try { const n = await PW.backup.importData(await f.text()); await PW.reloadSaved(); toast(`Imported ${n} records`); renderSettings(); }
+  try { const n = await PW.backup.importData(await f.text(), { manual: true }); await PW.reloadSaved(); toast(`Imported ${n} records`); renderSettings(); }
   catch (err) { console.warn(err); toast("Couldn't read that file as a Panelwise backup."); }
 });

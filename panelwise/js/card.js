@@ -14,22 +14,22 @@ function viewCard(P) {
    <p class="lede">Write it from memory first, then check it.${PW.single ? "" : " Only papers with a card go into Review, where you'll be quizzed on the finding, the lab and the key panel."}</p></div>
    <div class="card"><div class="cform">
      <label>Lab · last author<input id="cLab" value="${esc(c.lab || "")}" placeholder="e.g. Romano" autocomplete="off"></label>
-     <label>Year<input id="cYear" value="${esc(yr)}" inputmode="numeric"></label>
+     <label>Year<input id="cYear" value="${esc(yr)}" inputmode="numeric" autocomplete="off"></label>
      <label class="full">Preparation &amp; method<input id="cPrep" value="${esc(c.prep || "")}" placeholder="e.g. head-fixed mice · optogenetics of PCs, CN, RN, SC · bilateral whisker tracking"></label>
-     <label class="full"><span style="display:flex;justify-content:space-between">Finding · aim for 15 words or fewer <span class="wc" id="wc"></span></span><textarea id="cFind" placeholder="The one thing this paper showed">${esc(c.finding || "")}</textarea></label>
+     <label class="full"><span class="cf-l">Finding <span class="cf-h">aim for 15 words or fewer</span><span class="wc" id="wc"></span></span><textarea id="cFind" placeholder="The one thing this paper showed">${esc(c.finding || "")}</textarea></label>
      <label class="full">The one caveat<input id="cCav" value="${esc(c.caveat || "")}" placeholder="Main confound, missing control or limit"></label>
      <label>Key figure<select id="cFig">${P.figures.map(f => `<option value="${f.n}" ${+kf === f.n ? "selected" : ""}>Figure ${f.n}</option>`).join("")}</select></label>
      <label>Panel<select id="cPanel"><option value="">Whole figure</option>${(fig?.letters || []).map(l => `<option ${kp === l ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
    </div>
-   ${au.length ? `<p class="note" style="margin:12px 0 0">Check yourself: the author list on the paper ends with <strong>${esc(au[au.length - 1])}</strong>.</p>` : ""}
-   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
-     <button class="btn primary" type="button" data-act="savecard">${P.card ? "Update card" : "Save card"}</button>
+   ${au.length ? `<p class="note cf-check">Check yourself: the author list on the paper ends with <strong>${esc(au[au.length - 1])}</strong>.</p>` : ""}
+   <div class="cf-acts">
+     <button class="btn ${P.card ? "" : "primary cf-save"}" type="button" data-act="savecard">${P.card ? "Update card" : "Save card"}</button>
      ${S.sample ? `<button class="btn" type="button" data-act="checkcard" ${P.cardBusy ? "disabled" : ""}>${P.cardBusy ? "Checking…" : "Check against the paper"}</button>` : ""}
    </div>
    ${P.cardCheck ? `<div class="verdict" style="margin-top:12px"><div class="v ${P.cardCheck.ok ? "v-match" : "v-partial"}">${P.cardCheck.ok ? "No factual errors found" : "Check these"}</div>${(P.cardCheck.issues || []).length ? `<ul style="margin:6px 0 0;padding-left:18px">${P.cardCheck.issues.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : ""}</div>` : ""}
    </div>
    ${P.card ? `<div><div class="eyebrow" style="margin-bottom:6px">Saved card${P.demo ? " (example paper: not kept)" : ""}</div>${onelinerHTML(P.card)}${P.cardImg ? `<div class="rvimg" style="margin-top:10px"><img src="${P.cardImg}" alt="Key panel"></div>` : ""}</div>` : ""}
-   <div class="nextbar"><button class="btn" type="button" data-go="figures">← Figures</button>${P.card ? `<button class="btn primary" type="button" data-act="tolib">Back to library</button>` : ""}</div>
+   <div class="nextbar"><button class="btn" type="button" data-go="figures">${chev("l")}Figures</button>${P.card ? `<button class="btn primary" type="button" data-bar="lib">${PW.single ? "Done" : "Back to library"}${chev()}</button>` : ""}</div>
   </div></section>`;
 }
 function readCardForm() {
@@ -60,6 +60,7 @@ async function saveCard() {
   if (changedFig && c.fig) { toast("Saving the key panel…"); P.cardImg = await panelImage(P, c.fig, c.panel); }
   P.srs = P.srs || {};
   for (const t of reviewTypes(P.card, P.cardImg)) if (!P.srs[t]) P.srs[t] = { due: 0, ivl: 0, ease: 2.5, reps: 0, lapses: 0 };
+  draftsClear(DRAFT_IDS.filter(id => id !== "noteIn"));
   persistPaper(P); render();
   toast(P.demo ? "Card saved for this session (example paper)" : "Card saved. It's now in Review.");
 }

@@ -3,11 +3,24 @@
 document.addEventListener("click", e => {
   const t = e.target.closest("button, .seg, .sent.has, [data-record]"); if (!t) return;
   if (t.dataset.open) { openFromLibrary(t.dataset.open); return; }
-  if (t.dataset.untag) { setTags(S.paper, (S.paper.tags || []).filter(x => x !== t.dataset.untag)); return; }
+  if (t.dataset.untag) {
+    const P = S.paper, tag = t.dataset.untag;
+    setTags(P, (P.tags || []).filter(x => x !== tag));
+    toastUndo(`Removed from “${tag}”.`, () => setTags(P, [...(P.tags || []), tag]), null);
+    return;
+  }
   if (t.dataset.ltab) { S.view = "library"; L.tab = t.dataset.ltab; render(); return; }
   if (t.dataset.topic) { S.topic = t.dataset.topic; S.view = "topic"; render(); window.scrollTo(0, 0); return; }
   if (t.dataset.record) { S.recId = t.dataset.record; S.view = "record"; render(); window.scrollTo(0, 0); return; }
-  if (t.dataset.delnote) { const P = S.paper; if (!P) return; P.notes = P.notes.filter(n => n._id !== t.dataset.delnote); delChild(P, "notes", t.dataset.delnote); persistPaper(P); render(); return; }
+  if (t.dataset.delnote) {
+    const P = S.paper; if (!P) return;
+    const id = t.dataset.delnote, note = P.notes.find(n => n._id === id); if (!note) return;
+    P.notes = P.notes.filter(n => n !== note); render();
+    // gone from the screen at once; deleted for good only when the Undo toast goes
+    toastUndo("Note deleted.", () => { P.notes = [...P.notes, note].sort((a, b) => (a.at || 0) - (b.at || 0)); if (S.paper === P) render(); },
+      () => { delChild(P, "notes", id); persistPaper(P); });
+    return;
+  }
   if (t.dataset.savemsg !== undefined) { saveMsg(+t.dataset.savemsg); return; }
   if (t.dataset.grade) { gradeCard(+t.dataset.grade); return; }
   if (t.dataset.place) { placePaper(t.dataset.place); return; }
@@ -15,9 +28,9 @@ document.addEventListener("click", e => {
   if (t.dataset.wing !== undefined) { S.wing = +t.dataset.wing; S.room = 0; S.locus = null; S.walk = null; renderPalace(); window.scrollTo(0, 0); return; }
   if (t.dataset.walk !== undefined) { walkGrade(+t.dataset.walk); return; }
   if (t.dataset.folder !== undefined) { L.folderSel = t.dataset.folder; renderLibrary(); return; }
-  if (t.matches(".step")) { S.view = t.dataset.view; render(); window.scrollTo(0, 0); return; }
-  if (t.dataset.go) { S.view = t.dataset.go; render(); window.scrollTo(0, 0); return; }
-  if (t.dataset.figIdx !== undefined) { S.figIdx = +t.dataset.figIdx; S.view = "figures"; S.hover = null; S.textHover = null; render(); window.scrollTo(0, 0); return; }
+  if (t.matches(".step")) { S.view = t.dataset.view; render(); window.scrollTo(0, 0); viewFocus(); return; }
+  if (t.dataset.go) { S.view = t.dataset.go; render(); window.scrollTo(0, 0); viewFocus(); return; }
+  if (t.dataset.figIdx !== undefined) { S.figIdx = +t.dataset.figIdx; S.view = "figures"; S.hover = null; S.textHover = null; render(); window.scrollTo(0, 0); viewFocus(); return; }
   if (t.matches(".ref")) { e.stopPropagation(); goFigure(+t.dataset.fig, t.dataset.panel || null); if (t.closest("#chat") && innerWidth <= 1100) setChat(false); return; }
   if (t.matches(".hot, .pchip")) { pin(t.dataset.panel); return; }
   if (t.matches(".seg")) { const l = (t.dataset.letters || "")[0]; if (l) pin(l, false); return; }
@@ -35,13 +48,12 @@ document.addEventListener("click", e => {
   else if (act === "redetect") prepareFigure(S.paper.figures[S.figIdx], true);
   else if (act === "openchat") setChat(true);
   else if (act === "pickdir") pickFolderAction();
-  else if (["key-test", "key-remove", "rescan", "export", "import", "sync-now"].includes(act)) settingsAction(act);
+  else if (["key-test", "key-remove", "rescan", "export", "import", "sync-now"].includes(act)) settingsAction(act).catch(e => { console.warn(e); toast("That didn't work" + (e && e.message ? `: ${e.message}` : "."), 6000); });
   else if (act === "pickfile") $("#fileIn").click();
   else if (act === "tosettings") { S.view = "settings"; render(); window.scrollTo(0, 0); }
   else if (act === "tostart") { S.view = "upload"; render(); window.scrollTo(0, 0); }
   else if (act === "demo") openPaper(DEMO);
   else if (act === "addtag") { S.tagEdit = true; renderTags(); }
-  else if (act === "phonetoggle") { if (S.paper?.syncErr) { S.paper.syncErr = null; syncPaper(S.paper); } else phoneToggle(); }
   else if (act === "savecard") saveCard();
   else if (act === "checkcard") checkCard();
   else if (act === "review") startReview(false);
@@ -93,7 +105,7 @@ document.addEventListener("mouseover", e => {
 });
 document.addEventListener("input", e => {
   if (e.target.id === "cFind") updateWC();
-  if (e.target.id === "cFig" && S.paper) { const f = S.paper.figures.find(x => x.n === +e.target.value); const sel = $("#cPanel"); if (sel) sel.innerHTML = `<option value="">Whole figure</option>` + (f?.letters || []).map(l => `<option>${esc(l)}</option>`).join(""); } if (e.target.id === "restate" && S.paper) S.paper.restate = e.target.value; if (e.target.id === "libQ") { L.q = e.target.value; renderLibList(); } if (e.target.id === "nbQ") { L.nbq = e.target.value; clearTimeout(L.nbt); L.nbt = setTimeout(renderNotebook, 200); } });
+  if (e.target.id === "cFig" && S.paper) { const f = S.paper.figures.find(x => x.n === +e.target.value); const sel = $("#cPanel"); if (sel) sel.innerHTML = `<option value="">Whole figure</option>` + (f?.letters || []).map(l => `<option>${esc(l)}</option>`).join(""); } if (e.target.id === "restate" && S.paper) S.paper.restate = e.target.value; if (e.target.id === "libQ") { L.q = e.target.value; clearTimeout(L.qT); L.qT = setTimeout(renderLibList, 120); } if (e.target.id === "nbQ") { L.nbq = e.target.value; clearTimeout(L.nbt); L.nbt = setTimeout(renderNotebook, 200); } });
 document.addEventListener("keydown", e => {
   if (S.view === "review" && S.rv && S.rv.i < S.rv.q.length) {
     const typing = e.target.id === "rvIn";

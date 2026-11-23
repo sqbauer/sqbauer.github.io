@@ -33,18 +33,22 @@ function rmApplyAids() {
   RM.el.classList.toggle("focus", fm === "1"); RM.el.classList.toggle("lfocus", RM.lineMode);
   RM.el.classList.toggle("spell", rmOn("spell"));
 }
-function rmAidsLookHTML(seg) {
+// Display sheet groups (js/readmode.js rmShowLook): seg(k, options, current) is a segmented control, row(label, control, note) a labelled row
+function rmAidsTypeHTML(seg, row, lineHeight) {
+  return row("Typeface", seg("font", RM_FONTS.map(([v, l]) => [v, l]), rmPref("font", "serif")))
+    + (lineHeight || "")
+    + row("Margins", seg("margin", RM_MARGINS, String(rmMargin())))
+    + row("Letter spacing", seg("ls", [["0", "Normal"], ["1", "Wide"]], rmOn("ls") ? "1" : "0"))
+    + row("Alignment", seg("align", [["left", "Left"], ["justify", "Justified"]], rmPref("align", "left")));
+}
+function rmAidsGuideHTML(seg, row) {
   const onoff = k => seg(k, [["0", "Off"], ["1", "On"]], rmOn(k) ? "1" : "0");
   const keysNote = rmOn("keys") ? rmKeysNote() : "";
-  return `<div class="lbl">Font</div>${seg("font", RM_FONTS.map(([v, l]) => [v, l]), rmPref("font", "serif"))}
-    <div class="lbl">Margins</div>${seg("margin", RM_MARGINS, String(rmMargin()))}
-    <div class="lbl">Letter spacing</div>${seg("ls", [["0", "Normal"], ["1", "Wide"]], rmOn("ls") ? "1" : "0")}
-    <div class="lbl">Alignment</div>${seg("align", [["left", "Left"], ["justify", "Justified"]], rmPref("align", "left"))}
-    <h4 class="rdm-toc-h">Reading aids</h4>
-    <div class="lbl">Reading guide</div>${seg("focus", [["0", "Off"], ["1", "Sentence"], ["line", "Line"], ["word", "Word"]], ["1", "line", "word"].includes(rmPref("focus", "0")) ? rmPref("focus", "0") : "0")}<p class="rdm-aid">Sentence and Line highlight where you are and dim the rest: tap to move on, the left edge to go back. Word shows the text one word at a time from the highlighted line: tap the page to start${matchMedia("(hover:hover)").matches ? ". On a keyboard: the arrow keys or the space bar" : ""}.</p>
-    ${rmWordsLookHTML(seg)}
-    <div class="lbl">Key sentences in bold</div>${onoff("keys")}<p class="rdm-aid">Claude picks the sentence that carries each paragraph's point, once per paper.${keysNote ? " " + keysNote : ""}</p>
-    <div class="lbl">Spell out abbreviations</div>${onoff("spell")}<p class="rdm-aid">Shows the full name after an abbreviation the first time it appears in each section.</p>`;
+  return row("Guide", seg("focus", [["0", "Off"], ["1", "Sentence"], ["line", "Line"], ["word", "Word"]], ["1", "line", "word"].includes(rmPref("focus", "0")) ? rmPref("focus", "0") : "0"),
+      `Sentence and Line highlight where you are and dim the rest: tap to move on, the left edge to go back. Word shows the text one word at a time from the highlighted line: tap the page to start${matchMedia("(hover:hover)").matches ? ". On a keyboard: the arrow keys or the space bar" : ""}.`)
+    + rmWordsWpmHTML(seg, row)
+    + row("Key sentences in bold", onoff("keys"), `Claude picks the sentence that carries each paragraph's point, once per paper.${keysNote ? " " + keysNote : ""}`)
+    + row("Spell out abbreviations", onoff("spell"), "Shows the full name after an abbreviation the first time it appears in each section.");
 }
 // a setting changed in the Display sheet: those that change the layout lay the text out again, keeping the place
 function rmAidPref(k, v) {
@@ -117,14 +121,15 @@ function rmLines() {
     }
   }
   // one line: the text fragments on the same page that overlap vertically (a superscript just widens it)
-  const lines = [];
+  const lines = [], byPage = new Map();                    // lines per page: a fragment is only compared with its own page's
   rects.sort((a, b) => a.left - b.left);
   for (const r of rects) {
     const page = Math.max(0, Math.min(RM.pages - 1, Math.floor((r.left - left + 1) / RM.step)));
     const mid = (r.top + r.bottom) / 2;
-    const L = lines.find(l => l.page === page && mid > l.top && mid < l.bottom && r.left - l.right < 60);
+    let pl = byPage.get(page); if (!pl) byPage.set(page, pl = []);
+    const L = pl.find(l => mid > l.top && mid < l.bottom && r.left - l.right < 60);
     if (L) { L.left = Math.min(L.left, r.left); L.right = Math.max(L.right, r.right); if (r.height <= L.h * 1.1) { L.top = Math.min(L.top, r.top); L.bottom = Math.max(L.bottom, r.bottom); L.h = Math.max(L.h, r.height); } }
-    else lines.push({ page, left: r.left, right: r.right, top: r.top, bottom: r.bottom, h: r.height });
+    else { const l = { page, left: r.left, right: r.right, top: r.top, bottom: r.bottom, h: r.height }; lines.push(l); pl.push(l); }
   }
   lines.sort((a, b) => a.page - b.page || a.top - b.top);   // one column per page
   RM.lines = lines.map(l => ({ page: l.page, x: l.left - vr.left + sl, y: l.top - vr.top, w: l.right - l.left, h: l.bottom - l.top }));
@@ -234,11 +239,10 @@ function rmUndefined(text, known) {
   }
   return [...n].filter(([, c]) => c >= 2).sort((a, b) => b[1] - a[1]).slice(0, 40).map(([w]) => w);
 }
-function rmAbbrCache() { try { return JSON.parse(localStorage.getItem("pwread:abbr:" + RM.paperId) || "null") || {}; } catch { return {}; } }
+function rmAbbrCache(pid = RM.paperId) { try { return JSON.parse(localStorage.getItem("pwread:abbr:" + pid) || "null") || {}; } catch { return {}; } }
 async function rmAskAbbr(gi) {
-  const out = $("#rmExplain"), P = S.paper; if (!out || !P) return;
-  if (!S.sample) { out.innerHTML = `<p class="note">${esc(typeof NO_CLAUDE === "string" ? NO_CLAUDE : "Claude is off until you add your API key in Settings.")}</p>`; return; }
-  if (!PW.online()) { out.innerHTML = `<p class="note">You're offline. Claude needs a connection.</p>`; return; }
+  const out = $("#rmExplain"), P = S.paper, pid = RM.paperId; if (!out || !P) return;
+  if (!claudeReady(out)) return;
   const list = RM.gloss.filter(g => g.undef && !g.def);
   if (!list.length) return;
   out.innerHTML = `<div class="thinking"><span class="dot"></span>Claude is looking up ${list.length} abbreviation${list.length > 1 ? "s" : ""} in this paper…</div>`;
@@ -250,9 +254,10 @@ Paper: ${P.title || ""}
 ${list.map(g => `${g.word}: …${ctx(g.word)}…`).join("\n")}`;
   try {
     const j = await S.sample.json(prompt, { maxTokens: 300 + list.length * 60, cache: { gcTime: 864e5 * 30 } });
-    const cache = rmAbbrCache();
+    const cache = rmAbbrCache(pid);
     for (const g of list) { const v = j && j[g.word]; if (v && typeof v.full === "string") cache[g.word] = { full: v.full.trim(), what: String(v.what || "").trim() }; }
-    try { localStorage.setItem("pwread:abbr:" + RM.paperId, JSON.stringify(cache)); } catch {}
+    try { localStorage.setItem("pwread:abbr:" + pid, JSON.stringify(cache)); } catch {}
+    if (RM.paperId !== pid) return;                   // another paper is open now: saved for when this one is back
     for (const g of RM.gloss) if (g.undef && cache[g.word]) { g.def = cache[g.word].full; g.what = cache[g.word].what; }
     rmShowTerm(gi);
   } catch (e) {
@@ -263,7 +268,7 @@ ${list.map(g => `${g.word}: …${ctx(g.word)}…`).join("\n")}`;
 function rmAbbrListHTML() {
   const list = (RM.gloss || []).map((g, i) => ({ g, i })).filter(x => x.g.abbr).sort((a, b) => a.g.word.localeCompare(b.g.word));
   if (!list.length) return "";
-  return `<h4 class="rdm-toc-h">Abbreviations <span>${list.length}</span></h4>` + list.map(({ g, i }, n) =>
+  return `<h3 class="rdm-toc-h">Abbreviations <span>${list.length}</span></h3>` + list.map(({ g, i }, n) =>
     `<button type="button" class="rdm-toc-i sub rdm-abbr${n >= 12 ? " rdm-more-abbr" : ""}" data-sheet="reg-open" data-v="${i}"${n >= 12 ? " hidden" : ""}><span><strong>${esc(g.word)}</strong> ${g.def ? esc(g.def) : `<span class="muted">not spelled out in the paper</span>`}</span><span class="pg">›</span></button>`).join("")
     + (list.length > 12 ? `<button type="button" class="rdm-btn rdm-sumbtn" data-sheet="abbr-all">Show all ${list.length}</button>` : "");
 }

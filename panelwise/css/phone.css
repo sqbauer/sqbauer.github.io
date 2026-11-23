@@ -1,7 +1,7 @@
 /* Phone-first layer for the iOS app: loaded last, only overrides. Figure stays sticky at the top
    with the text scrolling under it (set up in overlays.css at <=860px); this file tightens the
-   header, makes the panel buttons a swipeable row, turns chat into a full-screen sheet with a
-   floating "Ask" button, and makes taps behave (no hover, no double-tap zoom). */
+   header, makes the panel buttons a swipeable row, turns chat into a full-screen sheet, gives the
+   paper screen one bottom bar (Read · Ask · next step), and makes taps behave (no hover, no double-tap zoom). */
 
 html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 button,.seg,.sent.has,[data-record]{touch-action:manipulation}
@@ -13,18 +13,24 @@ body{margin:0;padding-top:env(safe-area-inset-top,0px)}
 .settings .card{margin-top:16px}
 .settings p{margin:8px 0 0}
 .setrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
-.setrow input{flex:1 1 200px;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--sunk);color:var(--ink);font:15px var(--f-mono)}
+.setrow input{flex:1 1 200px;min-width:0;padding:9px 10px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--sunk);color:var(--ink);font:15px var(--f-mono)}
 .iconbtn{padding:7px 9px}
 
 /* offline pill */
 .offline{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 6px);z-index:45;pointer-events:none;
-  background:var(--ink);color:var(--surface);font-size:12.5px;padding:5px 12px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+  background:var(--ink);color:var(--surface);font-size:12.5px;padding:5px 12px;border-radius:var(--r-pill);box-shadow:var(--sh-2)}
 
 /* touch screens: no hover styling, iOS doesn't zoom into inputs of 16px+ */
 @media (hover:none){
   .btn:hover{border-color:var(--line)}
   .btn.primary:hover{filter:none;border-color:var(--accent)}
   input,textarea,select{font-size:16px!important}
+}
+
+/* the paper screen keeps its bar at the top on narrow screens too (overlays.css makes .top static at <=860px) */
+@media (max-width:860px){
+  html.pw-paper .top{position:sticky}
+  html.pw-paper .stage{top:calc(env(safe-area-inset-top,0px) + 56px)}
 }
 
 @media (max-width:600px){
@@ -36,21 +42,62 @@ body{margin:0;padding-top:env(safe-area-inset-top,0px)}
   .paper-id .s{font-size:11.5px}
   #openBtn{display:none}
   .top .btn{padding:6px 10px}
-  .steps{margin-inline:-4px;scroll-snap-type:x proximity}
-  .step{padding:9px 10px 10px;scroll-snap-align:start}
 
   /* figure stage: panel buttons as one swipeable row with comfortable tap targets */
   .stage .panelrow{gap:8px;padding:2px 2px 6px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
-  .stage .pchip{min-width:44px;height:40px;flex:0 0 auto;scroll-snap-align:start}
-  .stage{top:env(safe-area-inset-top,0px)}
+  .stage .pchip{min-width:44px;min-height:40px;flex:0 0 auto;scroll-snap-align:start}
 
-  /* chat: floating Ask button, full-screen sheet */
-  #chatBtn{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:35;
-    border-radius:999px;padding:12px 18px;background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 8px 24px rgba(0,0,0,.22)}
-  .app.chat-open #chatBtn{display:none}
+  /* chat: a full-screen sheet, opened from the bottom bar */
   .chat{position:fixed;inset:0;width:100%!important;height:auto;z-index:40;border-left:0;box-shadow:none;padding-top:env(safe-area-inset-top,0px)}
   .composer{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 
+  /* the paper screen: back link and More in the bar; Read, Ask and the next step in ONE bottom bar
+     (replaces the floating Read and Ask buttons: #readBtn is made by readmode.js, so it is hidden here) */
+  html body #readBtn,html.pw-paper #chatBtn{display:none}
+  .top.paper .top-row{height:52px;min-height:52px}
+  .top.paper .paper-id .t{font-size:var(--t-sm)}
+  .paperhead{padding-top:14px}
+  .ph-title{font-size:var(--t-xl);line-height:1.25}
+  .ph-meta{font-size:var(--t-xs)}
+  .ph-tags .tchip{min-height:32px}
+  .ph-tags .addtag{min-height:36px}
+  html.pw-paper .stage{top:calc(env(safe-area-inset-top,0px) + 52px)}
+  html.pw-paper main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  html.pw-paper .nextbar,html.pw-paper .figfoot,html.pw-paper .cf-save{display:none}
+  html.pw-paper .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  html.pw-paper .actbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;gap:8px;
+    padding:8px max(12px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));
+    background:color-mix(in srgb,var(--surface) 94%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+  html.pw-chat .actbar,html.rdm-open .actbar,html.fv-open .actbar{display:none}
+  .actbar .btn{min-height:44px;padding:0 14px;justify-content:center}
+  .actbar .btn.primary{flex:1;min-width:0}
+  .actbar .bl{overflow:hidden;text-overflow:ellipsis}
+  .actbar [data-bar="ask"][aria-expanded="true"]{background:var(--accent-weak);color:var(--accent)}
+
+  /* the steps: four equal columns, number (or check) over a short label, no sideways scrolling */
+  .paperhead .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:14px -8px 0;padding-top:6px}
+  .paperhead .sj{display:none}
+  .paperhead .step{position:relative;flex-direction:column;gap:4px;width:100%;min-height:56px;padding:4px 2px;font-size:var(--t-xs);justify-content:center}
+  .paperhead .step:not(:first-of-type)::before{content:"";position:absolute;top:16px;right:calc(50% + 17px);width:calc(100% - 34px);height:2px;border-radius:1px;background:var(--line)}
+  .paperhead .step .full,.paperhead .step .sx{display:none}
+  .paperhead .step .short{display:inline}
+
+  /* figures: the figure chips scroll sideways in one row */
+  .fignav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%;padding:2px 0 4px;-webkit-overflow-scrolling:touch}
+  .fignav::-webkit-scrollbar{display:none}
+  .fignav .fchip{flex:0 0 auto}
+  .fighead{gap:8px}
+  .pcard{grid-template-columns:36px minmax(0,1fr);padding:14px}
+  .pcard .pl{width:36px;height:36px}
+  .pcard .pm{grid-column:1/-1}
   .libhead .btn{padding:8px 12px}
   h2{font-size:21px}
+}
+
+/* touch screens: small controls get a 44 px tall tappable area (an invisible layer), without changing their look */
+@media (hover:none) and (pointer:coarse){
+  .linkbtn,.tchip button,.chip,:not(span).seg>button,.wk-cat,.sug,.rdm-sw,.rdm-inlib,.fchip,.pchip,.btn,.rdm-btn{position:relative}
+  .linkbtn::after,.tchip button::after,.chip::after,:not(span).seg>button::after,.wk-cat::after,.sug::after,.rdm-sw::after,.rdm-inlib::after,.fchip::after,.pchip::after,.btn::after,.rdm-btn::after{
+    content:"";position:absolute;left:-4px;right:-4px;top:50%;height:44px;min-height:100%;transform:translateY(-50%)}
+  .tchip button::after{left:-10px;right:-10px}
 }
