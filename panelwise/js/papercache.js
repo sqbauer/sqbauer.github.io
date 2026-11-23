@@ -12,7 +12,7 @@ const pwTextKey = file => `${PW_TEXT_VER}|${file.name}:${file.size}:${file.lastM
 async function pwLoadDoc(file) {
   const lib = await ensurePdfJs();
   const data = new Uint8Array(await file.arrayBuffer());
-  return lib.getDocument({ data, isEvalSupported: false, disableFontFace: false }).promise;
+  return lib.getDocument({ data, ...PDF_OPTS }).promise;
 }
 
 (function () {
@@ -25,10 +25,11 @@ async function pwLoadDoc(file) {
     const { doc, ...plain } = raw;
     try { doc && doc.destroy(); } catch {}
     const clean = JSON.parse(JSON.stringify(plain));
-    try { await PW.be.put(PW_TEXT_COL, key, clean); } catch (e) { console.warn("couldn't cache paper text:", e && e.message); }
+    try { await PW.be.put(PW_TEXT_COL, key, clean); if (typeof IX !== "undefined") IX.noText.delete(key); } catch (e) { console.warn("couldn't cache paper text:", e && e.message); }
     return clean;
   };
-  parsePdf = async function (file, prog) {
+  // opening a paper: the cached text if there is one (the PDF loads in the background for figures), else parse and cache
+  window.parsePdfCached = async function (file, prog) {
     const key = pwTextKey(file);
     let hit = null;
     try { hit = PW.be && await PW.be.get(PW_TEXT_COL, key); } catch {}
@@ -40,13 +41,18 @@ async function pwLoadDoc(file) {
         if (P && P.docReady === raw.docReady) { P.doc = doc; if (S.view === "figures") render(); }
         else doc.destroy();
         return doc;
-      }).catch(e => { console.warn("PDF load failed:", e && e.message); return null; });
+      }).catch(e => {
+        console.warn("PDF load failed:", e && e.message);
+        const P = S.paper; if (P && P.docReady === raw.docReady) { P.docFailed = true; if (S.view === "figures") render(); }
+        return null;
+      });
       return raw;
     }
     const raw = await readPdf(file, prog);
     try {
       const { doc, ...plain } = raw;
       await PW.be.put(PW_TEXT_COL, key, JSON.parse(JSON.stringify(plain)));
+      if (typeof IX !== "undefined") IX.noText.delete(key);
     } catch (e) { console.warn("couldn't cache paper text:", e && e.message); }
     return raw;
   };

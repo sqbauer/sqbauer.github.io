@@ -4,7 +4,18 @@
    while a page mentions none. Tapping a figure reference shows that figure in the panel instead of opening the
    full-screen viewer (the panel's own button opens that). On a phone the panel never appears. */
 const RM_SIDE_MQ = "(min-width: 1100px)";
-const rmSideOn = () => matchMedia(RM_SIDE_MQ).matches && !!(S.paper && S.paper.figures && S.paper.figures.length);
+// the panel fits (wide window, a paper with figures), and it's on unless you hid it with the Figure button (remembered)
+const rmSideFits = () => matchMedia(RM_SIDE_MQ).matches && !!(S.paper && S.paper.figures && S.paper.figures.length);
+const rmSideOn = () => rmSideFits() && rmPref("side", "1") === "1";
+function rmSideBtn() {
+  const b = RM.el && RM.el.querySelector('[data-rm="side"]'); if (!b) return;
+  b.hidden = !rmSideFits(); b.setAttribute("aria-pressed", String(rmSideOn()));
+}
+function rmSideToggle() {
+  if (!rmSideFits()) return;
+  rmSetPref("side", rmSideOn() ? "0" : "1");
+  RM.sideFig = null; rmSideRefs(); rmSideFollow(RM.page);   // the reading area changes width: it lays out again (ResizeObserver)
+}
 
 // where each figure is mentioned, as pages (worked out with every layout)
 function rmSideRefs() {
@@ -17,6 +28,7 @@ function rmSideRefs() {
 // after a page turn: the first figure mentioned on this page, if any
 function rmSideFollow(p) {
   const side = $("#rmSide"); if (!side) return;
+  rmSideBtn();
   side.hidden = !rmSideOn();
   if (side.hidden) return;
   const here = (RM.figAt || []).find(x => x.page === p);
@@ -30,7 +42,7 @@ function rmSideFollow(p) {
 async function rmSideImg(f) {
   if (f.img) return f.img;
   const P = S.paper; if (!P || P.demo) return null;
-  RM.sideImgs = RM.sideImgs || new Map();
+  if (!RM.sideImgs || RM.sideImgsFor !== P.id) { RM.sideImgs = new Map(); RM.sideImgsFor = P.id; }   // only the open paper's
   const key = P.id + ":" + f.n;
   if (RM.sideImgs.has(key)) return RM.sideImgs.get(key);
   if (!P.doc && P.docReady) await P.docReady;
@@ -52,7 +64,7 @@ async function rmSideShow(n, panel) {
   const title = (L.title || "").replace(/[\s,;:]+$/, "");
   const body = (f.legend || "").replace(/^\s*(?:Figure|Fig\.?)\s*\d+\s*[.:|—–]?\s*/i, "");
   side.innerHTML = `<div class="rdm-side-h"><span class="k">Figure ${f.n} <span>of ${figs.length}</span></span>
-      <span class="rdm-side-nav"><button type="button" class="rdm-btn" data-side="prev" ${i === 0 ? "disabled" : ""} aria-label="Previous figure">‹</button><button type="button" class="rdm-btn" data-side="next" ${i === figs.length - 1 ? "disabled" : ""} aria-label="Next figure">›</button><button type="button" class="rdm-btn" data-side="open">Open</button></span></div>
+      <span class="rdm-side-nav"><button type="button" class="rdm-btn rdm-tool" data-side="prev" ${i === 0 ? "disabled" : ""} aria-label="Previous figure">${rmIc("chevL")}</button><button type="button" class="rdm-btn rdm-tool" data-side="next" ${i === figs.length - 1 ? "disabled" : ""} aria-label="Next figure">${rmIc("chevR")}</button><button type="button" class="rdm-btn" data-side="open">Open</button></span></div>
     <button type="button" class="rdm-side-img" data-side="open" aria-label="Open Figure ${f.n}"><span class="rdm-side-wait">Loading the figure…</span></button>
     <div class="rdm-side-text">${title ? `<h4>${esc(title)}</h4>` : ""}<p>${esc(title && body.startsWith(title) ? body.slice(title.length).replace(/^[\s.:]+/, "") : body)}</p></div>`;
   side.scrollTop = 0;

@@ -104,7 +104,6 @@ async function feedWork(limit) {
       feedStatus(`Preparing cards · ${pp.label}`);
       try { await feedPrepare(pp); done++; }
       catch (e) { if (e && FEED_STOP[e.code]) { FEED.queue.unshift(pp); feedStatus(FEED_STOP[e.code]); FEED.stopped = FEED_STOP[e.code]; break; } console.warn(e); }
-      if (FEED.open) feedTopUp();
     }
   } finally { FEED.busy = false; if (!FEED.stopped) feedStatus(FEED.queue.length ? `${FEED.queue.length} papers still to prepare` : ""); FEED.stopped = ""; }
 }
@@ -179,10 +178,23 @@ function feedBuild() {
   let raf = 0;
   FEED.list.addEventListener("scroll", () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(feedOnScroll); }, { passive: true });
 }
+// keyboard: Escape closes, ↓/J and ↑/K move a card (Mac)
+document.addEventListener("keydown", e => {
+  if (!FEED.open || !FEED.el || FEED.el.hidden || document.documentElement.classList.contains("rdm-open")) return;
+  if (e.target.closest && e.target.closest("input, textarea, select")) return;
+  const k = e.key;
+  if (k === "Escape") { feedClose(); e.preventDefault(); return; }
+  const d = k === "ArrowDown" || k === "j" || k === "J" || k === "PageDown" ? 1 : k === "ArrowUp" || k === "k" || k === "K" || k === "PageUp" ? -1 : 0;
+  if (!d) return;
+  e.preventDefault();
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  FEED.list.scrollBy({ top: d * FEED.list.clientHeight, behavior: calm ? "auto" : "smooth" });
+});
 async function feedOpen() {
   if (!FEED.el) feedBuild();
   if (!FEED.open) FEED.from = S.view;
   FEED.open = true; FEED.el.hidden = false; document.documentElement.classList.add("fd-on");
+  FEED.list.setAttribute("tabindex", "-1"); FEED.list.focus({ preventScroll: true });
   if (typeof PWZoomLock !== "undefined") PWZoomLock.set(true);
   if (FEED.session.length && FEED.i >= 0 && FEED.i <= FEED.session.length) { feedShowAgain(); return; }
   await feedStart();
@@ -201,7 +213,6 @@ async function feedStart() {
   feedRender();
   feedWork(6);                                        // keep preparing a few more in the background
 }
-function feedTopUp() { /* new cards become part of the next session; nothing to do mid-session */ }
 
 function feedCardHTML(c, i) {
   const k = FEED_KINDS[c.kind] || "";
@@ -287,11 +298,22 @@ async function feedImage(i) {
 }
 
 /* ---- actions ---- */
+// the Notebook and topic overviews find notes through the paper's record: count this one there
+function feedNoteCounted(pp) {
+  const cur = recOf(pp.id);
+  if (cur) { patchRec(pp.id, { nNotes: (cur.nNotes || 0) + 1 }); return; }
+  const g = pp.g || {}, rec = { kind: "paper", id: pp.id, name: g.name || pp.title, title: pp.title, year: g.year || null, folder: g.folders ? g.folders[0] || "" : "",
+    authors: g.authors || [], nNotes: 1, nChat: 0, tags: [], lastOpened: 0, updated: Date.now() };
+  const key = keyOf(pp.id);
+  if (D.col) { D.recs.set(key, rec); enqueue(key, () => D.col.doc(key).set(rec)); }
+  const { kind, ...loc } = rec; store.set("pw:" + pp.id, loc);
+}
 async function feedSave(i) {
   const c = FEED.session[i]; if (!c) return;
   const text = c.kind === "quiz" ? `Q: ${c.q}\nA: ${c.a}` : c.kind === "highlight" ? `“${c.text}”` : `${c.title ? c.title + ": " : ""}${c.text}`;
   try {
     await addChild({ id: c.pp.id, demo: false }, "notes", { kind: "saved", text: text + "\n\n(from the feed)", fig: c.fig || null, panel: c.panel || null });
+    feedNoteCounted(c.pp);
     FEED.stats.saved++;
     const P = feedPrefs(); P.w[c.kind] = Math.min(2, (P.w[c.kind] || 1) * 1.08); P.paper[c.pp.id] = Math.min(2, (P.paper[c.pp.id] || 1) * 1.1); feedSavePrefs(P);
     const b = FEED.list.querySelector(`.fd-card[data-i="${i}"] [data-f="save"]`); if (b) { b.textContent = "♥ Saved"; b.classList.add("on"); }
@@ -302,7 +324,7 @@ function feedLess(i) {
   const c = FEED.session[i]; if (!c) return;
   const P = feedPrefs(); P.w[c.kind] = Math.max(.4, (P.w[c.kind] || 1) * .85); P.paper[c.pp.id] = Math.max(.2, (P.paper[c.pp.id] || 1) * .5); P.seen[c.id] = Date.now(); feedSavePrefs(P);
   toast("Fewer cards like this");
-  FEED.list.scrollTo({ top: (i + 1) * FEED.list.clientHeight, behavior: "smooth" });
+  FEED.list.scrollTo({ top: (i + 1) * FEED.list.clientHeight, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 }
 function feedEnd() {
   const box = FEED.el.querySelector("#fdEnd"); if (!box || !FEED.stats) return;

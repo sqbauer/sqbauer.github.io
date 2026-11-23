@@ -1,10 +1,19 @@
 "use strict";
 /* ---------- chat ---------- */
 function setChat(open) {
+  const inside = $("#chat").contains(document.activeElement);
   $("#chat").hidden = !open; $("#app").classList.toggle("chat-open", open);
-  $("#chatBtn").setAttribute("aria-expanded", open); $("#chatBtn").textContent = open ? "Hide chat" : "Ask about the paper";
+  document.documentElement.classList.toggle("pw-chat", open);
+  // "Ask" in the header (wide screens) and in the phone's bottom bar; pressed while the chat is open
+  for (const b of [$("#chatBtn"), $('#actbar [data-bar="ask"]')]) if (b) { b.setAttribute("aria-expanded", open); b.title = open ? "Hide the chat" : "Ask about the paper"; }
   if (open) { renderChat(); setTimeout(() => $("#chatIn").focus(), 30); }
+  else if (inside) { const back = [$('#actbar [data-bar="ask"]'), $("#chatBtn")].find(b => b && !b.hidden && b.getClientRects().length); if (back) back.focus({ preventScroll: true }); }
 }
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape" || $("#chat").hidden || document.documentElement.classList.contains("rdm-open") || document.documentElement.classList.contains("fd-on")) return;
+  if (typeof FV !== "undefined" && FV.el && !FV.el.hidden) return;
+  setChat(false); e.preventDefault();
+});
 $("#chatBtn").onclick = () => setChat($("#chat").hidden);
 $("#chatClose").onclick = () => setChat(false);
 function ctxLine() {
@@ -87,7 +96,7 @@ ${P.fullText}
   } catch (e) {
     ans.content = e.text || ans.content || ""; if (e.code !== "cancelled") ans.err = errCopy(e); claudeOff(e);
   }
-  S.chatBusy = false; renderChat();
+  if (S.paper === P) { S.chatBusy = false; renderChat(); }       // after a paper switch, the new paper's chat is its own
   if (ans.content && !ans.err && S.paper === P) { addChild(P, "chat", { role: "assistant", content: ans.content }).then(o => ans._id = o._id); persistPaper(P); }
 }
 $("#composer").onsubmit = e => { e.preventDefault(); sendChat($("#chatIn").value); };

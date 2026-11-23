@@ -7,7 +7,7 @@
 .progress li.run{color:var(--ink)}.progress li.run::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse .8s infinite alternate;margin:0 2px}
 .progress li.todo::before{content:"·";width:12px;text-align:center}
 .progress ul{padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:8px;z-index:70;font-size:14px;max-width:calc(100% - 32px)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:var(--r-sm);z-index:70;font-size:14px;max-width:calc(100% - 32px)}
 
 @media (max-width:1100px){
   .app.chat-open{grid-template-columns:minmax(0,1fr)}
@@ -29,3 +29,5 @@
   .reading{font-size:16px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.toast-act{margin-left:10px;border:0;background:none;color:inherit;font:inherit;font-weight:700;text-decoration:underline;padding:2px 4px;cursor:pointer}
+.linkbtn.danger{color:var(--bad)}

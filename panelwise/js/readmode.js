@@ -9,6 +9,14 @@
    Self-contained: it adds its own button and overlay and leaves the reader's other views alone. */
 const RM = { cites: [], refList: "", sheet: null, el: null, flow: null, vp: null, btn: null, page: 0, pages: 1, heads: [], paperId: null, down: null, swiped: false, size: 18 };
 const RM_SIZES = [15, 16.5, 18, 20, 22, 25];
+// toolbar icons (24 px grid, drawn with the text colour)
+const RM_IC = {
+  list: '<path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/>', chevD: '<path d="M6 9l6 6 6-6"/>',
+  chevL: '<path d="M15 18l-6-6 6-6"/>', chevR: '<path d="M9 18l6-6-6-6"/>', search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  speaker: '<path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>', pause: '<path d="M9 5v14M15 5v14"/>',
+  figure: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M3 12h18"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>'
+};
+const rmIc = (n, s = 20) => `<svg class="rdm-ic" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${RM_IC[n]}</svg>`;
 
 function rmKey(id) { return "pwread:" + id; }
 function rmLoad(id) { try { return JSON.parse(localStorage.getItem(rmKey(id)) || "null"); } catch { return null; } }
@@ -94,6 +102,7 @@ function rmFindRef(item, numbered) {
 }
 function rmShowCites(k) {
   const c = RM.cites[k]; if (!c) return;
+  RM.sheetKind = "cite";
   const box = rmSheet(c.items.length > 1 ? `${c.items.length} references` : "Reference", `<ol class="rdm-list">${c.items.map(it => {
     const ref = rmFindRef(it, c.numbered);
     const L = ref && typeof ixMatchRef === "function" ? ixMatchRef(ref) : null;
@@ -101,19 +110,29 @@ function rmShowCites(k) {
   }).join("")}</ol>`);
 }
 function rmSheet(title, html) {
+  RM.explainCtl?.abort(); RM.explainCtl = null;      // an answer still streaming belongs to the sheet that asked
   const box = $("#rmSheetList");
   $("#rmSheetTitle").textContent = title; box.innerHTML = html; box.scrollTop = 0;
   RM.sheet.classList.toggle("tall", RM.sheetKind === "region" || RM.sheetKind === "toc" || RM.sheetKind === "look");
-  RM.sheet.hidden = false;
-  box.scrollTop = 0; requestAnimationFrame(() => { box.scrollTop = 0; });
+  RM.sheet.classList.toggle("wide", RM.sheetKind === "region");    // the atlas sections need room beside the text on a wide screen
+  RM.sheet.dataset.kind = RM.sheetKind || "";
+  const was = RM.sheet.hidden; RM.sheet.hidden = false;
+  if (was) { const a = document.activeElement; RM.sheetOpener = a && !RM.sheet.contains(a) ? a : null; }
+  box.scrollTop = 0; requestAnimationFrame(() => { box.scrollTop = 0; if (was && !RM.sheet.hidden && !RM.sheet.contains(document.activeElement)) RM.sheet.querySelector('[data-rm="sheet-close"]')?.focus({ preventScroll: true }); });
   return box;
 }
-function rmSheetClose() { RM.sheet.hidden = true; RM.explainCtl?.abort(); RM.explainCtl = null; if (window.CSS && CSS.highlights) CSS.highlights.delete("rdm-sel"); }
+function rmSheetClose() {
+  const back = !RM.sheet.hidden && RM.sheet.contains(document.activeElement) ? RM.sheetOpener : null;
+  RM.sheet.hidden = true; RM.explainCtl?.abort(); RM.explainCtl = null; if (window.CSS && CSS.highlights) CSS.highlights.delete("rdm-sel");
+  // focus goes back where it was (a term or button in the text), or to the reader itself
+  if (back && back.isConnected && !RM.el.hidden) back.focus({ preventScroll: true }); else if (RM.sheet.contains(document.activeElement)) RM.el.querySelector("#rmWhere")?.focus({ preventScroll: true });
+  RM.sheetOpener = null;
+}
 
 function rmHTML(P) {
   RM.cites = []; RM.refList = P.refList || "";
   RM.allText = Object.entries(P.sections || {}).filter(([k]) => k !== "refs").flatMap(([, v]) => v).join(" ");
-  const name = { intro: "Introduction", results: "Results", discussion: "Discussion", methods: "Methods", other: "Other text" };
+  const name = SEC_NAMES;
   let h = `<h2 class="rdm-title">${esc(P.title || "Untitled paper")}</h2>`; const seenFig = new Set();
   if (P.abstract) h += `<h3 data-sec="Abstract">Abstract</h3><p data-k="abs:0">${esc(P.abstract)}</p>`;
   for (const k of ["intro", "results", "discussion", "methods", "other"]) {
@@ -144,13 +163,20 @@ function rmBuild() {
   const el = document.createElement("div");
   el.className = "rdm"; el.hidden = true;
   el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Reading mode");
-  el.innerHTML = `<div class="rdm-top"><button type="button" class="rdm-where" id="rmWhere" data-rm="toc" aria-label="Contents"></button>
-      <span class="rdm-tools"><button type="button" class="rdm-btn rdm-speak" data-rm="speak" aria-label="Read aloud">Listen</button><button type="button" class="rdm-btn" data-rm="look" aria-label="Text and display settings">Aa</button><button type="button" class="rdm-btn" data-rm="close">Close</button></span></div>
+  const mod = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? "⌘" : "Ctrl+";
+  el.innerHTML = `<div class="rdm-top"><button type="button" class="rdm-where" id="rmWhere" data-rm="toc" aria-haspopup="dialog" aria-label="Contents" title="Contents, highlights and related papers">${rmIc("list", 18)}<span class="wl">Reading</span>${rmIc("chevD", 16)}</button>
+      <span class="rdm-tools">
+        <button type="button" class="rdm-btn rdm-tool" data-rm="find" aria-haspopup="dialog" aria-label="Search this paper" title="Search this paper (${mod}F)">${rmIc("search")}<span class="lbl">Search</span></button>
+        <button type="button" class="rdm-btn rdm-tool rdm-speak" data-rm="speak" aria-label="Listen: read aloud" title="Read aloud from this page">${rmIc("speaker")}<span class="lbl">Listen</span></button>
+        <button type="button" class="rdm-btn rdm-tool" data-rm="look" aria-haspopup="dialog" aria-label="Text and display" title="Text and display"><span class="aa" aria-hidden="true">Aa</span></button>
+        <button type="button" class="rdm-btn rdm-tool rdm-figtog" data-rm="side" aria-pressed="true" aria-label="Figure beside the text" title="Figure beside the text (F)" hidden>${rmIc("figure")}<span class="lbl">Figure</span></button>
+        <button type="button" class="rdm-btn rdm-tool" data-rm="close" aria-label="Close reading mode" title="Close (Esc)">${rmIc("x")}<span class="lbl">Close</span></button>
+      </span></div>
     <div class="rdm-main"><div class="rdm-vp" id="rmVp"><article class="rdm-flow reading" id="rmFlow"></article></div><aside class="rdm-side" id="rmSide" hidden aria-label="Figure"></aside></div>
-    <div class="rdm-sheet" id="rmSheet" hidden><div class="rdm-sheet-h"><strong id="rmSheetTitle"></strong><button type="button" class="rdm-btn" data-rm="sheet-close">Done</button></div><div class="rdm-sheet-list" id="rmSheetList"></div></div>
-    <div class="rdm-bot"><button type="button" class="rdm-btn rdm-arrow" data-rm="prev" aria-label="Previous page">‹</button>
+    <div class="rdm-sheet" id="rmSheet" role="dialog" aria-labelledby="rmSheetTitle" hidden><div class="rdm-grab" aria-hidden="true"></div><div class="rdm-sheet-h"><h2 class="rdm-sheet-t" id="rmSheetTitle"></h2><button type="button" class="rdm-btn rdm-done" data-rm="sheet-close">Done</button></div><div class="rdm-sheet-list" id="rmSheetList"></div></div>
+    <div class="rdm-bot"><button type="button" class="rdm-btn rdm-arrow" data-rm="prev" aria-label="Previous page">${rmIc("chevL", 24)}</button>
       <div class="rdm-prog" id="rmProg" role="slider" aria-label="Position in the paper" tabindex="0"><div class="rdm-bar"><i id="rmBar"></i></div><span id="rmCount"></span></div>
-      <button type="button" class="rdm-btn rdm-arrow" data-rm="next" aria-label="Next page">›</button></div>`;
+      <button type="button" class="rdm-btn rdm-arrow" data-rm="next" aria-label="Next page">${rmIc("chevR", 24)}</button></div>`;
   document.body.appendChild(el);
   RM.el = el; RM.flow = el.querySelector("#rmFlow"); RM.vp = el.querySelector("#rmVp"); RM.sheet = el.querySelector("#rmSheet");
   try { const s = +localStorage.getItem("pwread:size"); if (RM_SIZES.includes(s)) RM.size = s; } catch {}
@@ -181,6 +207,8 @@ function rmBuild() {
       else if (a === "prev") rmGo(RM.page - 1);
       else if (a === "next") rmGo(RM.page + 1);
       else if (a === "toc") rmShowToc();
+      else if (a === "find") rmShowToc(null, true);
+      else if (a === "side") rmSideToggle();
       else if (a === "speak") rmSpeakToggle();
       else if (a === "look") rmShowLook();
       else if (a === "methods") { RM.showMethods = true; rmRender(null, "Methods"); }
@@ -213,8 +241,12 @@ function rmBuild() {
     rmGo(Math.round(f * (RM.pages - 1)), true);
   };
   prog.addEventListener("pointerdown", e => { if (!RM.sheet.hidden) return; RM.scrubbing = true; prog.setPointerCapture?.(e.pointerId); prog.classList.add("on"); scrub(e); });
-  prog.addEventListener("pointermove", e => { if (RM.scrubbing) scrub(e); });
-  const endScrub = () => { if (!RM.scrubbing) return; RM.scrubbing = false; prog.classList.remove("on"); rmSave(); };
+  prog.addEventListener("pointermove", e => {
+    if (!RM.scrubbing) return;
+    RM.scrubE = e;                                     // at most one page turn per frame while dragging
+    if (!RM.scrubRaf) RM.scrubRaf = requestAnimationFrame(() => { RM.scrubRaf = 0; if (RM.scrubbing && RM.scrubE) scrub(RM.scrubE); });
+  });
+  const endScrub = () => { if (!RM.scrubbing) return; RM.scrubbing = false; prog.classList.remove("on"); rmSideFollow(RM.page); rmSave(); };
   prog.addEventListener("pointerup", endScrub); prog.addEventListener("pointercancel", endScrub);
   prog.addEventListener("keydown", e => { if (e.key === "Home") rmGo(0); else if (e.key === "End") rmGo(RM.pages - 1); });
   // re-paginate whenever the reading area changes size (rotation, viewport settling after open)
@@ -256,13 +288,13 @@ function rmGo(p, quiet) {
   const smooth = !quiet && !matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (smooth) RM.vp.scrollTo({ left: p * RM.step, top: 0, behavior: "smooth" }); else { RM.vp.scrollLeft = p * RM.step; RM.vp.scrollTop = 0; }
   let sec = ""; for (const hd of RM.heads) if (hd.page <= p) sec = hd.name;
-  $("#rmWhere").textContent = sec || "Reading";
-  $("#rmCount").textContent = `${p + 1} / ${RM.pages}`;
+  const wh = $("#rmWhere"); wh.querySelector(".wl").textContent = sec || "Reading"; wh.setAttribute("aria-label", `Contents: ${sec || "Reading"}`);
+  $("#rmCount").textContent = `Page ${p + 1} of ${RM.pages}`;
   $("#rmBar").style.width = (RM.pages > 1 ? p / (RM.pages - 1) * 100 : 100) + "%";
-  const pr = $("#rmProg"); pr.setAttribute("aria-valuemin", "1"); pr.setAttribute("aria-valuemax", String(RM.pages)); pr.setAttribute("aria-valuenow", String(p + 1));
+  const pr = $("#rmProg"); pr.setAttribute("aria-valuemin", "1"); pr.setAttribute("aria-valuemax", String(RM.pages)); pr.setAttribute("aria-valuenow", String(p + 1)); pr.setAttribute("aria-valuetext", `Page ${p + 1} of ${RM.pages}${sec ? ", " + sec : ""}`);
   RM.el.querySelector('[data-rm="prev"]').disabled = p === 0;
   RM.el.querySelector('[data-rm="next"]').disabled = p === RM.pages - 1;
-  rmFocusSync(p); rmSideFollow(p);
+  rmFocusSync(p); if (!RM.scrubbing) rmSideFollow(p);   // while scrubbing, the side panel waits for the end
   if (!quiet) rmSave();
 }
 function rmResize(d) {
@@ -288,22 +320,29 @@ async function rmOpen() {
   RM.paperId = P.id || null; RM.showMethods = false; RM.sideFig = null;
   rmApplyLook();
   RM.flow.innerHTML = rmHTML(P); rmDecorate(P); rmApplyMarks(); rmAids();
-  if (RM.el.hidden) PWZoomLock.set(true);
+  if (RM.el.hidden) { PWZoomLock.set(true); const a = document.activeElement; RM.opener = a && a !== document.body && !RM.el.contains(a) ? a : null; }
   RM.el.hidden = false; document.documentElement.classList.add("rdm-open");
+  $("#app").inert = true;                              // keyboard and screen readers stay in the reader
   const saved = RM.paperId && !P.demo ? rmLoad(RM.paperId) : null;
   RM.page = -1;
   RM.want = saved && saved.at ? saved.at : 0;
   const lay = () => rmLayout(RM.want);
   lay();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!RM.el.hidden) rmLayout(RM.pages > 1 ? RM.page / (RM.pages - 1) : RM.want); });  // web fonts change the page count
+  // web fonts still loading change the page count: lay out again once they're in (not when they already are)
+  if (document.fonts && document.fonts.ready && document.fonts.status !== "loaded") document.fonts.ready.then(() => { if (!RM.el.hidden) rmLayout(RM.pages > 1 ? RM.page / (RM.pages - 1) : RM.want); });
   rmKeysMaybe();
+  requestAnimationFrame(() => { if (!RM.el.hidden && !RM.el.contains(document.activeElement)) RM.el.querySelector("#rmWhere")?.focus({ preventScroll: true }); });
 }
 function rmClose() {
   if (!RM.el || RM.el.hidden) return;
   rmSave(); rmWordsReset();
   RM.el.hidden = true; document.documentElement.classList.remove("rdm-open"); PWZoomLock.set(false); rmSheetClose();
+  $("#app").inert = false;
   RM.flow.innerHTML = "";
+  const opener = RM.opener; RM.opener = null;
   const cb = RM.onClose; RM.onClose = null; if (cb) cb();   // e.g. back to the feed
+  // focus back on what opened the reader (the Read button), if it's still there
+  else if (opener && opener.isConnected) opener.focus({ preventScroll: true }); else if (RM.btn && !RM.btn.hidden) RM.btn.focus({ preventScroll: true });
 }
 
 /* ---- render (again) keeping the reader's place, or moving to a section ---- */
@@ -311,42 +350,78 @@ function rmRender(at, toSection) {
   const P = S.paper; if (!P) return;
   RM.flow.innerHTML = rmHTML(P); rmDecorate(P); rmApplyMarks(); rmAids();
   rmLayout(at != null ? at : (RM.pages > 1 ? RM.page / (RM.pages - 1) : 0));
-  if (toSection) { const hd = (RM.heads || []).find(h => h.name === toSection); if (hd) rmGo(hd.page + (toSection === "Methods" ? 0 : 0), true); rmSave(); }
+  if (toSection) { const hd = (RM.heads || []).find(h => h.name === toSection); if (hd) rmGo(hd.page, true); rmSave(); }
 }
 
-/* ---- contents: every section and subheading with its page ---- */
-function rmShowToc() {
+/* ---- contents: search on top, then three tabs. Contents: every section and subheading with its page, the summaries
+   and the abbreviations. Highlights: yours, in reading order. Related: papers in your library and the brain regions. ---- */
+const RM_TABS = [["contents", "Contents"], ["highlights", "Highlights"], ["related", "Related"]];
+function rmShowToc(tab, find) {
   RM.sheetKind = "toc";
+  if (tab) RM.tocTab = tab;
+  if (find) RM.tocTab = RM.tocTab || "contents";
+  const T = RM_TABS.some(([k]) => k === RM.tocTab) ? RM.tocTab : "contents";
   let cur = -1; (RM.toc || []).forEach((t, i) => { if (t.page <= RM.page) cur = i; });
   const P = S.paper, sums = rmSums();
-  const secs = (RM.toc || []).map((t, i) => `<button type="button" class="rdm-toc-i${t.sub ? " sub" : ""}${i === cur ? " on" : ""}" data-sheet="go" data-p="${t.page}"><span>${esc(t.name)}${!t.sub && sums && sums[t.name] ? `<span class="rdm-sum">${esc(sums[t.name])}</span>` : ""}</span><span class="pg">${t.page + 1}</span></button>`).join("");
+  const secs = (RM.toc || []).map((t, i) => `<button type="button" class="rdm-toc-i${t.sub ? " sub" : ""}${i === cur ? " on" : ""}"${i === cur ? ' aria-current="location"' : ""} data-sheet="go" data-p="${t.page}"><span>${esc(t.name)}${!t.sub && sums && sums[t.name] ? `<span class="rdm-sum">${esc(sums[t.name])}</span>` : ""}</span><span class="pg">${t.page + 1}</span></button>`).join("");
   const sumBtn = !sums && P && !P.demo ? `<button type="button" class="rdm-btn rdm-sumbtn" data-sheet="sum">Summarise each section with Claude</button><div class="rdm-explain" id="rmSumOut"></div>` : "";
   // highlights, in reading order
   const marks = [...RM.flow.querySelectorAll("mark.rdm-hl[data-m]")].filter((el, i, a) => a.findIndex(x => x.dataset.m === el.dataset.m) === i);
-  const hl = marks.length ? `<h4 class="rdm-toc-h">Highlights <span>${marks.length}</span></h4>` + marks.map(el => {
+  const hl = marks.length ? marks.map(el => {
     const m = (RM.marks || []).find(x => x._id === el.dataset.m) || {};
     return `<button type="button" class="rdm-toc-i sub rdm-hlitem" data-sheet="mark-go" data-v="${esc(el.dataset.m)}"><span><i class="rdm-dot c-${m.color || "y"}"></i>${esc((m.text || "").replace(/\s*refs(?=[\s.,;:)]|$)/g, "").slice(0, 140))}${(m.text || "").length > 140 ? "…" : ""}</span><span class="pg">${rmPageOf(el) + 1}</span></button>`;
-  }).join("") : "";
+  }).join("") : `<p class="rdm-empty">No highlights yet. Press and hold a sentence in the text to highlight it.</p>`;
   // brain regions named in the paper, by first mention
   const regs = [], seenR = new Set();
   for (const el of RM.flow.querySelectorAll(".rdm-term.reg")) {
     const g = RM.gloss[+el.dataset.g]; if (!g || !g.regs || !g.regs.length) continue;
     for (const r of g.regs) { const k = r.ids.join(","); if (seenR.has(k)) continue; seenR.add(k); regs.push({ gi: +el.dataset.g, name: atlasName(r.ids), page: rmPageOf(el) }); }
   }
-  const rg = regs.length ? `<h4 class="rdm-toc-h">Brain regions <span>${regs.length}</span></h4>` + regs.map((r, i) => `<button type="button" class="rdm-toc-i sub${i >= 12 ? " rdm-more-reg" : ""}" data-sheet="reg-open" data-v="${r.gi}"${i >= 12 ? " hidden" : ""}><span>${esc(r.name)}</span><span class="pg">${r.page + 1}</span></button>`).join("")
+  const rg = regs.length ? `<h3 class="rdm-toc-h">Brain regions <span>${regs.length}</span></h3>` + regs.map((r, i) => `<button type="button" class="rdm-toc-i sub${i >= 12 ? " rdm-more-reg" : ""}" data-sheet="reg-open" data-v="${r.gi}"${i >= 12 ? " hidden" : ""}><span>${esc(r.name)}</span><span class="pg">${r.page + 1}</span></button>`).join("")
     + (regs.length > 12 ? `<button type="button" class="rdm-btn rdm-sumbtn" data-sheet="regs-all">Show all ${regs.length} regions</button>` : "") : "";
-  rmSheet("Contents", `<input type="search" class="rdm-find" id="rmFind" placeholder="Search this paper" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
-    <div id="rmFindOut"></div><div class="rdm-toc" id="rmTocBody">${secs}${sumBtn}${hl}<div id="rmRel"></div>${rg}${rmAbbrListHTML()}</div>`);
-  if (P && !P.demo && typeof ixRelated === "function") ixRelated(P).then(rel => {
+  const relWait = P && !P.demo && typeof ixRelated === "function";
+  const counts = { highlights: marks.length };
+  const tabs = `<div class="seg rdm-tabs" role="tablist" aria-label="Show" id="rmTocTabs">${RM_TABS.map(([k, l]) => `<button type="button" role="tab" id="rmTab-${k}" aria-controls="rmPane-${k}" aria-selected="${k === T}" tabindex="${k === T ? 0 : -1}" data-sheet="toc-tab" data-v="${k}">${l}<span class="c" id="rmTabN-${k}">${counts[k] ? counts[k] : ""}</span></button>`).join("")}</div>`;
+  const pane = (k, html) => `<div class="rdm-toc" role="tabpanel" id="rmPane-${k}" aria-labelledby="rmTab-${k}"${k === T ? "" : " hidden"}>${html}</div>`;
+  rmSheet("This paper", `<div class="rdm-tochead"><input type="search" class="rdm-find" id="rmFind" aria-label="Search this paper" placeholder="Search this paper" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search"></div>
+    <div id="rmFindOut" aria-live="polite"></div><div id="rmTocBody">${tabs}
+    ${pane("contents", secs + sumBtn + rmAbbrListHTML())}${pane("highlights", hl)}
+    ${pane("related", `<div id="rmRel">${relWait ? `<p class="rdm-empty">Looking for related papers in your library…</p>` : P && P.demo ? `<p class="rdm-empty">Related papers are found for papers in your library, not for the example.</p>` : ""}</div>${rg}`)}</div>`);
+  if (relWait) ixRelated(P).then(rel => {
     const box = $("#rmRel"); if (!box) return;
     const miss = ixMissing();
-    box.innerHTML = (rel.length ? `<h4 class="rdm-toc-h">Related in your library <span>${rel.length}</span></h4>` + rel.map(r => `<button type="button" class="rdm-toc-i sub rdm-rel" data-sheet="lib-open" data-v="${esc(r.L.id)}"><span><strong>${esc(r.L.label || "")}</strong> ${esc(r.L.title)}<span class="rdm-why">${r.why.map(esc).join(" · ")}</span></span><span class="pg">›</span></button>`).join("") : "")
+    box.innerHTML = (rel.length ? `<h3 class="rdm-toc-h">In your library <span>${rel.length}</span></h3>` + rel.map(r => `<button type="button" class="rdm-toc-i sub rdm-rel" data-sheet="lib-open" data-v="${esc(r.L.id)}"><span><strong>${esc(r.L.label || "")}</strong> ${esc(r.L.title)}<span class="rdm-why">${r.why.map(esc).join(" · ")}</span></span><span class="pg" aria-hidden="true">›</span></button>`).join("") : `<p class="rdm-empty">No related papers in your library yet.</p>`)
       + (miss ? `<p class="rdm-findn">${miss} paper${miss === 1 ? " hasn't" : "s haven't"} been read yet, so connections to ${miss === 1 ? "it" : "them"} are missing.</p><button type="button" class="rdm-btn rdm-sumbtn" data-sheet="ix-fill">Read all papers to find connections</button>` : "");
+    const n = $("#rmTabN-related"); if (n) n.textContent = rel.length ? String(rel.length) : "";
   });
   const inp = $("#rmFind");
   inp.addEventListener("input", () => { clearTimeout(RM.findT); RM.findT = setTimeout(() => rmFind(inp.value), 180); });
-  inp.addEventListener("keydown", e => { if (e.key === "Enter") inp.blur(); });
-  const on = $("#rmSheetList .on"); if (on) on.scrollIntoView({ block: "center" });
+  inp.addEventListener("keydown", e => {
+    if (e.key === "Enter") inp.blur();
+    else if (e.key === "Escape") {                     // Escape clears the search first, then closes the sheet
+      e.preventDefault(); e.stopPropagation();
+      if (inp.value) { inp.value = ""; rmFind(""); } else rmSheetClose();
+    }
+  });
+  // the tabs: arrow keys move between them (and show them), as in any tab list
+  const tl = $("#rmTocTabs");
+  tl.addEventListener("keydown", e => {
+    const ks = RM_TABS.map(([k]) => k), i = ks.indexOf(RM.tocTab || "contents");
+    const j = e.key === "ArrowRight" ? (i + 1) % ks.length : e.key === "ArrowLeft" ? (i + ks.length - 1) % ks.length : e.key === "Home" ? 0 : e.key === "End" ? ks.length - 1 : -1;
+    if (j < 0) return;
+    e.preventDefault(); e.stopPropagation(); rmTocTab(ks[j]); $("#rmTab-" + ks[j])?.focus();
+  });
+  if (find) inp.focus({ preventScroll: true });
+  else if (T === "contents") { const on = $("#rmSheetList .on"); if (on) on.scrollIntoView({ block: "center" }); }
+}
+function rmTocTab(k) {
+  RM.tocTab = k;
+  for (const [t] of RM_TABS) {
+    const b = $("#rmTab-" + t), p = $("#rmPane-" + t); if (!b || !p) continue;
+    b.setAttribute("aria-selected", String(t === k)); b.tabIndex = t === k ? 0 : -1; p.hidden = t !== k;
+  }
+  $("#rmSheetList").scrollTop = 0;
+  if (k === "contents") { const on = $("#rmSheetList .on"); if (on) on.scrollIntoView({ block: "center" }); }
 }
 function rmOpenLib(id) {
   const lib = ixPapers(), L = lib.find(x => x.id === id), prev = S.paper && lib.find(x => x.id === S.paper.id);
@@ -452,11 +527,10 @@ function rmMarkGo(id) {
 /* ---- one line per section, from Claude, kept with the reading state (and so in the backup) ---- */
 function rmSums() { try { const o = JSON.parse(localStorage.getItem("pwread:sum:" + RM.paperId) || "null"); return o && o.s; } catch { return null; } }
 async function rmSummarise() {
-  const out = $("#rmSumOut"), P = S.paper; if (!out || !P) return;
-  if (!S.sample) { out.innerHTML = `<p class="note">${esc(typeof NO_CLAUDE === "string" ? NO_CLAUDE : "Claude is off until you add your API key in Settings.")}</p>`; return; }
-  if (!PW.online()) { out.innerHTML = `<p class="note">You're offline. Claude needs a connection.</p>`; return; }
+  const out = $("#rmSumOut"), P = S.paper, pid = RM.paperId; if (!out || !P) return;
+  if (!claudeReady(out)) return;
   out.innerHTML = `<div class="thinking"><span class="dot"></span>Claude is reading the sections…</div>`;
-  const name = { intro: "Introduction", results: "Results", discussion: "Discussion", methods: "Methods", other: "Other text" };
+  const name = SEC_NAMES;
   const parts = [];
   if (P.abstract) parts.push(["Abstract", P.abstract]);
   for (const k of ["intro", "results", "discussion", "methods"]) if ((P.sections[k] || []).length) parts.push([name[k], P.sections[k].join("\n")]);
@@ -468,8 +542,8 @@ ${parts.map(([n, t]) => `### ${n}\n${t.slice(0, per)}`).join("\n\n")}`;
     const j = await S.sample.json(prompt, { maxTokens: 900, cache: { gcTime: 864e5 * 30 } });
     const s = {}; for (const [n] of parts) if (j && typeof j[n] === "string") s[n] = j[n].trim();
     if (!Object.keys(s).length) throw { code: "invalid_json" };
-    try { localStorage.setItem("pwread:sum:" + RM.paperId, JSON.stringify({ t: Date.now(), s })); } catch {}
-    if (RM.sheetKind === "toc" && !RM.sheet.hidden) rmShowToc();
+    try { localStorage.setItem("pwread:sum:" + pid, JSON.stringify({ t: Date.now(), s })); } catch {}
+    if (RM.paperId === pid && RM.sheetKind === "toc" && !RM.sheet.hidden) rmShowToc();
   } catch (e) {
     const o = $("#rmSumOut"); if (o) o.innerHTML = `<p class="note">${esc(typeof errCopy === "function" ? errCopy(e) : "Couldn't reach Claude.")}</p>`;
   }
@@ -486,22 +560,31 @@ function rmApplyLook() {
   RM.flow.style.lineHeight = rmPref("lh", "1.6");
   rmApplyAids();
 }
+// the Display sheet, in groups: text size, typeface and spacing, theme, reading guide, read aloud
 function rmShowLook() {
   const keep = RM.sheetKind === "look" && !RM.sheet.hidden ? $("#rmSheetList").scrollTop : 0;   // stay where you were after a change
   RM.sheetKind = "look";
   const look = rmPref("look", "auto"), lh = rmPref("lh", "1.6");
-  const seg = (k, opts, cur) => `<div class="rdm-seg">${opts.map(([v, l]) => `<button type="button" class="rdm-btn${v === cur ? " on" : ""}" data-sheet="${k}" data-v="${v}">${l}</button>`).join("")}</div>`;
-  rmSheet("Display", `<div class="rdm-look">
-    <div class="lbl">Text size</div><div class="rdm-seg"><button type="button" class="rdm-btn" data-sheet="size" data-v="-1" aria-label="Smaller text">A−</button><span class="sz">${RM.size}</span><button type="button" class="rdm-btn" data-sheet="size" data-v="1" aria-label="Larger text">A+</button></div>
-    <div class="lbl">Line spacing</div>${seg("lh", RM_LH, lh)}
-    <div class="lbl">Theme</div>${seg("look", RM_LOOKS, look)}
-    ${rmAidsLookHTML(seg)}</div>`);
+  // one segmented control for every choice: the selected option is pressed (aria-pressed), the same look everywhere
+  const seg = (k, opts, cur) => `<div class="seg rdm-opt" role="group">${opts.map(([v, l]) => `<button type="button" aria-pressed="${v === cur}" data-sheet="${k}" data-v="${v}">${l}</button>`).join("")}</div>`;
+  let n = 0;
+  const row = (label, ctl, note) => { const id = "rmLk" + (++n); return `<div class="rdm-row"><span class="rdm-row-l" id="${id}">${label}</span><div class="rdm-row-c">${ctl.replace(/role="group"/, `role="group" aria-labelledby="${id}"`)}</div>${note ? `<p class="rdm-aid">${note}</p>` : ""}</div>`; };
+  const grp = (title, body) => `<section class="rdm-grp" aria-labelledby="rmG${++n}"><h3 class="rdm-grp-h" id="rmG${n}">${title}</h3>${body}</section>`;
+  const i = RM_SIZES.indexOf(RM.size);
+  const size = `<div class="rdm-stepper" role="group"><button type="button" class="rdm-btn" data-sheet="size" data-v="-1" aria-label="Smaller text"${i <= 0 ? " disabled" : ""}>A−</button><output aria-live="polite">${RM.size} px</output><button type="button" class="rdm-btn" data-sheet="size" data-v="1" aria-label="Larger text"${i >= RM_SIZES.length - 1 ? " disabled" : ""}>A+</button></div>`;
+  rmSheet("Text and display", `<div class="rdm-look">
+    ${grp("Text size", row("Size", size))}
+    ${grp("Typeface and spacing", rmAidsTypeHTML(seg, row, row("Line height", seg("lh", RM_LH, lh))))}
+    ${grp("Theme", row("Page", seg("look", RM_LOOKS, look), "Auto follows the app's light or dark setting."))}
+    ${grp("Reading guide", rmAidsGuideHTML(seg, row))}
+    ${grp("Read aloud", rmWordsLookHTML(seg, row))}</div>`);
   if (keep) { const box = $("#rmSheetList"); box.scrollTop = keep; requestAnimationFrame(() => { box.scrollTop = keep; }); }
 }
 function rmSheetAction(b) {
   const k = b.dataset.sheet, v = b.dataset.v;
   if (k === "go") { rmSheetClose(); rmGo(+b.dataset.p, true); rmSave(); }
   else if (k === "size") rmResize(+v);
+  else if (k === "toc-tab") rmTocTab(v);
   else if (k === "lh") { rmSetPref("lh", v); const at = RM.pages > 1 ? RM.page / (RM.pages - 1) : 0; rmApplyLook(); rmLayout(at); rmShowLook(); }
   else if (k === "look") { rmSetPref("look", v); rmApplyLook(); rmShowLook(); }
   else if (["font", "margin", "ls", "align", "focus", "keys", "spell"].includes(k)) rmAidPref(k, v);
@@ -639,14 +722,13 @@ function rmShowRegion(gi, ri) {
   RM.sheetKind = "region"; RM.region = { gi, ri, e };
   const note = g.abbr ? `In this paper, <strong>${esc(g.word)}</strong> stands for ${esc(g.def)}.`
     : !g.region && g.def ? `<strong>${esc(g.title)}</strong>: ${esc(g.def)} <span class="muted">(from the primer)</span>` : "";
-  const pick = g.regs.length > 1 ? `<div class="rdm-seg atl-pick">${g.regs.map((r, i) => `<button type="button" class="rdm-btn${i === ri ? " on" : ""}" data-sheet="atl-reg" data-v="${i}">${esc(r.word)}</button>`).join("")}</div>` : "";
+  const pick = g.regs.length > 1 ? `<div class="seg rdm-opt atl-pick" role="group" aria-label="Region">${g.regs.map((r, i) => `<button type="button" aria-pressed="${i === ri}" data-sheet="atl-reg" data-v="${i}">${esc(r.word)}</button>`).join("")}</div>` : "";
   const box = rmSheet(g.abbr ? "Abbreviation · brain region" : "Brain region", pick + atlasSheetHTML(e, note));
   atlasFill(box, e);
 }
 async function rmExplainRegion() {
   const out = $("#rmExplain"), P = S.paper, r = RM.region; if (!out || !r) return;
-  if (!S.sample) { out.innerHTML = `<p class="note">${esc(typeof NO_CLAUDE === "string" ? NO_CLAUDE : "Claude is off until you add your API key in Settings.")}</p>`; return; }
-  if (!PW.online()) { out.innerHTML = `<p class="note">You're offline. Claude needs a connection; the atlas works offline.</p>`; return; }
+  if (!claudeReady(out, "the atlas works offline")) return;
   const ids = r.e.ids, name = atlasName(ids);
   const path = atlasLineage(ids[0]).slice(1).reverse().map(i => atlasS(i)).filter(s => s && s.a !== "root" && s.a !== "grey").map(s => s.n).join(" > ");
   out.innerHTML = `<div class="thinking"><span class="dot"></span>Claude is looking up ${esc(name)}…</div>`;
@@ -688,13 +770,12 @@ function rmLongPress(x, y) {
   RM.sheetKind = "sentence";
   rmSheet("Sentence", `<blockquote class="rdm-quote">${esc(RM.sel.quote)}</blockquote>
     <div class="rdm-seg"><button type="button" class="rdm-btn primary" data-sheet="explain">Explain</button><button type="button" class="rdm-btn" data-sheet="note">Save to notes</button></div>
-    <div class="rdm-seg rdm-hlrow"><span class="lbl">Highlight</span>${RM_HL.map(([c, l]) => `<button type="button" class="rdm-sw c-${c}${mk && mk.color === c ? " on" : ""}" data-sheet="hl" data-v="${c}" aria-label="Highlight ${l}"></button>`).join("")}${mk ? `<button type="button" class="rdm-btn" data-sheet="hl-x">Remove</button>` : ""}</div>
+    <div class="rdm-seg rdm-hlrow"><span class="lbl">Highlight</span>${RM_HL.map(([c, l]) => `<button type="button" class="rdm-sw c-${c}${mk && mk.color === c ? " on" : ""}" aria-pressed="${!!(mk && mk.color === c)}" data-sheet="hl" data-v="${c}" aria-label="Highlight ${l}"></button>`).join("")}${mk ? `<button type="button" class="rdm-btn" data-sheet="hl-x">Remove</button>` : ""}</div>
     <div class="rdm-explain" id="rmExplain"></div>`);
 }
 async function rmExplain() {
   const out = $("#rmExplain"), P = S.paper; if (!out || !RM.sel) return;
-  if (!S.sample) { out.innerHTML = `<p class="note">${esc(typeof NO_CLAUDE === "string" ? NO_CLAUDE : "Claude is off until you add your API key in Settings.")}</p>`; return; }
-  if (!PW.online()) { out.innerHTML = `<p class="note">You're offline. Claude needs a connection; everything you've saved still opens.</p>`; return; }
+  if (!claudeReady(out, "everything you've saved still opens")) return;
   out.innerHTML = `<div class="thinking"><span class="dot"></span>Claude is reading the sentence…</div>`;
   RM.explainCtl?.abort(); RM.explainCtl = new AbortController();
   const prompt = `You are helping a researcher read a scientific paper on their phone. Explain the sentence below in plain words: what it says, what any jargon or abbreviations mean, and how it fits the paper's argument. Use 3 to 6 short sentences, no preamble, no headings. If it refers to a figure panel, say what to look for in it.
@@ -757,10 +838,16 @@ function rmProgressLabel(id) {
 })();
 
 document.addEventListener("keydown", e => {
-  if (!RM.el || RM.el.hidden || (typeof FV !== "undefined" && FV.el && !FV.el.hidden)) return;
+  // e.defaultPrevented: the figure viewer (registered first) already used this key, e.g. Escape closed it
+  if (!RM.el || RM.el.hidden || e.defaultPrevented || (typeof FV !== "undefined" && FV.el && !FV.el.hidden)) return;
   if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
   if (RM.rs && RM.rs.open) { if (rmRsvpKey(e)) { e.stopPropagation(); e.preventDefault(); } return; }
+  // ⌘F / Ctrl+F: search this paper (instead of the browser's find, which can't see the other pages)
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && (e.key === "f" || e.key === "F")) { rmShowToc(null, true); e.stopPropagation(); e.preventDefault(); return; }
+  // a sheet is open: Escape closes the sheet (not the reader), and other keys don't turn pages behind it
+  if (RM.sheet && !RM.sheet.hidden) { if (e.key === "Escape") { rmSheetClose(); e.stopPropagation(); e.preventDefault(); } return; }
   if (e.key === "Escape") rmClose();
+  else if ((e.key === "f" || e.key === "F") && !e.metaKey && !e.ctrlKey && !e.altKey && rmSideFits()) rmSideToggle();   // the figure beside the text
   // with a reading guide on, the arrows and the space bar move it; Page Up/Down still turn pages
   else if (RM.focusOn && (e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === " ")) rmFocusStep(1);
   else if (RM.focusOn && (e.key === "ArrowUp" || e.key === "ArrowLeft")) rmFocusStep(-1);

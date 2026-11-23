@@ -12,7 +12,20 @@ async function initClaude() {
   render(); renderChat();
   const P = S.paper; if (P && !P.demo && !P.primer && S.sample) genPrimer();
 }
-function claudeOff(e) { if (e && ["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { S.sample = null; render(); } }
+// before a Claude request that writes into out: say why not, if Claude is off or there's no connection
+function claudeReady(out, offlineToo) {
+  if (!S.sample) { out.innerHTML = `<p class="note">${esc(NO_CLAUDE)}</p>`; return false; }
+  if (!PW.online()) { out.innerHTML = `<p class="note">You're offline. Claude needs a connection${offlineToo ? "; " + esc(offlineToo) : ""}.</p>`; return false; }
+  return true;
+}
+function claudeOff(e) {
+  if (!e) return;
+  if (e.code === "bad_key") {                          // a revoked or mistyped key: stop offering Claude until it's fixed
+    if (S.sample) { S.sample = null; toast("Claude rejected your API key, so Claude is off. Check the key in Settings.", 7000); render(); if (typeof renderChat === "function") renderChat(); }
+    return;
+  }
+  if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { S.sample = null; render(); }
+}
 
 function cacheKey() { return "pw:" + (S.paper?.id || "none"); }
 function saveCache() { persistPaper(S.paper); }
@@ -32,7 +45,7 @@ ${intro}`;
   try {
     const j = await S.sample.json(prompt, { cache: force ? { gcTime: 86400000, refresh: true } : { gcTime: 86400000 } });
     if (!j || !Array.isArray(j.background)) throw { code: "invalid_json" };
-    P.primer = j; saveCache();
+    P.primer = j; persistPaper(P);
   } catch (e) { P.primerErr = errCopy(e); claudeOff(e); }
   P.primerBusy = false; render();
 }
@@ -40,7 +53,7 @@ async function checkRestate() {
   const P = S.paper, txt = $("#restate").value.trim();
   if (!txt) { toast("Write the question in your own words first."); return; }
   P.restate = txt;
-  if (!S.sample) { P.revealed = true; saveCache(); render(); return; }
+  if (!S.sample) { P.revealed = true; persistPaper(P); render(); return; }
   P.checkBusy = true; render();
   const ref = P.primer ? `Authors' goal: ${P.primer.goal}\nCore question: ${P.primer.coreQuestion}\nHypothesis: ${P.primer.hypothesis || "n/a"}` : "";
   const prompt = `A researcher read the introduction of a paper and wrote what they think its core question is. Judge whether they got it, as a rigorous but fair supervisor. Reply with only JSON: {"verdict": "match" | "partial" | "miss", "feedback": "2-3 sentences: what they got right and what is missing or off", "missing": "the key element they missed, or null"}
@@ -54,7 +67,7 @@ ${P.sections.intro.join("\n\n").slice(0, 12000)}
 READER'S VERSION: ${txt}`;
   try { P.verdict = await S.sample.json(prompt, { cache: false }); P.revealed = true; }
   catch (e) { toast(errCopy(e)); claudeOff(e); }
-  P.checkBusy = false; saveCache(); render();
+  P.checkBusy = false; persistPaper(P); render();
 }
 async function genBrief(fig) {
   const P = S.paper; if (!S.sample) return;
@@ -66,7 +79,7 @@ Core question of the paper: ${P.primer?.coreQuestion || "(not given)"}
 LEGEND: ${fig.legend}
 TEXT CITING THIS FIGURE:
 ${paras}`;
-  try { P.briefs[fig.n] = await S.sample.json(prompt, { cache: { gcTime: 86400000 } }); saveCache(); }
+  try { P.briefs[fig.n] = await S.sample.json(prompt, { cache: { gcTime: 86400000 } }); persistPaper(P); }
   catch (e) { toast(errCopy(e)); claudeOff(e); }
   fig.briefBusy = false; render();
 }
@@ -81,8 +94,18 @@ async function renderPage(pg, width = 1500) {
   await page.render({ canvasContext: ctx, viewport: vp }).promise;
   return c;
 }
-const pageCache = new Map();
-async function pageCanvas(pg) { if (!pageCache.has(pg)) pageCache.set(pg, renderPage(pg)); return pageCache.get(pg); }
+// rendered pages of the open paper: each is a ~1500 px canvas (about 12 MB), so keep only the last few
+const pageCache = new Map(), PAGE_CACHE_MAX = 3;
+async function pageCanvas(pg) {
+  let p = pageCache.get(pg);
+  if (p) { pageCache.delete(pg); pageCache.set(pg, p); return p; }                  // most recently used last
+  p = renderPage(pg);
+  p.catch(() => { if (pageCache.get(pg) === p) pageCache.delete(pg); });          // a failed render is tried again next time
+  pageCache.set(pg, p);
+  // drop the oldest; a caller still holding one keeps it until it's done (it is freed when no longer used)
+  while (pageCache.size > PAGE_CACHE_MAX) pageCache.delete(pageCache.keys().next().value);
+  return p;
+}
 function cropTo(canvas, b) {
   const x = Math.round(b.x * canvas.width), y = Math.round(b.y * canvas.height), w = Math.max(20, Math.round(b.w * canvas.width)), h = Math.max(20, Math.round(b.h * canvas.height));
   const c = document.createElement("canvas"); c.width = w; c.height = h;
@@ -169,9 +192,8 @@ async function prepareFigure(fig, redetect) {
     else if (fig.autoBox) { fig.img = cropTo(cv, fig.autoBox); fig.panels = null; fig.cropped = true; }
     else { fig.img = cv.toDataURL("image/jpeg", .9); fig.panels = null; fig.cropped = false; }
     fig.letters = [...new Set([...fig.letters, ...(fig.panels || []).map(p => p.label)])].sort();
-    saveCache();
+    persistPaper(P);
   } catch (e) { fig.err = errCopy(e); claudeOff(e); try { const cv = await pageCanvas(fig.page); fig.img = cv.toDataURL("image/jpeg", .9); } catch {} }
   fig.busy = false; render();
-  if (P.doc && !P.phoneOff && A.api) { clearTimeout(A.t); A.t = setTimeout(() => syncPaper(P), 2500); }
 }
 

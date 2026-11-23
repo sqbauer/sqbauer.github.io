@@ -22,15 +22,26 @@ PW.reloadSaved = async function () {
 };
 PW.reloadClaude = async function () { S.claudeChecked = false; await initClaude(); };
 
-// boot order: database -> folder access -> other devices' changes -> first-run import -> saved work -> Claude -> folder scan
+// boot order: database -> folder access -> saved work (shown at once) -> Claude -> folder scan; then, in the
+// background, the other devices' changes (iCloud can be slow or offline) and the first-run import, which refresh
+// the screen when anything comes in
 PW.boot = async function () {
   await PW.dbReady;
   const hasFolder = await PW.files.restore();
-  // what your other devices changed comes in before the saved work is loaded (and before any first-run import)
-  if (hasFolder) await PW.sync.read().catch(e => console.warn("sync", e));
-  if (hasFolder) await PW.backup.firstRunImport().catch(e => console.warn("import", e));
   await initDb();
-  if (hasFolder) setTimeout(() => PW.sync.write(), 3000);
   initClaude();
-  if (hasFolder) PW.files.scan();
+  if (hasFolder) {
+    PW.files.scan();
+    (async () => {
+      const n = await PW.sync.read().catch(e => { console.warn("sync", e); return 0; });
+      const imported = await PW.backup.firstRunImport().catch(e => { console.warn("import", e); return 0; });   // reloads by itself
+      if (n && !imported) {
+        await PW.reloadSaved();
+        if (S.paper && !S.paper.demo) await hydrate(S.paper);
+        if (S.view !== "settings") render();
+        toast(`Synced ${n} change${n === 1 ? "" : "s"} from your ${PW.sync.lastPeerName()}`);
+      }
+      setTimeout(() => PW.sync.write(), 3000);
+    })();
+  }
 };
