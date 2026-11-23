@@ -1,0 +1,31 @@
+/* overlays */
+.drop{position:fixed;inset:0;z-index:50;background:color-mix(in srgb,var(--accent) 18%,transparent);display:grid;place-items:center;border:3px dashed var(--accent);font-weight:600;font-size:20px;color:var(--ink)}
+.progress{position:fixed;inset:0;z-index:60;background:color-mix(in srgb,var(--bg) 82%,transparent);display:grid;place-items:center;padding:16px}
+.progress .card{width:min(440px,100%);display:flex;flex-direction:column;gap:10px}
+.progress li{list-style:none;display:flex;gap:10px;align-items:center;font-size:14px;color:var(--muted)}
+.progress li.done{color:var(--ink)}.progress li.done::before{content:"✓";color:var(--good);width:12px}
+.progress li.run{color:var(--ink)}.progress li.run::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse .8s infinite alternate;margin:0 2px}
+.progress li.todo::before{content:"·";width:12px;text-align:center}
+.progress ul{padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:8px;z-index:70;font-size:14px;max-width:calc(100% - 32px)}
+
+@media (max-width:1100px){
+  .app.chat-open{grid-template-columns:minmax(0,1fr)}
+  .chat{position:fixed;right:0;top:0;bottom:0;height:auto;width:min(420px,100%);z-index:40;box-shadow:-10px 0 30px rgba(0,0,0,.18)}
+}
+@media (max-width:860px){
+  .cols,.figbody{grid-template-columns:minmax(0,1fr)}
+  .primer{position:static}
+  .top{position:static}
+  .stage{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);padding-block:6px 4px;margin-inline:-4px;padding-inline:4px}
+  .stage .frame{width:min(100%, calc(36vh * var(--ar, 1.3)));margin-inline:auto}
+  .stage .stagebar{display:none}
+  .stage .panelrow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;justify-content:flex-start}
+  .stage .panelrow .note{display:none}
+  .pchip{min-width:40px;height:36px}
+  .fighead h2{font-size:18px}
+  .reveal{grid-template-columns:minmax(0,1fr)}
+  h2{font-size:22px}
+  .reading{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

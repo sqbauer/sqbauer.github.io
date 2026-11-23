@@ -1,0 +1,56 @@
+/* Phone-first layer for the iOS app: loaded last, only overrides. Figure stays sticky at the top
+   with the text scrolling under it (set up in overlays.css at <=860px); this file tightens the
+   header, makes the panel buttons a swipeable row, turns chat into a full-screen sheet with a
+   floating "Ask" button, and makes taps behave (no hover, no double-tap zoom). */
+
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+button,.seg,.sent.has,[data-record]{touch-action:manipulation}
+main{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+/* no browser default margin (claude.ai's frame reset it), and the page starts below the status bar / notch; without the padding the header sits under the safe-area cover (body::before) until you scroll */
+body{margin:0;padding-top:env(safe-area-inset-top,0px)}
+
+/* settings */
+.settings .card{margin-top:16px}
+.settings p{margin:8px 0 0}
+.setrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.setrow input{flex:1 1 200px;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--sunk);color:var(--ink);font:15px var(--f-mono)}
+.iconbtn{padding:7px 9px}
+
+/* offline pill */
+.offline{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 6px);z-index:45;pointer-events:none;
+  background:var(--ink);color:var(--surface);font-size:12.5px;padding:5px 12px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+
+/* touch screens: no hover styling, iOS doesn't zoom into inputs of 16px+ */
+@media (hover:none){
+  .btn:hover{border-color:var(--line)}
+  .btn.primary:hover{filter:none;border-color:var(--accent)}
+  input,textarea,select{font-size:16px!important}
+}
+
+@media (max-width:600px){
+  /* compact header: logo mark, one-line title, small buttons */
+  .top-row{flex-wrap:nowrap;gap:10px;min-height:52px;padding-block:6px}
+  .brand{font-size:0;gap:0}
+  .brand-mark{width:26px;height:26px}
+  .paper-id .t{font-size:15px}
+  .paper-id .s{font-size:11.5px}
+  #openBtn{display:none}
+  .top .btn{padding:6px 10px}
+  .steps{margin-inline:-4px;scroll-snap-type:x proximity}
+  .step{padding:9px 10px 10px;scroll-snap-align:start}
+
+  /* figure stage: panel buttons as one swipeable row with comfortable tap targets */
+  .stage .panelrow{gap:8px;padding:2px 2px 6px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+  .stage .pchip{min-width:44px;height:40px;flex:0 0 auto;scroll-snap-align:start}
+  .stage{top:env(safe-area-inset-top,0px)}
+
+  /* chat: floating Ask button, full-screen sheet */
+  #chatBtn{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:35;
+    border-radius:999px;padding:12px 18px;background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 8px 24px rgba(0,0,0,.22)}
+  .app.chat-open #chatBtn{display:none}
+  .chat{position:fixed;inset:0;width:100%!important;height:auto;z-index:40;border-left:0;box-shadow:none;padding-top:env(safe-area-inset-top,0px)}
+  .composer{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+
+  .libhead .btn{padding:8px 12px}
+  h2{font-size:21px}
+}

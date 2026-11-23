@@ -1,0 +1,227 @@
+/* Reading mode (js/readmode.js): the paper as pages. Follows the app's light/dark theme. */
+.rdm{position:fixed;inset:0;z-index:52;background:var(--surface);color:var(--ink);display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+/* quick taps turn pages: they must never trigger the browser's double-tap or pinch zoom */
+.rdm *{touch-action:manipulation}
+.rdm .rdm-vp,.rdm .rdm-vp *{touch-action:none}
+html.rdm-open,html.rdm-open body{overflow:hidden}
+.rdm-top,.rdm-bot{display:flex;align-items:center;gap:10px;padding:8px 12px 8px 20px;min-height:52px;flex:0 0 auto}
+.rdm-top{justify-content:space-between;border-bottom:1px solid var(--line)}
+.rdm-bot{padding:8px 12px;border-top:1px solid var(--line)}
+.rdm-where{font:500 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rdm-tools{display:flex;gap:6px;flex:0 0 auto}
+.rdm-btn{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:0 12px;min-width:44px;height:40px;font-size:15px}
+.rdm-btn:active{background:var(--sunk)}
+.rdm-btn:disabled{opacity:.35}
+.rdm-arrow{font-size:24px;line-height:1;padding:0}
+.rdm-prog{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;font:500 12px var(--f-mono);color:var(--muted);
+  padding:10px 10px 2px;touch-action:none!important;cursor:pointer}   /* tall enough to grab with a thumb */
+.rdm-bar{width:100%;height:4px;border-radius:2px;background:var(--line);position:relative}
+.rdm-bar i{display:block;height:100%;background:var(--accent);width:0;border-radius:2px;position:relative}
+.rdm-bar i::after{content:"";position:absolute;right:-8px;top:50%;width:16px;height:16px;margin-top:-8px;border-radius:50%;background:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.rdm-prog.on .rdm-bar i::after{transform:scale(1.35)}
+.rdm-prog.on #rmCount{color:var(--ink)}
+.rdm-vp{flex:1 1 auto;min-height:0;overflow:hidden;position:relative;touch-action:none}
+/* the text flows into screen-wide columns; turning a page scrolls the reading area sideways (set from JS) */
+.rdm-flow{box-sizing:border-box;column-fill:auto;line-height:1.6;margin:14px 0;
+  border:0!important;background:transparent!important;padding-block:0!important;border-radius:0!important;box-shadow:none!important;max-width:none!important}
+.rdm-flow p{margin:0 0 .9em;orphans:2;widows:2;hyphens:auto;-webkit-hyphens:auto}
+.rdm-flow h2.rdm-title{font-size:1.25em;line-height:1.25;margin:0 0 .8em;font-family:var(--f-ui)}
+.rdm-flow .ref{font-size:.82em;padding:3px 7px;margin:0 1px}
+
+/* Read button: in the header on wide screens, a floating pill opposite "Ask about the paper" on phones */
+@media (max-width:600px){
+  #readBtn{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:35;
+    border-radius:999px;padding:12px 18px;background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.22)}
+  .app.chat-open #readBtn{display:none}
+}
+
+/* citations collapsed to a chip; tapping it opens a sheet listing them */
+.rdm-flow .rdm-cite{font:500 .7em var(--f-mono);letter-spacing:.02em;color:var(--muted);background:var(--sunk);border:1px solid var(--line);
+  border-radius:999px;padding:1px 7px;margin:0 1px;vertical-align:.12em;line-height:1.4;white-space:nowrap}
+.rdm-flow .rdm-cite:active{background:var(--line)}
+.rdm-sheet{position:absolute;left:0;right:0;bottom:0;z-index:2;max-height:62%;display:flex;flex-direction:column;background:var(--surface);
+  border-top:1px solid var(--line);border-radius:14px 14px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.18);
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+.rdm-sheet[hidden]{display:none}
+.rdm-sheet-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px 8px 20px;border-bottom:1px solid var(--line)}
+.rdm-sheet-list{margin:0;padding:6px 20px 16px 20px;overflow-y:auto;-webkit-overflow-scrolling:touch;list-style:none;-webkit-user-select:text;user-select:text}
+.rdm-sheet-list li{padding:10px 0;border-bottom:1px solid var(--line)}
+.rdm-sheet-list li:last-child{border-bottom:0}
+.rdm-cite-k{font-weight:600;font-size:15px}
+.rdm-cite-ref{font-family:var(--f-read);font-size:14.5px;line-height:1.5;margin-top:4px}
+.rdm-cite-ref.none{font-family:var(--f-ui);font-size:13px;color:var(--muted)}
+
+/* headings: bold, and each one opens a new page so a section always starts at the top */
+.rdm-flow h3{font:700 1.2em/1.3 var(--f-ui);color:var(--ink);letter-spacing:-.01em;margin:0 0 .7em;
+  break-before:column;-webkit-column-break-before:always;break-after:avoid;-webkit-column-break-after:avoid}
+.rdm-flow h4.rdm-sub{font:700 1.05em/1.35 var(--f-ui);color:var(--ink);margin:0 0 .6em;
+  break-before:column;-webkit-column-break-before:always;break-after:avoid;-webkit-column-break-after:avoid}
+/* no empty page between the title and the abstract, or between a section heading and its first subheading */
+.rdm-flow h2 + h3,.rdm-flow h3 + h4.rdm-sub{break-before:auto;-webkit-column-break-before:auto}
+.rdm-flow h3 + h4.rdm-sub{margin-top:.4em}
+
+/* contents button: the section name at the top */
+.rdm-where{background:none;border:0;padding:6px 4px;margin:0;text-align:left;cursor:pointer;color:var(--muted)}
+.rdm-where::after{content:" ▾";font-size:.9em}
+.rdm-list{list-style:none;margin:0;padding:0}
+.rdm-toc{display:flex;flex-direction:column;padding:4px 0 8px}
+.rdm-toc-i{display:flex;justify-content:space-between;gap:12px;align-items:baseline;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);
+  padding:12px 2px;font:600 16px var(--f-ui);color:var(--ink)}
+.rdm-toc-i.sub{font-weight:400;font-size:15px;padding-left:18px;color:var(--ink)}
+.rdm-toc-i .pg{font:500 12px var(--f-mono);color:var(--muted);flex:0 0 auto}
+.rdm-toc-i.on{color:var(--accent)}
+/* display settings */
+.rdm-look{padding:6px 0 10px}
+.rdm-look .lbl{font:600 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+.rdm-seg{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.rdm-seg .sz{font:500 14px var(--f-mono);min-width:40px;text-align:center;color:var(--muted)}
+.rdm-btn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink,#fff)}
+.rdm-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+/* hidden Methods */
+.rdm-more{border:1px dashed var(--line);border-radius:10px;padding:14px;margin:.6em 0 1em;font-family:var(--f-ui);font-size:.85em;color:var(--muted)}
+.rdm-more p{margin:0 0 10px}
+/* a figure the first time it is mentioned */
+.rdm-figcard{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;margin:0 0 1em;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:8px;background:var(--sunk);color:var(--ink);font-family:var(--f-ui);break-inside:avoid;-webkit-column-break-inside:avoid}
+.rdm-figcard .k{font:600 .7em var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.rdm-figcard .t{font-size:.8em;line-height:1.35}
+.rdm-figcard .go{font-size:.72em;color:var(--accent);font-weight:600}
+/* terms and abbreviations with a meaning on tap */
+.rdm-flow .rdm-term{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;line-height:inherit;
+  text-decoration:underline dotted;text-decoration-color:var(--muted);text-underline-offset:.18em;cursor:pointer}
+.rdm-def{padding:10px 0 14px}
+.rdm-def .note{font:13px var(--f-ui);color:var(--muted);margin:10px 0 0}
+/* long-pressed sentence */
+::highlight(rdm-sel){background-color:rgba(255,216,74,.55);color:inherit}
+.rdm-quote{margin:10px 0;padding:8px 12px;border-left:3px solid var(--accent);font-family:var(--f-read);font-size:15px;line-height:1.5;color:var(--ink)}
+.rdm-explain{font-family:var(--f-read);font-size:15px;line-height:1.55;padding-bottom:12px}
+.rdm-explain p{margin:.6em 0}
+.rdm-explain .note{font:13px var(--f-ui);color:var(--muted)}
+.rdm-explain .rdm-btn{margin-top:6px}
+/* a citation the viewer sent you back to */
+@keyframes rdmflash{0%,40%{background:rgba(255,216,74,.85)}100%{background:var(--sunk)}}
+.rdm-flow .ref.flash{animation:rdmflash 2.2s ease-out}
+/* themes */
+.rdm[data-look=light]{--surface:#fff;--ink:#1c2230;--muted:#5d6779;--line:#dfe3ea;--sunk:#f4f6f9;--bg:#fff;color-scheme:light}
+.rdm[data-look=sepia]{--surface:#f5ecd9;--ink:#3b2f22;--muted:#7a6a55;--line:#e3d5bb;--sunk:#efe3cb;--bg:#f5ecd9;--accent:#8a5a1f;color-scheme:light}
+.rdm[data-look=dark]{--surface:#121418;--ink:#e3e5e9;--muted:#9aa1ad;--line:#2a2f38;--sunk:#1a1e24;--bg:#121418;--accent:#8aa5ff;color-scheme:dark}
+
+/* brain regions: atlas sheet */
+.rdm-flow .rdm-term.reg{text-decoration-style:solid;text-decoration-color:color-mix(in srgb,var(--accent) 55%,transparent);text-decoration-thickness:1.5px}
+.atl{padding:6px 0 14px}
+.atl-name{font:700 17px/1.3 var(--f-ui);color:var(--ink)}
+.atl-meta{margin-top:4px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.atl-acr{font:600 12px var(--f-mono);color:var(--accent);margin-right:4px}
+.atl-note{font:14px/1.5 var(--f-read);margin:10px 0 0;color:var(--ink)}
+.atl-note .muted{color:var(--muted);font-size:12.5px}
+.atl-pick{margin:4px 0 8px;flex-wrap:wrap}
+.atl-views{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+@media (min-width:600px){.atl-views{grid-template-columns:1fr 1fr}}
+.atl-view{display:flex;flex-direction:column;gap:4px;padding:0;margin:0;background:none;border:0;color:inherit;text-align:left;cursor:zoom-in}
+.atl-view.zoomed{cursor:zoom-out}
+.atl-svg{width:100%;aspect-ratio:1.45;border:1px solid var(--line);border-radius:10px;background:var(--sunk);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.atl-view[data-plane=sagittal] .atl-svg{aspect-ratio:1.75}
+.atl-svg svg{width:100%;height:100%;display:block}
+.atl-svg path{vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.atl-out{fill:var(--surface);stroke:var(--ink);stroke-width:1.2}
+.atl-lines path{fill:none;stroke:var(--muted);stroke-opacity:.55;stroke-width:.6}
+.atl-hit path{fill:#e0533b;fill-opacity:.72;stroke:#b83a24;stroke-width:1}
+.atl-mark{stroke:var(--accent);stroke-width:1;stroke-dasharray:4 4;vector-effect:non-scaling-stroke;opacity:.7}
+.atl-wait{font:13px var(--f-ui);color:var(--muted)}
+.atl-cap{font:500 11.5px var(--f-mono);color:var(--muted);letter-spacing:.02em}
+.atl-hint{font:12px var(--f-ui);color:var(--muted);margin:8px 0 0}
+.atl-info{font:14.5px/1.55 var(--f-read);margin:12px 0 4px;color:var(--ink)}
+.atl .rdm-seg{margin-top:12px}
+.atl-link{display:inline-flex;align-items:center;text-decoration:none}
+.atl-cite{font:11.5px/1.4 var(--f-ui);color:var(--muted);margin:12px 0 0}
+.rdm-sheet.tall{max-height:86%}
+/* highlights */
+.rdm-flow mark{color:inherit;border-radius:2px;padding:0;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.rdm-flow mark.rdm-hl.c-y,.rdm-dot.c-y,.rdm-sw.c-y{background:rgba(255,212,0,.42)}
+.rdm-flow mark.rdm-hl.c-g,.rdm-dot.c-g,.rdm-sw.c-g{background:rgba(64,192,87,.32)}
+.rdm-flow mark.rdm-hl.c-p,.rdm-dot.c-p,.rdm-sw.c-p{background:rgba(240,101,149,.32)}
+.rdm-flow mark.rdm-hl.c-b,.rdm-dot.c-b,.rdm-sw.c-b{background:rgba(77,148,255,.32)}
+.rdm-flow mark.rdm-found{background:rgba(255,150,0,.6);animation:rdmfound 2.6s ease-out forwards}
+@keyframes rdmfound{0%,50%{background:rgba(255,150,0,.65)}100%{background:transparent}}
+.rdm-hlrow{gap:10px}
+.rdm-hlrow .lbl{font:500 13px var(--f-ui);color:var(--muted);margin-right:2px}
+.rdm-sw{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer}
+.rdm-sw.on{border-color:var(--ink)}
+.rdm-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:1px;flex:0 0 auto}
+/* contents: search, summaries, highlights, regions */
+.rdm-find{width:100%;box-sizing:border-box;margin:8px 0 4px;padding:10px 12px;font:16px var(--f-ui);color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:10px;-webkit-appearance:none;appearance:none}
+.rdm-findn{font:12.5px var(--f-ui);color:var(--muted);margin:8px 2px 2px}
+.rdm-hit span:first-child{font:400 14px/1.45 var(--f-read)}
+.rdm-hit b{background:rgba(255,212,0,.45);font-weight:600;border-radius:2px}
+.rdm-sum{display:block;font:400 13.5px/1.45 var(--f-read);color:var(--muted);margin-top:4px}
+.rdm-sumbtn{margin:12px 0 4px;height:auto;min-height:40px;padding:8px 12px;text-align:left}
+.rdm-toc-h{font:600 12px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:22px 2px 2px}
+.rdm-toc-h span{color:var(--accent);margin-left:4px}
+.rdm-hlitem span:first-child{font:400 14px/1.45 var(--f-read);display:flex;align-items:baseline}
+.rdm-hlitem .rdm-dot{transform:translateY(1px)}
+/* references in your library, related papers */
+.rdm-inlib{margin-top:8px;height:34px;font-size:13.5px;color:var(--accent);border-color:var(--accent)}
+.rdm-rel span:first-child{font:400 14px/1.4 var(--f-ui);display:block}
+.rdm-rel strong{font-weight:600;margin-right:4px}
+.rdm-why{display:block;font:12.5px/1.35 var(--f-ui);color:var(--accent);margin-top:3px}
+/* reading aids (js/readaids.js) */
+.rdm-aid{font:13px/1.4 var(--f-ui);color:var(--muted);margin:-2px 0 4px}
+.rdm-look .rdm-toc-h{margin-top:22px}
+.rdm-flow .rdm-key{font-weight:600}
+/* line focus: everything but the current sentence fades (colour only, nothing that changes the layout) */
+.rdm.focus .rdm-flow .rdm-s:not(.cur),.rdm.focus .rdm-flow h2,.rdm.focus .rdm-flow h3,.rdm.focus .rdm-flow h4,
+.rdm.focus .rdm-flow .rdm-figcard,.rdm.focus .rdm-flow .rdm-more{opacity:.28}
+/* abbreviations spelled out after their first use in each section */
+.rdm.spell .rdm-flow .rdm-term[data-lf]{text-decoration:none}   /* an underline would run under the full name too */
+.rdm.spell .rdm-flow .rdm-term[data-lf]::after{content:" (" attr(data-lf) ")";font-size:.82em;color:var(--muted);text-decoration:none;display:inline}
+.rdm-abbr .muted{color:var(--muted);font-style:italic}
+.rdm.focus .rdm-flow .rdm-term[data-lf]:not(:has(.cur))::after{opacity:.28}
+/* wide screens (the Mac): the figure beside the text (js/readside.js) */
+.rdm-main{flex:1 1 auto;min-height:0;display:flex}
+.rdm-main .rdm-vp{flex:1 1 auto;min-width:0}
+.rdm-side{display:none}
+@media (min-width:1100px){
+  .rdm-side:not([hidden]){display:flex;flex-direction:column;gap:12px;flex:0 0 44%;max-width:720px;min-width:0;overflow-y:auto;
+    border-left:1px solid var(--line);padding:14px 20px 20px;background:var(--surface);-webkit-user-select:text;user-select:text}
+}
+.rdm-side>*{flex:0 0 auto;min-width:0}   /* never squeezed: the panel scrolls instead (a tall figure spilled over its legend) */
+.rdm-side-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rdm-side-h .k{font:600 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+.rdm-side-h .k span{color:var(--muted);font-weight:500}
+.rdm-side-nav{display:flex;gap:6px}
+.rdm-side-img{display:flex;align-items:center;justify-content:center;min-height:180px;padding:8px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:zoom-in}
+.rdm-side-img img{display:block;max-width:100%;max-height:62vh;object-fit:contain}
+.rdm-side-wait{font:13px var(--f-ui);color:#6b7280}
+.rdm-side-text h4{margin:0 0 6px;font:600 15px/1.4 var(--f-ui);color:var(--ink)}
+.rdm-side-text p{margin:0;font:14px/1.55 var(--f-read);color:var(--ink)}
+/* reading guide, line by line (js/readaids.js): a band over the current line; its wide shadow dims the rest of the page */
+.rdm-band{position:absolute;z-index:2;pointer-events:none;border-radius:6px;
+  background:color-mix(in srgb,#ffd84a 24%,transparent);
+  box-shadow:0 0 0 300vmax color-mix(in srgb,var(--surface) 64%,transparent);
+  transition:top .16s ease,left .16s ease,width .16s ease,height .16s ease}
+.rdm-band.quiet{transition:none}
+.rdm-band[hidden],.rdm:not(.lfocus) .rdm-band{display:none}
+@media (prefers-reduced-motion:reduce){.rdm-band{transition:none}}
+/* word guide and read aloud (js/readwords.js) */
+.rdm-main{position:relative}
+.rdm-wband{position:absolute;z-index:3;pointer-events:none;border-radius:4px;background:color-mix(in srgb,#ffd84a 30%,transparent);box-shadow:inset 0 -3px 0 #e0a400}
+.rdm-wband[hidden]{display:none}
+.rdm-speak.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.rdm-rsvp{position:absolute;left:0;top:0;bottom:0;z-index:6;background:var(--surface);color:var(--ink);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:22px;padding:20px 16px;-webkit-user-select:none;user-select:none;cursor:pointer}
+.rdm-rsvp[hidden]{display:none}
+.rdm-rsvp-ctx{font:600 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.rdm-rsvp-word{position:relative;display:grid;grid-template-columns:1fr auto 1fr;width:100%;max-width:720px;padding:22px 0;
+  font-size:clamp(34px,9vw,56px);line-height:1.2;font-weight:500;white-space:pre;border-block:1px solid var(--line)}
+.rdm-rsvp-word::before,.rdm-rsvp-word::after{content:"";position:absolute;left:50%;width:2px;height:10px;background:var(--muted);transform:translateX(-50%)}
+.rdm-rsvp-word::before{top:0}.rdm-rsvp-word::after{bottom:0}
+.rdm-rsvp-word .pre{justify-self:end}.rdm-rsvp-word .post{justify-self:start}.rdm-rsvp-word .piv{color:#e5484d}
+.rdm-rsvp-bar{width:min(420px,80%);height:3px;border-radius:2px;background:var(--line);overflow:hidden}
+.rdm-rsvp-bar i{display:block;height:100%;width:0;background:var(--muted)}
+.rdm-rsvp-ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;cursor:default}
+.rdm-rsvp-ctl .wpm{font:600 14px var(--f-mono);min-width:84px;text-align:center}
+.rdm-rsvp-play{min-width:84px}
+.rdm-rsvp-hint{margin:0;font:13px var(--f-ui);color:var(--muted);text-align:center}
+.rdm-voice{width:100%;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:15px var(--f-ui);padding:0 8px;margin:6px 0}

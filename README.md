@@ -94,6 +94,22 @@ Playwright with Chromium; local only).
 - The page is not linked from the home page yet. To list it there, add an entry to `tools` in
   `_data/site.json` (or a new section in `scripts/render.mjs`) and run `npm run render`.
 
+## Web app: `panelwise/`
+
+Panelwise, served at <https://sqbauer.github.io/panelwise/>: open one scientific paper as a PDF and read
+it figure by figure. It is **built, not hand-written**: the source lives in the (private) Panelwise
+repository, and this folder is its output. Don't edit it here; rebuild it from the Panelwise checkout:
+
+```bash
+npm run web -- ../sqbauer.github.io/panelwise
+```
+
+- **Privacy:** the PDF is read in the browser tab and never uploaded. The paper's parsed text and your
+  notes are kept in the browser's IndexedDB so reopening the same PDF picks up where you left off.
+- **No Claude:** the summaries and chat of the app are left out, so there are no API keys or calls.
+- **Not in CI** (it isn't checked by the validators, link check or Lighthouse) and not linked from the
+  home page yet.
+
 ## How deploy works
 
 GitHub Pages serves the `main` branch root (Settings → Pages → Deploy from a branch). Every push to
