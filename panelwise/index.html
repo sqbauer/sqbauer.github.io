@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" data-pw="single">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Panelwise · read a paper figure by figure</title>
+<meta name="description" content="Open a scientific paper as a PDF and read it figure by figure, with each panel linked to the text that describes it. The PDF is read in your browser and never uploaded.">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/reader.css">
+<link rel="stylesheet" href="css/library.css">
+<link rel="stylesheet" href="css/review.css">
+<link rel="stylesheet" href="css/overlays.css">
+<link rel="stylesheet" href="css/phone.css">
+<link rel="stylesheet" href="css/figview.css">
+<link rel="stylesheet" href="css/readmode.css">
+<link rel="stylesheet" href="css/feed.css">
+</head>
+<body>
+
+<div class="app" id="app">
+  <div style="min-width:0">
+    <header class="top">
+      <div class="top-row">
+        <button class="brand" id="brandBtn" type="button" title="Back to your library"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Panelwise</button>
+        <div class="paper-id"><span class="t" id="pTitle"></span><span class="s"><span id="pSub"></span><span id="pTags" class="tags"></span></span></div>
+        <input type="file" id="fileIn" accept="application/pdf,.pdf" hidden>
+        <input type="file" id="dirIn" hidden>
+        <button class="btn" id="libBtn" type="button">Library</button>
+        <button class="btn" id="openBtn" type="button">Open PDF</button>
+        <button class="btn" id="chatBtn" type="button" aria-expanded="false">Ask about the paper</button>
+        <button class="btn ghost iconbtn" id="setBtn" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.5 7.5 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.5 7.5 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg></button>
+      </div>
+      <nav class="steps" role="tablist" id="steps"></nav>
+    </header>
+    <main id="main"></main>
+  </div>
+  <aside class="chat" id="chat" hidden>
+    <div class="chat-h"><div><strong>Ask about this paper</strong><div class="ctx" id="chatCtx"></div></div><button class="btn ghost" id="chatClose" type="button" aria-label="Close chat">Close</button></div>
+    <div class="msgs" id="msgs"></div>
+    <div class="sugs" id="sugs"></div>
+    <form class="composer" id="composer"><textarea id="chatIn" placeholder="Ask about methods, results, a panel…" rows="1"></textarea><button class="btn primary" id="sendBtn" type="submit">Send</button></form>
+  </aside>
+</div>
+<div class="drop" id="drop" hidden>Drop the PDF to read it</div>
+<div class="progress" id="progress" hidden><div class="card"><strong id="progTitle">Reading paper</strong><ul id="progList"></ul><div class="note" id="progNote"></div></div></div>
+<div class="toast" id="toast" hidden></div>
+<div class="offline" id="offline" role="status" hidden>Offline · reading works, Claude needs a connection</div>
+<!-- platform adapter: Anthropic SDK, SQLite, Papers folder (replaces claude.ai's window.claude.use) -->
+<script src="vendor/deps.js"></script>
+<script src="js/platform/native.js"></script>
+<script src="js/platform/sample.js"></script>
+<script src="js/platform/db.js"></script>
+<script src="js/platform/files.js"></script>
+<script src="js/platform/backup.js"></script>
+<script src="js/platform/sync.js"></script>
+<script src="js/platform/index.js"></script>
+<!-- the app (split from panelwise.html; ordered scripts sharing one global scope) -->
+<script src="js/util.js"></script>
+<script src="js/refs.js"></script>
+<script src="js/demo.js"></script>
+<script src="js/paper.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/claude.js"></script>
+<script src="js/open.js"></script>
+<script src="js/papercache.js"></script>
+<script src="js/store.js"></script>
+<script src="js/library.js"></script>
+<script src="js/card.js"></script>
+<script src="js/review.js"></script>
+<script src="js/palace.js"></script>
+<script src="js/assets.js"></script>
+<script src="js/render.js"></script>
+<script src="js/events.js"></script>
+<script src="js/figview.js"></script>
+<script src="js/atlas.js"></script>
+<script src="js/readmode.js"></script>
+<script src="js/readaids.js"></script>
+<script src="js/readside.js"></script>
+<script src="js/readwords.js"></script>
+<script src="js/feed.js"></script>
+<script src="js/connect.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/web.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

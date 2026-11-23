@@ -1,0 +1,177 @@
+"use strict";
+/* ---------- Claude ---------- */
+async function initClaude() {
+  try {
+    if (window.claude && window.claude.use) {
+      const s = await window.claude.use("sample");
+      S.sample = s || null;
+      if (s) { try { const lim = await s.limits(); S.imagesOK = !!(lim && lim.images); } catch { S.imagesOK = false; } }
+    }
+  } catch { S.sample = null; }
+  S.claudeChecked = true;
+  render(); renderChat();
+  const P = S.paper; if (P && !P.demo && !P.primer && S.sample) genPrimer();
+}
+function claudeOff(e) { if (e && ["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e.code)) { S.sample = null; render(); } }
+
+function cacheKey() { return "pw:" + (S.paper?.id || "none"); }
+function saveCache() { persistPaper(S.paper); }
+
+async function genPrimer(force) {
+  const P = S.paper; if (!S.sample || P.primerBusy) return;
+  P.primerBusy = true; P.primerErr = null; render();
+  const intro = (P.sections.intro.join("\n\n") || P.sections.other.join("\n\n")).slice(0, 30000);
+  const prompt = `You are helping a researcher understand a paper before they look at its figures. Using only the title, abstract and introduction below, reply with only this JSON:
+{"field": "short phrase", "background": ["3-5 bullets on what was known, each under 30 words"], "gap": "what was unknown or contested, under 40 words", "goal": "what the authors set out to do, under 35 words", "coreQuestion": "the single core question, phrased as a question", "hypothesis": "their stated hypothesis or expectation, or null", "approach": "the approach in under 35 words", "keyTerms": [{"term": "...", "definition": "under 25 words"}]}
+Give up to 6 key terms a reader outside the subfield would need. Be precise and plain.
+
+TITLE: ${P.title}
+ABSTRACT: ${P.abstract}
+INTRODUCTION:
+${intro}`;
+  try {
+    const j = await S.sample.json(prompt, { cache: force ? { gcTime: 86400000, refresh: true } : { gcTime: 86400000 } });
+    if (!j || !Array.isArray(j.background)) throw { code: "invalid_json" };
+    P.primer = j; saveCache();
+  } catch (e) { P.primerErr = errCopy(e); claudeOff(e); }
+  P.primerBusy = false; render();
+}
+async function checkRestate() {
+  const P = S.paper, txt = $("#restate").value.trim();
+  if (!txt) { toast("Write the question in your own words first."); return; }
+  P.restate = txt;
+  if (!S.sample) { P.revealed = true; saveCache(); render(); return; }
+  P.checkBusy = true; render();
+  const ref = P.primer ? `Authors' goal: ${P.primer.goal}\nCore question: ${P.primer.coreQuestion}\nHypothesis: ${P.primer.hypothesis || "n/a"}` : "";
+  const prompt = `A researcher read the introduction of a paper and wrote what they think its core question is. Judge whether they got it, as a rigorous but fair supervisor. Reply with only JSON: {"verdict": "match" | "partial" | "miss", "feedback": "2-3 sentences: what they got right and what is missing or off", "missing": "the key element they missed, or null"}
+
+TITLE: ${P.title}
+ABSTRACT: ${P.abstract}
+${ref}
+INTRODUCTION (excerpt):
+${P.sections.intro.join("\n\n").slice(0, 12000)}
+
+READER'S VERSION: ${txt}`;
+  try { P.verdict = await S.sample.json(prompt, { cache: false }); P.revealed = true; }
+  catch (e) { toast(errCopy(e)); claudeOff(e); }
+  P.checkBusy = false; saveCache(); render();
+}
+async function genBrief(fig) {
+  const P = S.paper; if (!S.sample) return;
+  P.briefs = P.briefs || {}; fig.briefBusy = true; render();
+  const paras = P.paras.filter(p => [...p.keys].some(k => parseInt(k) === fig.n)).map(p => p.text).join("\n\n").slice(0, 20000);
+  const prompt = `You are a rigorous academic collaborator helping a researcher read Figure ${fig.n} of a paper. Reply with only JSON:
+{"question": "the question this figure answers, one sentence", "claim": "the main claim the authors draw from it, one sentence", "read": [{"panel": "A", "what": "what to look at in this panel, under 18 words"}], "scrutinize": ["2-4 specific things to check: controls, n, statistics, confounds, alternative explanations"]}
+Core question of the paper: ${P.primer?.coreQuestion || "(not given)"}
+LEGEND: ${fig.legend}
+TEXT CITING THIS FIGURE:
+${paras}`;
+  try { P.briefs[fig.n] = await S.sample.json(prompt, { cache: { gcTime: 86400000 } }); saveCache(); }
+  catch (e) { toast(errCopy(e)); claudeOff(e); }
+  fig.briefBusy = false; render();
+}
+
+/* figure location on a PDF page */
+async function renderPage(pg, width = 1500) {
+  const page = await S.paper.doc.getPage(pg);
+  const vp0 = page.getViewport({ scale: 1 });
+  const vp = page.getViewport({ scale: width / vp0.width });
+  const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+  const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  return c;
+}
+const pageCache = new Map();
+async function pageCanvas(pg) { if (!pageCache.has(pg)) pageCache.set(pg, renderPage(pg)); return pageCache.get(pg); }
+function cropTo(canvas, b) {
+  const x = Math.round(b.x * canvas.width), y = Math.round(b.y * canvas.height), w = Math.max(20, Math.round(b.w * canvas.width)), h = Math.max(20, Math.round(b.h * canvas.height));
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  c.getContext("2d").drawImage(canvas, x, y, w, h, 0, 0, w, h);
+  return c.toDataURL("image/jpeg", .92);
+}
+/* Panel detection, in two steps:
+   1. find the figure on its page (whole page image, as before), trying up to three candidate pages;
+   2. crop just the figure, render it larger, and ask only for the panel boxes.
+   On a whole page shrunk to fit, panel letters are a few pixels tall and are easily missed or merged; on the
+   cropped figure they are several times larger. If step 2 fails, the boxes from step 1 are used. */
+async function renderRegion(pg, box, longSide = 1800) {
+  const page = await S.paper.doc.getPage(pg);
+  const v1 = page.getViewport({ scale: 1 });
+  const rw = box.w * v1.width, rh = box.h * v1.height;
+  const scale = Math.min(longSide / Math.max(rw, rh), 6);
+  const c = document.createElement("canvas"); c.width = Math.max(20, Math.round(rw * scale)); c.height = Math.max(20, Math.round(rh * scale));
+  const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: ctx, viewport: page.getViewport({ scale, offsetX: -box.x * v1.width * scale, offsetY: -box.y * v1.height * scale }) }).promise;
+  try { page.cleanup(); } catch {}
+  return c;
+}
+const toPanels = (list, map) => (list || []).filter(p => p && Array.isArray(p.box) && p.label).map(p => {
+  const [x0, y0, x1, y1] = p.box.map(clamp01);
+  const r = map(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
+  const px = Math.max(0, r.x), py = Math.max(0, r.y);
+  return { label: String(p.label).trim().toUpperCase().slice(0, 2), x: px, y: py, w: Math.min(1 - px, r.w), h: Math.min(1 - py, r.h) };
+}).filter(p => p.w > .02 && p.h > .02);
+async function detectPanels(fig, redetect) {
+  const labels = fig.letters.join(", ");
+  const cache = redetect ? false : { gcTime: 86400000 };
+  let det = null;
+  for (const pg of fig.pages.slice(0, 3)) {
+    const cv = await pageCanvas(pg);
+    const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", .88));
+    const prompt = `This image is page ${pg} of a scientific paper. Locate Figure ${fig.n} on it.
+Its legend begins: "${fig.legend.slice(0, 280).replace(/"/g, "'")}"
+Panel labels expected from the legend: ${labels || "unknown"}.
+Reply with only JSON: {"found": true, "figure": [x0, y0, x1, y1], "panels": [{"label": "A", "box": [x0, y0, x1, y1]}]}
+Coordinates are fractions of the full page image: 0 = left/top edge, 1 = right/bottom edge. "figure" bounds the graphic only; exclude the legend paragraph, page header and body text. Give one box per lettered panel, covering that panel's plots and its letter. Panels should not overlap much. If Figure ${fig.n} is not drawn on this page, reply {"found": false}.`;
+    let j;
+    try { j = await S.sample.json(prompt, { images: [blob], cache }); }
+    catch (e) { if (e.code === "images_unavailable") { S.imagesOK = false; return null; } throw e; }
+    if (j && j.found && Array.isArray(j.figure)) { det = { page: pg, raw: j }; break; }
+  }
+  if (!det) return null;
+  const [a, b, c, d] = det.raw.figure.map(clamp01);
+  const pad = .008, fx = Math.max(0, Math.min(a, c) - pad), fy = Math.max(0, Math.min(b, d) - pad), fx1 = Math.min(1, Math.max(a, c) + pad), fy1 = Math.min(1, Math.max(b, d) + pad);
+  const box = { x: fx, y: fy, w: fx1 - fx, h: fy1 - fy };
+  // step 1's boxes, mapped from page fractions to figure fractions: the fallback
+  let panels = toPanels(det.raw.panels, (x, y, w, h) => ({ x: (x - fx) / box.w, y: (y - fy) / box.h, w: w / box.w, h: h / box.h }));
+  // step 2: the figure on its own, larger
+  let cv2 = null;
+  try {
+    cv2 = await renderRegion(det.page, box);
+    const blob2 = await new Promise(r => cv2.toBlob(r, "image/jpeg", .9));
+    const prompt2 = `This image is Figure ${fig.n} of a scientific paper, cropped from its page.
+Its legend begins: "${fig.legend.slice(0, 400).replace(/"/g, "'")}"
+Panel labels expected from the legend: ${labels || "unknown"}.
+Find each lettered panel. Reply with only JSON: {"panels": [{"label": "A", "box": [x0, y0, x1, y1]}]}
+Coordinates are fractions of this image: 0 = left/top edge, 1 = right/bottom edge. Each box covers one panel: its plots, axes, axis labels and its letter, but not neighbouring panels. Panels sit in a grid of rows and columns and may differ in size; boxes should not overlap much. Include every label you can see, using the letter exactly as printed. Sub-panels inside one lettered panel belong to that panel.`;
+    const j2 = await S.sample.json(prompt2, { images: [blob2], cache });
+    const fine = toPanels(j2 && j2.panels, (x, y, w, h) => ({ x, y, w, h }));
+    if (fine.length >= Math.max(1, panels.length * .6)) panels = fine;
+  } catch (e) {
+    if (e && e.code && !["invalid_json", "refused"].includes(e.code)) throw e;   // network or key problems: report them
+  } finally { if (cv2) cv2.width = cv2.height = 0; }
+  return { page: det.page, box, panels };
+}
+async function prepareFigure(fig, redetect) {
+  const P = S.paper; if (P.demo || fig.busy || !P.doc) return;
+  fig.busy = true; fig.err = null; render();
+  try {
+    if (!fig.det || redetect) {
+      if (S.sample && S.imagesOK) {
+        const det = await detectPanels(fig, redetect);
+        if (det) fig.det = det;
+        else if (!S.imagesOK) { fig.det = null; } else { fig.err = "Claude couldn't find this figure on its page; showing the full page."; }
+      }
+    }
+    const pg = fig.det?.page || fig.page;
+    const cv = await pageCanvas(pg);
+    if (fig.det) { fig.img = cropTo(cv, fig.det.box); fig.panels = fig.det.panels; fig.cropped = true; }
+    else if (fig.autoBox) { fig.img = cropTo(cv, fig.autoBox); fig.panels = null; fig.cropped = true; }
+    else { fig.img = cv.toDataURL("image/jpeg", .9); fig.panels = null; fig.cropped = false; }
+    fig.letters = [...new Set([...fig.letters, ...(fig.panels || []).map(p => p.label)])].sort();
+    saveCache();
+  } catch (e) { fig.err = errCopy(e); claudeOff(e); try { const cv = await pageCanvas(fig.page); fig.img = cv.toDataURL("image/jpeg", .9); } catch {} }
+  fig.busy = false; render();
+  if (P.doc && !P.phoneOff && A.api) { clearTimeout(A.t); A.t = setTimeout(() => syncPaper(P), 2500); }
+}
+

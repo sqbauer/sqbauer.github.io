@@ -1,0 +1,33 @@
+/* Figure viewer (js/figview.js): full-screen zoom and pan, one panel at a time.
+   Always dark, like a photo viewer, so the white figure stands out in both themes. */
+.fv{position:fixed;inset:0;z-index:55;background:#0b0d12;color:#eef1f5;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+.fv *{touch-action:manipulation}
+.fv .fv-vp,.fv .fv-vp *{touch-action:none}
+html.fv-open,html.fv-open body{overflow:hidden}
+.fv-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px 8px 16px;min-height:52px}
+.fv-title{font-weight:600;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fv-btn{background:rgba(255,255,255,.12);color:#eef1f5;border:0;border-radius:999px;padding:9px 16px;font-size:15px;min-height:40px}
+.fv-btn:active{background:rgba(255,255,255,.22)}
+.fv-btn:disabled{opacity:.35}
+.fv-btn:focus-visible,.fv-chip:focus-visible{outline:2px solid #8aa5ff;outline-offset:2px}
+.fv-vp{flex:1 1 auto;min-height:0;position:relative;overflow:hidden;touch-action:none;cursor:grab}
+.fv-vp img{position:absolute;left:0;top:0;max-width:none;background:#fff;pointer-events:none}
+.fv-card{position:absolute;left:0;top:0;pointer-events:none;will-change:transform}   /* screen-sized, so a layer each is cheap */
+.fv-bot{display:flex;align-items:center;gap:8px;padding:8px 12px}
+.fv-bot[hidden]{display:none}
+.fv-arrow{flex:0 0 auto;width:44px;padding:0;font-size:24px;line-height:1}
+.fv-chips{flex:1 1 auto;min-width:0;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;padding:2px}
+.fv-chips::-webkit-scrollbar{display:none}
+.fv-chip{flex:0 0 auto;min-width:44px;height:40px;padding:0 14px;border-radius:8px;border:1px solid rgba(255,255,255,.22);background:transparent;color:#eef1f5;font:600 15px var(--f-mono);white-space:nowrap}
+.fv-chip.on{background:#ffd84a;border-color:#ffd84a;color:#11161e}
+
+/* the figure on the page is a button now: say so */
+.stage .frame img{cursor:zoom-in}
+@media (hover:none){
+  .stage .frame:has(img)::after{content:"Tap to enlarge";position:absolute;right:6px;bottom:6px;font:500 11px/1 var(--f-ui);
+    color:#fff;background:rgba(17,22,30,.62);padding:5px 8px;border-radius:999px;pointer-events:none}
+}
+
+.fv-tools{display:flex;gap:8px;flex:0 0 auto}
