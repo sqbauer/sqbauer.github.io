@@ -2,7 +2,7 @@
 /* ---------- rendering ---------- */
 function render() {
   const lib = ["library", "topic", "record", "review", "palace", "settings", "upload"].includes(S.view);
-  $("#steps").hidden = lib; $("#chatBtn").hidden = lib || PW.single; $("#libBtn").hidden = S.view === "library" || PW.single; $("#setBtn").hidden = S.view === "settings" || PW.single;
+  $("#steps").hidden = lib; $("#chatBtn").hidden = lib || PW.single; if (RM.btn) RM.btn.hidden = lib; $("#libBtn").hidden = S.view === "library" || PW.single; $("#setBtn").hidden = S.view === "settings" || PW.single;
   $("#openBtn").hidden = S.view === "upload";
   if (S.view === "upload") { renderUpload(); return; }
   renderTags();

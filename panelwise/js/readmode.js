@@ -745,15 +745,14 @@ function rmProgressLabel(id) {
   return pct >= 99 ? "Read to the end" : `Read ${pct}%${s.sec ? " · " + s.sec : ""}`;
 }
 
-/* the Read button: shown exactly when "Ask about the paper" is (a paper is open) */
+/* the Read button: shown while a paper is open (render() keeps it in step) */
 (function () {
   const chat = $("#chatBtn"); if (!chat) return;
   const b = document.createElement("button");
   b.type = "button"; b.id = "readBtn"; b.className = "btn"; b.textContent = "Read";
-  b.title = "Read the paper page by page"; b.hidden = chat.hidden;
+  b.title = "Read the paper page by page"; b.hidden = true;
   chat.insertAdjacentElement("beforebegin", b);
   b.addEventListener("click", e => { e.stopPropagation(); rmOpen(); });
-  new MutationObserver(() => { b.hidden = chat.hidden; }).observe(chat, { attributes: true, attributeFilter: ["hidden"] });
   RM.btn = b;
 })();
 
