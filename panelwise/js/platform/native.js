@@ -11,16 +11,23 @@ const PW = window.PW = {
 };
 if (PW.native) PW.plugin = window.PWDeps.registerPlugin("PanelwiseNative");
 
-/* API key: iOS Keychain in the app. In a browser it is kept in memory only (dev/testing). */
+/* API key: iOS Keychain in the app. In a browser it is kept in memory only (dev/testing), except in the
+   web version, where a visitor can choose to remember it in this browser's localStorage. */
+const PW_KEY_LS = "pw:anthropic-key";
 PW.keys = {
   _mem: null,
   async get() {
-    if (!PW.native) return this._mem;
+    if (!PW.native) { if (this._mem) return this._mem; if (!PW.single) return null; try { return localStorage.getItem(PW_KEY_LS) || null; } catch { return null; } }
     try { const r = await PW.plugin.keychainGet({ key: "anthropic_api_key" }); return r.value || null; } catch { return null; }
   },
-  async set(v) {
+  remembered() { if (!PW.single) return false; try { return !!localStorage.getItem(PW_KEY_LS); } catch { return false; } },
+  async set(v, remember) {
     v = (v || "").trim();
-    if (!PW.native) { this._mem = v || null; return; }
+    if (!PW.native) {
+      this._mem = v || null;
+      if (PW.single) { try { if (v && remember) localStorage.setItem(PW_KEY_LS, v); else localStorage.removeItem(PW_KEY_LS); } catch {} }
+      return;
+    }
     if (v) await PW.plugin.keychainSet({ key: "anthropic_api_key", value: v });
     else await PW.plugin.keychainRemove({ key: "anthropic_api_key" });
   },

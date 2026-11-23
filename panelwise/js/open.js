@@ -10,7 +10,7 @@ function openPaper(raw) {
   P.seen = P.seen || new Set(); P.lastOpened = Date.now(); P.notes = P.notes || []; P.tags = P.tags || [];
   S.view = "background"; S.figIdx = 0; S.pinned = null; S.hover = null; S.chat = [];
   render(); renderChat();
-  if (innerWidth > 1280 && $("#chat").hidden && !PW.single) setChat(true);
+  if (innerWidth > 1280 && $("#chat").hidden && (!PW.single || S.sample)) setChat(true);
   if (!P.demo) { saveCache(); hydrate(P).then(() => { if (P.doc && !P.phoneOff) setTimeout(() => syncPaper(P), 1200); }); }
   window.scrollTo(0, 0);
   if (!P.demo && !P.primer && S.sample) genPrimer();

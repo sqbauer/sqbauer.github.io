@@ -70,3 +70,7 @@ select.sort{border:1px solid var(--line);border-radius:8px;background:var(--surf
 .webprivacy{max-width:760px;margin-top:12px}
 /* the web version keeps one paper: no topics */
 [data-pw="single"] #pTags{display:none}
+.webremember{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:14px;color:var(--muted)}
+.webremember input{margin-top:3px}
+.webfacts{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:8px;color:var(--muted);font-size:14px;line-height:1.5}
+.libempty.webcards{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}

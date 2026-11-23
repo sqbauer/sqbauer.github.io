@@ -106,7 +106,10 @@ npm run web -- ../sqbauer.github.io/panelwise
 
 - **Privacy:** the PDF is read in the browser tab and never uploaded. The paper's parsed text and your
   notes are kept in the browser's IndexedDB so reopening the same PDF picks up where you left off.
-- **No Claude:** the summaries and chat of the app are left out, so there are no API keys or calls.
+- **Claude with the visitor's own key:** Settings (the gear) takes an Anthropic API key. It is sent
+  only to api.anthropic.com, straight from the browser, and kept in `localStorage` under
+  `pw:anthropic-key` if the visitor ticks "Remember". Any script on sqbauer.github.io can read that
+  storage, so never add third-party scripts to pages on this site. Without a key, Claude stays off.
 - Listed under Tools on the home page (`tools` in `_data/site.json`). The page itself isn't checked by
   CI (validators, Lighthouse); the link check only confirms the folder exists.
 
