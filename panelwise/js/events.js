@@ -37,6 +37,8 @@ document.addEventListener("click", e => {
   else if (act === "pickdir") pickFolderAction();
   else if (["key-test", "key-remove", "rescan", "export", "import", "sync-now"].includes(act)) settingsAction(act);
   else if (act === "pickfile") $("#fileIn").click();
+  else if (act === "tosettings") { S.view = "settings"; render(); window.scrollTo(0, 0); }
+  else if (act === "tostart") { S.view = "upload"; render(); window.scrollTo(0, 0); }
   else if (act === "demo") openPaper(DEMO);
   else if (act === "addtag") { S.tagEdit = true; renderTags(); }
   else if (act === "phonetoggle") { if (S.paper?.syncErr) { S.paper.syncErr = null; syncPaper(S.paper); } else phoneToggle(); }

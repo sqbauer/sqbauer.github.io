@@ -30,7 +30,7 @@ function errCopy(e) {
   })[c] || "Something went wrong reaching Claude. Try again.";
 }
 
-const NO_CLAUDE = PW.single ? "Claude's summaries and chat are only in the Panelwise app, not in this web version." : "Claude is off until you add your API key in Settings.";
+const NO_CLAUDE = PW.single ? "Claude is off. To turn it on, add your own Anthropic API key in Settings (the gear at the top)." : "Claude is off until you add your API key in Settings.";
 
 /* ---------- state ---------- */
 const S = {

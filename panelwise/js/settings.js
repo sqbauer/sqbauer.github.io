@@ -1,6 +1,7 @@
 "use strict";
 /* ---------- settings: API key, Papers folder, backups ---------- */
 async function renderSettings() {
+  if (PW.single) return renderWebSettings();
   $("#pTitle").textContent = "Settings"; $("#pSub").textContent = "Claude key, Papers folder, backups"; $("#pTags").innerHTML = "";
   const key = await PW.keys.get();
   if (S.view !== "settings") return;   // the Keychain read is async: the user may have moved on meanwhile
@@ -77,7 +78,7 @@ document.addEventListener("submit", async e => {
   e.preventDefault();
   const v = $("#keyIn").value.trim(); $("#keyIn").value = "";
   if (!/^sk-ant-/.test(v)) { toast("That doesn't look like an Anthropic API key (it starts with sk-ant-)."); return; }
-  await PW.keys.set(v); await PW.reloadClaude(); toast("API key saved"); renderSettings();
+  await PW.keys.set(v, !!$("#keyRemember")?.checked); await PW.reloadClaude(); toast("API key saved"); renderSettings();
 });
 document.addEventListener("change", async e => {
   if (e.target.id !== "importIn" || !e.target.files[0]) return;
