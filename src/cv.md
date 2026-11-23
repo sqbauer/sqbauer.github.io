@@ -10,7 +10,7 @@ title: "Staf Bauer"
 *Erasmus MC, Rotterdam, NL*
 
 - Supervisors: Chris de Zeeuw; daily supervision Vincenzo Romano.
-- Cerebellar control of locomotion and sensorimotor adaptation; chronic silicon-probe electrophysiology and kinematic tracking in freely moving mice.
+- Cerebellar sculpting of rhythmic movements; chronic silicon-probe electrophysiology and kinematic tracking in freely moving mice.
 - Core strength in quantitative analysis: built a full MATLAB pipeline for spike-kinematics correlation, trajectory clustering, GLM encoding/decoding, and permutation-based statistics.
 
 **MSc, Nanobiology** (2018--2021)\
@@ -33,7 +33,7 @@ title: "Staf Bauer"
 **PhD Candidate, Dept. of Neuroscience** (2022--present)\
 *Erasmus MC, Rotterdam, NL*
 
-- Cerebellar physiology, locomotion, sleep, and adaptive motor control.
+- Cerebellar sculpting of rhythmic movements; cerebellar processing across sleep states.
 
 **RPA Developer / Solution Architect** (2018--2022)\
 *Ciphix & Ciphix Healthcare, Rotterdam, NL*
