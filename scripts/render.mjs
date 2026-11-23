@@ -55,7 +55,8 @@ function picture(name, alt, { eager = false, cls = "", sizes = "100vw" } = {}) {
 // --d delay matches when the draw-in animation reaches it. Without CSS animation support the SVG
 // is simply static.
 function traceSvg() {
-  const W = 1200, H = 84, mid = 34, cyc = 20, bout = 400, L = W + bout, DRAW = 1200;
+  // W is wide so that "slice" crops only left/right, never the wave peaks, on screens up to W px wide.
+  const W = 2560, H = 84, mid = 34, cyc = 20, bout = 400, L = W + bout, DRAW = 1200;
   const env = (x) => 0.12 + 0.88 * Math.sin((Math.PI * x) / bout) ** 4;
   // One quadratic Bezier per half-cycle (control point at 2x the local amplitude): visually a sine,
   // at a fraction of the bytes of a sampled polyline.
