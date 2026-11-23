@@ -15,11 +15,8 @@
   var css =
     "@media (prefers-reduced-motion: no-preference){" +
     "@supports (animation-timeline: view()){" +
-    ".pub.reveal{animation:enh-rise linear both;animation-timeline:view();animation-range:entry 0% entry 60%}" +
     ".wipe{animation:enh-wipe linear both;animation-timeline:view();animation-range:entry 10% cover 40%}" +
     ".hero-photo .photo{display:block;animation:enh-par linear both;animation-timeline:scroll(root);animation-range:0 480px}}" +
-    ".io .reveal{transition:opacity .6s var(--ease),transform .6s var(--ease)}" +
-    ".io .reveal:not(.in){opacity:0;transform:translateY(14px)}" +
     ".io .wipe{transition:clip-path .9s var(--ease)}" +
     ".io .wipe:not(.in){clip-path:inset(0 100% 0 0)}" +
     "@supports (interpolate-size: allow-keywords) and selector(::details-content){" +
@@ -29,7 +26,6 @@
     "::view-transition-group(*){animation-duration:.38s;animation-timing-function:var(--ease)}" +
     ":root.vt-theme::view-transition-old(root),:root.vt-theme::view-transition-new(root){animation:none;mix-blend-mode:normal}" +
     ":root.vt-theme::view-transition-new(root){z-index:1}}" +
-    "@keyframes enh-rise{from{opacity:0;transform:translateY(14px)}}" +
     "@keyframes enh-wipe{from{clip-path:inset(0 100% 0 0)}}" +
     "@keyframes enh-par{to{transform:translateY(-24px)}}";
   var style = document.createElement("style");
@@ -38,7 +34,7 @@
 
   // ---- Scroll reveal fallback (no scroll-driven animations): IntersectionObserver ----------
   if (!supports("animation-timeline: view()") && !reduced() && "IntersectionObserver" in window) {
-    var targets = $$(".reveal, .wipe");
+    var targets = $$(".wipe");
     // Anything already on screen is shown immediately, so nothing visible blinks out.
     targets.forEach(function (el) { if (el.getBoundingClientRect().top < innerHeight) el.classList.add("in"); });
     root.classList.add("io");

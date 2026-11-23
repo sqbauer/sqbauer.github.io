@@ -97,6 +97,30 @@ function thumbHtml(p, o) {
   return `<figure class="pub-thumb">${picture(t.image, t.alt, { sizes: "120px" })}<figcaption>${esc(t.credit)} (${esc(t.license)})</figcaption></figure>`;
 }
 
+// doi.org BibTeX is Crossref's raw output. Normalise it so it matches the page and compiles cleanly:
+// https DOI URLs, standard month macros (jan..dec, unbraced), BibTeX page ranges (--), and the
+// same year as the page (issue year for articles; Crossref often gives the online-first year).
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+function cleanBibtex(p) {
+  if (!p.bibtex) return null;
+  let b = p.bibtex
+    .replace(/url = \{https?:\/\/(?:dx\.)?doi\.org\//i, "url = {https://doi.org/")
+    .replace(/month = \{?([A-Za-z]+)\.?\}?(,?)$/m, (m, name, comma) => {
+      const i = MONTHS.indexOf(name.slice(0, 3).toLowerCase());
+      return i < 0 ? m : `month = ${MONTHS[i]}${comma}`;
+    })
+    .replace(/pages = \{([^}]*)\}/, (m, pg) => `pages = {${pg.replace(/\s*[–—-]+\s*/g, "--")}}`);
+  const y = b.match(/year = \{?(\d{4})\}?/);
+  if (p.type !== "preprint" && p.year && y && Number(y[1]) !== p.year) {
+    // The month belongs to the online-first date, so it goes too.
+    b = b.replace(y[0], `year = {${p.year}}`)
+      .replace(/^(@\w+\{[^,]*?_)\d{4}(,)/, `$1${p.year}$2`)
+      .replace(/^\s*month = \w+,\n/m, "")
+      .replace(/,\n\s*month = \w+\n\}$/, "\n}");
+  }
+  return b;
+}
+
 function pubItem(p) {
   const o = overrides.entries?.[p.doi] || {};
   const r = role(p, o);
@@ -118,12 +142,13 @@ function pubItem(p) {
     o.data && ext(o.data, "Data"),
     o.slides && ext(o.slides, "Slides"),
   ].filter(Boolean).join("");
-  const bib = p.bibtex
-    ? `<details class="bib"><summary>BibTeX</summary><div class="bib-body"><pre><code>${esc(p.bibtex)}</code></pre><button type="button" class="copy" hidden>Copy BibTeX</button></div></details>`
+  const bibtex = cleanBibtex(p);
+  const bib = bibtex
+    ? `<details class="bib"><summary>BibTeX</summary><div class="bib-body"><pre><code>${esc(bibtex)}</code></pre><button type="button" class="copy" hidden>Copy BibTeX</button></div></details>`
     : "";
   const cite = citation(p);
   const thumb = thumbHtml(p, o);
-  return `<article class="pub reveal${thumb ? " has-thumb" : ""}" id="${pubId(p)}" data-role="${r || ""}" data-type="${p.type}">
+  return `<article class="pub${thumb ? " has-thumb" : ""}" id="${pubId(p)}" data-role="${r || ""}" data-type="${p.type}">
   ${thumb}<h4><a href="https://doi.org/${esc(p.doi)}">${esc(p.title)}</a></h4>
   <p class="authors">${authors}</p>
   <p class="venue"><span class="journal">${esc(p.journal)}</span>${cite ? ` ${esc(cite)}` : ""}${p.type === "preprint" && p.date ? ` · ${esc(p.date.slice(0, 4))}` : ""}</p>
@@ -212,7 +237,9 @@ const photoCol = site.photo === false ? "" : `<div class="hero-photo">${photo ||
 const upcomingHtml = site.showUpcoming === false ? "" : `<li><span class="pos-label">Next</span> ${site.upcomingUrl ? ext(site.upcomingUrl, site.upcoming) : `${esc(site.upcoming)} ${todo("lab URL")}`}</li>`;
 const showResearch = site.showResearch !== false, showTalks = site.showTalks !== false;
 const tools = Array.isArray(site.tools) ? site.tools : [];
-const nav = [showResearch && ["research", "Research"], ["publications", "Publications"], showTalks && ["talks", "Talks"], tools.length > 0 && ["tools", "Tools"], ["cv", "CV"], ["contact", "Contact"]].filter(Boolean);
+// Standalone pages (each with its own canonical URL) listed in sitemap.xml next to the home page.
+const sitemapExtra = ["brain-sections/", "hidden-conductor/"];
+const nav = [showResearch && ["research", "Research"], ["publications", "Publications"], showTalks && ["talks", "Talks"], tools.length > 0 && ["tools", "Tools"], ["contact", "Contact"]].filter(Boolean);
 const icon = {
   sun: `<svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`,
   moon: `<svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`,
@@ -327,14 +354,7 @@ ${tools.map((t) => `      <li><h3>${ext(t.url, t.title)}</h3><p class="muted">${
   </div>
 </section>
 
-` : ""}<section class="section" id="cv" aria-labelledby="h-cv">
-  <div class="wrap">
-    <h2 id="h-cv">CV</h2>
-    ${hasCv ? `<p>${ext(site.cv, "Download CV (PDF)", "button")}</p>` : todoBlock(`CV PDF without home address, phone number or date of birth, saved as ${site.cv}`)}
-  </div>
-</section>
-
-<section class="section" id="contact" aria-labelledby="h-contact">
+` : ""}<section class="section" id="contact" aria-labelledby="h-contact">
   <div class="wrap">
     <h2 id="h-contact">Contact</h2>
     ${emailHtml}
@@ -355,7 +375,7 @@ ${tools.map((t) => `      <li><h3>${ext(t.url, t.title)}</h3><p class="muted">${
 await writeFile(path.join(ROOT, "index.html"), html);
 await writeFile(path.join(ROOT, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>${esc(site.url)}</loc></url>
+${[site.url, ...sitemapExtra.map((p) => site.url + p)].map((u) => `  <url><loc>${esc(u)}</loc></url>`).join("\n")}
 </urlset>
 `);
 console.log(`Rendered index.html: ${pubs.length} publications, ${talks.length} talks.`);
