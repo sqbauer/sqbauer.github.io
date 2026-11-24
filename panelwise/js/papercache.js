@@ -6,7 +6,7 @@
    opens from that copy straight away, while the PDF itself loads in the background for figure images.
    Keyed by file name, size and modification date, so an edited or replaced file is read afresh.
    No Claude calls are involved in any of this: summaries, panel boxes and chat are saved separately. */
-const PW_TEXT_COL = "_text", PW_TEXT_VER = 9;   // bump when the parser output changes (2: reference list kept, 3: superscripts kept, 4: unheaded reference lists, 5: cleaner text, 8: dash captions, small figures, 9: short figures stop above the caption)
+const PW_TEXT_COL = "_text", PW_TEXT_VER = 10;   // bump when the parser output changes (10: two-column pages stored line by line across both columns, 2: reference list kept, 3: superscripts kept, 4: unheaded reference lists, 5: cleaner text, 8: dash captions, small figures, 9: short figures stop above the caption)
 const pwTextKey = file => `${PW_TEXT_VER}|${file.name}:${file.size}:${file.lastModified || 0}`;
 
 async function pwLoadDoc(file) {

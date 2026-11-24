@@ -239,6 +239,7 @@ function lsBuild() {
       if (!L_.g.file && recOf(L_.id)) { S.recId = L_.id; S.view = "record"; render(); window.scrollTo(0, 0); }
       else openFromLibrary(L_.g.key);
     }
+    else if (a === "brain") { lsClose(true); brainOpen(b.dataset.hash || ""); }
     else if (a === "term") { lsClose(true); S.wk = b.dataset.k; S.view = "wiki"; render(); window.scrollTo(0, 0); }
     else if (a === "lib") { const v = $("#lsQ").value.trim(); lsClose(true); L.q = v; L.tab = "papers"; L.folderSel = "*"; S.view = "library"; render(); window.scrollTo(0, 0); }
     else if (a === "read") {
@@ -333,7 +334,18 @@ function lsQuick(q) {
   const tRows = ts.slice(0, 5).map(a => `<button type="button" class="ls-row" role="option" data-lsi data-ls="term" data-k="${esc(a.k)}"><span class="ls-i">${LS_SVG.term}</span><span class="ls-b"><span class="ls-h1">${lsHL(a.name, q)}${a.sf ? ` <span class="wk-abbr">${esc(a.sf)}</span>` : ""}</span><span class="ls-h2">${esc(a.cat)} · in ${a.papers.length} paper${a.papers.length === 1 ? "" : "s"}</span></span><span class="ls-go">Wiki ↵</span></button>`).join("");
   box.innerHTML = (ps.length ? lsGroup("Papers", ps.length > 5 ? `5 of ${ps.length}` : ps.length, pRows, "lsgP") : "")
     + (ts.length ? lsGroup("Wiki terms", ts.length > 5 ? `5 of ${ts.length}` : ts.length, tRows, "lsgT") : wkWait && q.length >= 2 ? `<p class="note ls-wait">Gathering wiki terms…</p>` : "")
+    + lsBrainRow(q)
     + (typeof oaQueryFrom === "function" && !PW.single && (q.length >= 12 || /\b10\.\d{4,9}\//.test(q)) ? `<div class="oa-box ls-oa"><button type="button" class="ls-row ls-more" role="option" data-lsi data-oa="find" data-q="${esc(JSON.stringify(oaQueryFrom(q)))}">Find an open-access PDF for “${esc(q.slice(0, 60))}”</button></div>` : "");
+}
+// "Mouse brain sections": by name, or a brain region (shown highlighted in the region's best coronal section)
+function lsBrainRow(q) {
+  if (typeof brainOpen !== "function" || q.length < 2) return "";
+  if (typeof atlasLoad === "function" && !ATL.idx) atlasLoad().catch(() => {});   // region names: ready from the next keystroke
+  const named = /^(mouse |brain |atlas|sections?|ccf|stereota|coronal|sagittal)/i.test(q) || /brain sec|atlas/i.test(q);
+  const reg = typeof atlasMatch === "function" && ATL.idx ? atlasMatch(q) : null;
+  if (!named && !reg) return "";
+  const hash = reg && reg.ids ? `plane=coronal&pos=${atlasAP(atlasS(reg.ids[0]).cp).toFixed(2)}&sys=dorr&lvl=summary&fill=none&hemi=both&lab=none&hl=${reg.ids.map(i => i + ".e0533b").join(",")}` : "";
+  return lsGroup("Tools", "", `<button type="button" class="ls-row" role="option" data-lsi data-ls="brain" data-hash="${esc(hash)}"><span class="ls-i">${LS_SVG.term}</span><span class="ls-b"><span class="ls-h1">${reg && reg.ids ? `Show ${esc(atlasName(reg.ids))} in brain sections` : "Mouse brain sections"}</span><span class="ls-h2">Coronal, sagittal, dorsal and 3D views of the Allen mouse brain atlas</span></span><span class="ls-go">Open ↵</span></button>`, "lsgB");
 }
 async function lsIntro(q) {
   const box = $("#lsSents"); if (!box) return;

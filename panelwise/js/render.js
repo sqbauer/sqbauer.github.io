@@ -95,6 +95,7 @@ $("#moreBtn").onclick = e => {
   if (!P.demo) items.push({ label: "Add a topic", run: () => { S.tagEdit = true; renderTags(); } });
   if (f && f.panels && f.panels.length) items.push({ label: S.outlines ? "Hide panel outlines" : "Show panel outlines", run: () => { S.outlines = !S.outlines; render(); } });
   if (f && !P.demo && S.sample && S.imagesOK && !f.busy) items.push({ label: "Re-detect panels", run: () => prepareFigure(f, true) });
+  items.push({ label: "Mouse brain sections", run: () => brainOpen("") });
   items.push("-", { label: "Settings", run: () => $("#setBtn").click() });
   openMenu(e.currentTarget, items);
 };
