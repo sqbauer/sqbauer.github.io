@@ -303,3 +303,6 @@ html.rdm-open,html.rdm-open body{overflow:hidden}
 .rdm-rsvp-play{min-width:84px}
 .rdm-rsvp-hint{margin:0;font:13px var(--f-ui);color:var(--muted);text-align:center}
 .rdm-voice{width:100%;height:44px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font:15px var(--f-ui);padding:0 8px;margin:6px 0}
+/* pages turn by scrolling sideways: no scroll bar for that (macOS draws it as a glass capsule over the slider) */
+.rdm-vp{scrollbar-width:none}
+.rdm-vp::-webkit-scrollbar{display:none;height:0}

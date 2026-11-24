@@ -128,6 +128,34 @@ async function renderRegion(pg, box, longSide = 1800) {
   try { page.cleanup(); } catch {}
   return c;
 }
+/* Claude's figure box sometimes stops a row of panels short (Ratliff 2026, Fig. 4: rows h and i left out). Below the box,
+   the figure can only continue until the first line of running text or the caption ("Fig. 4 | …"), so: find that line
+   in the page's text, then move the bottom edge down to the last drawn pixels above it, within the box's width. */
+async function growDown(pg, box) {
+  try {
+    const page = await S.paper.doc.getPage(pg), v1 = page.getViewport({ scale: 1 }), tc = await page.getTextContent();
+    const bottom = box.y + box.h; let stop = .94;   // .94: above the page footer
+    for (const it of tc.items) {
+      if (typeof it.str !== "string") continue;
+      const t = it.str.trim(), x0 = it.transform[4] / v1.width, x1 = (it.transform[4] + (it.width || 0)) / v1.width, y = 1 - (it.transform[5] + Math.abs(it.transform[3] || 10)) / v1.height;
+      if (y <= bottom || y >= stop) continue;
+      if (/^(Fig(ure)?\.?|Extended Data Fig)\s*\d/i.test(t) || (t.length >= 40 && x1 > box.x && x0 < box.x + box.w)) stop = y;
+    }
+    const cv = await pageCanvas(pg), W = cv.width, H = cv.height;
+    const x0 = Math.max(0, Math.round(box.x * W)), x1 = Math.min(W, Math.round((box.x + box.w) * W));
+    const y0 = Math.round(bottom * H), y1 = Math.round(stop * H) - 2; if (y1 - y0 < 4 || x1 - x0 < 4) return box;
+    const d = cv.getContext("2d", { willReadFrequently: true }).getImageData(x0, y0, x1 - x0, y1 - y0).data, rw = x1 - x0;
+    let last = -1;
+    for (let r = 0; r < y1 - y0; r++) {
+      let ink = 0;
+      for (let c = 0; c < rw; c += 2) { const i = (r * rw + c) * 4; if (d[i] < 200 || d[i + 1] < 200 || d[i + 2] < 200) { ink++; if (ink > 2) break; } }
+      if (ink > 2) last = r;
+    }
+    if (last < 0) return box;
+    const nb = Math.min(1, (y0 + last + 1) / H + .006);
+    return nb > bottom ? { ...box, h: nb - box.y } : box;
+  } catch { return box; }
+}
 const toPanels = (list, map) => (list || []).filter(p => p && Array.isArray(p.box) && p.label).map(p => {
   const [x0, y0, x1, y1] = p.box.map(clamp01);
   const r = map(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
@@ -154,7 +182,7 @@ Coordinates are fractions of the full page image: 0 = left/top edge, 1 = right/b
   if (!det) return null;
   const [a, b, c, d] = det.raw.figure.map(clamp01);
   const pad = .008, fx = Math.max(0, Math.min(a, c) - pad), fy = Math.max(0, Math.min(b, d) - pad), fx1 = Math.min(1, Math.max(a, c) + pad), fy1 = Math.min(1, Math.max(b, d) + pad);
-  const box = { x: fx, y: fy, w: fx1 - fx, h: fy1 - fy };
+  const box = await growDown(det.page, { x: fx, y: fy, w: fx1 - fx, h: fy1 - fy });
   // step 1's boxes, mapped from page fractions to figure fractions: the fallback
   let panels = toPanels(det.raw.panels, (x, y, w, h) => ({ x: (x - fx) / box.w, y: (y - fy) / box.h, w: w / box.w, h: h / box.h }));
   // step 2: the figure on its own, larger
@@ -173,7 +201,7 @@ Coordinates are fractions of this image: 0 = left/top edge, 1 = right/bottom edg
   } catch (e) {
     if (e && e.code && !["invalid_json", "refused"].includes(e.code)) throw e;   // network or key problems: report them
   } finally { if (cv2) cv2.width = cv2.height = 0; }
-  return { page: det.page, box, panels };
+  return { page: det.page, box, panels, grown: 1 };
 }
 async function prepareFigure(fig, redetect) {
   const P = S.paper; if (P.demo || fig.busy || !P.doc) return;
@@ -185,6 +213,11 @@ async function prepareFigure(fig, redetect) {
         if (det) fig.det = det;
         else if (!S.imagesOK) { fig.det = null; } else { fig.err = "Claude couldn't find this figure on its page; showing the full page."; }
       }
+    }
+    // boxes saved before growDown existed: extend them once, keeping the panel boxes where they were on the page
+    if (fig.det && !fig.det.grown) {
+      const b = fig.det.box, g = await growDown(fig.det.page, b), k = b.h / g.h;
+      fig.det = { ...fig.det, box: g, grown: 1, panels: (fig.det.panels || []).map(q => ({ ...q, y: q.y * k, h: q.h * k })) };
     }
     const pg = fig.det?.page || fig.page;
     const cv = await pageCanvas(pg);

@@ -165,3 +165,20 @@ textarea{width:100%;min-height:96px;resize:vertical;border:1px solid var(--line-
 .notesbox .note-add textarea{min-height:72px}
 .notesbox .nrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .notesbox .nrow .note{font-size:var(--t-xs)}
+/* the figure column stays in view while the text scrolls: it must fit the window, or its bottom can never be seen
+   (and WebKit on the Mac left it unpainted). The figure scales down to the height that's left for it. */
+@media (min-width:861px){
+  /* --fig-max: the window height minus the bar above and the panel row below, set by render.js (window.innerHeight,
+     which the Mac app reports reliably, unlike vh). The frame shrinks to the image, so the panel letters stay on it. */
+  /* as wide as fits both the column and the height left in the window (--ar: the figure's width/height, set in render.js) */
+  .stage .frame{width:min(100%, calc(var(--fig-max, calc(100vh - 230px)) * var(--ar, 1.3) + 2px));margin-inline:auto}
+  .stage .frame img{width:100%;max-height:var(--fig-max, calc(100vh - 230px))}
+}
+
+/* a panel enlarged inside the figure's box (Mac, figZoom in render.js) */
+.frame .zw{position:relative;transform-origin:0 0;transition:transform .3s ease}
+.frame .zw .badge{transform:scale(calc(1 / var(--zs, 1)));transform-origin:0 0}
+.frame.zoomed .zw{cursor:zoom-out}
+.frame.zoomed .hot{cursor:zoom-out}
+.frame.zoomed .hot.pin{border-color:transparent;box-shadow:none;background:transparent}
+@media (prefers-reduced-motion:reduce){.frame .zw{transition:none}}

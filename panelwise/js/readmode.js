@@ -106,7 +106,7 @@ function rmShowCites(k) {
   const box = rmSheet(c.items.length > 1 ? `${c.items.length} references` : "Reference", `<ol class="rdm-list">${c.items.map(it => {
     const ref = rmFindRef(it, c.numbered);
     const L = ref && typeof ixMatchRef === "function" ? ixMatchRef(ref) : null;
-    return `<li><div class="rdm-cite-k">${esc(c.numbered ? "[" + it + "]" : it)}</div>${ref ? `<div class="rdm-cite-ref">${esc(ref)}</div>` : `<div class="rdm-cite-ref none">Not found in the reference list.</div>`}${L ? `<button type="button" class="rdm-btn rdm-inlib" data-sheet="lib-open" data-v="${esc(L.id)}">In your library · Open ›</button>` : ""}</li>`;
+    return `<li><div class="rdm-cite-k">${esc(c.numbered ? "[" + it + "]" : it)}</div>${ref ? `<div class="rdm-cite-ref">${esc(ref)}</div>` : `<div class="rdm-cite-ref none">Not found in the reference list.</div>`}${L ? `<button type="button" class="rdm-btn rdm-inlib" data-sheet="lib-open" data-v="${esc(L.id)}">In your library · Open ›</button>` : ref && typeof oaQueryFrom === "function" && !(S.paper && S.paper.demo) ? `<div class="oa-box"><button type="button" class="rdm-btn rdm-oa" data-oa="find" data-q="${esc(JSON.stringify(oaQueryFrom(ref)))}">Find open-access PDF</button></div>` : ""}</li>`;
   }).join("")}</ol>`);
 }
 function rmSheet(title, html) {
@@ -270,7 +270,7 @@ function rmLayout(at) {
   flow.style.width = w + "px";                     // fixed, so one column is exactly one screen even if the viewport settles later
   flow.style.columnWidth = (w - 2 * m) + "px"; flow.style.columnGap = (2 * m) + "px";
   flow.style.paddingInline = m + "px";
-  vp.scrollLeft = 0;
+  vp.scrollLeft = 0; RM.slid = 0; flow.style.transition = "none"; flow.style.left = "0px";
   RM.pages = Math.max(1, Math.round((flow.scrollWidth - 2 * m + 2 * m) / w));
   const left = flow.getBoundingClientRect().left;
   const pageOf = el => Math.max(0, Math.floor((el.getBoundingClientRect().left - left) / w));
@@ -279,6 +279,11 @@ function rmLayout(at) {
   rmFocusPages(); rmSideRefs(); rmWordsLayout();
   rmGo(Math.round((at || 0) * (RM.pages - 1)), true);
 }
+// On a computer (mouse or trackpad) the text slides by its "left" position instead of scrolling the reading area:
+// macOS 26 draws a glass scroll track over the bottom bar once such an area has scrolled. Moving "left" makes no
+// scroll view and no graphics layer. On a phone the area scrolls (smooth, native).
+const rmSlides = () => matchMedia("(hover: hover) and (pointer: fine)").matches;
+const rmSlideX = () => RM.slid || 0;                  // px the text is moved left right now
 function rmGo(p, quiet) {
   p = Math.max(0, Math.min(RM.pages - 1, p));
   if (p === RM.page && !quiet) { if (p === RM.pages - 1 && RM.pages > 1) toast("End of the paper"); return; }
@@ -286,7 +291,16 @@ function rmGo(p, quiet) {
   // Turn the page by scrolling the reading area, not by transforming the text: a transformed strip of a hundred
   // pages becomes one enormous graphics layer, which a phone cannot afford.
   const smooth = !quiet && !matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (smooth) RM.vp.scrollTo({ left: p * RM.step, top: 0, behavior: "smooth" }); else { RM.vp.scrollLeft = p * RM.step; RM.vp.scrollTop = 0; }
+  if (rmSlides()) {
+    RM.vp.scrollLeft = 0; RM.vp.scrollTop = 0;
+    RM.flow.style.position = "relative";
+    RM.flow.style.transition = smooth ? "left .22s cubic-bezier(.2,.7,.2,1)" : "none";
+    RM.slid = p * RM.step; RM.flow.style.left = -RM.slid + "px";
+    rmBandsFollow(smooth);
+  } else {
+    if (RM.slid) { RM.slid = 0; RM.flow.style.left = "0px"; }
+    if (smooth) RM.vp.scrollTo({ left: p * RM.step, top: 0, behavior: "smooth" }); else { RM.vp.scrollLeft = p * RM.step; RM.vp.scrollTop = 0; }
+  }
   let sec = ""; for (const hd of RM.heads) if (hd.page <= p) sec = hd.name;
   const wh = $("#rmWhere"); wh.querySelector(".wl").textContent = sec || "Reading"; wh.setAttribute("aria-label", `Contents: ${sec || "Reading"}`);
   $("#rmCount").textContent = `Page ${p + 1} of ${RM.pages}`;
@@ -296,6 +310,14 @@ function rmGo(p, quiet) {
   RM.el.querySelector('[data-rm="next"]').disabled = p === RM.pages - 1;
   rmFocusSync(p); if (!RM.scrubbing) rmSideFollow(p);   // while scrubbing, the side panel waits for the end
   if (!quiet) rmSave();
+}
+// the guide bands sit in the reading area, at text coordinates: when the text slides, they slide with it
+function rmBandsFollow(smooth) {
+  for (const b of [RM.band, RM.wband]) {
+    if (!b || b.hidden || b.dataset.x == null) continue;
+    b.style.transition = smooth ? "left .22s cubic-bezier(.2,.7,.2,1)" : "none";
+    b.style.left = (+b.dataset.x - rmSlideX()) + "px";
+  }
 }
 function rmResize(d) {
   const i = Math.max(0, Math.min(RM_SIZES.length - 1, RM_SIZES.indexOf(RM.size) + d));
