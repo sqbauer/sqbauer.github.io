@@ -35,7 +35,7 @@ function allRecs() { if (D.ready) return [...D.recs.values()]; return localRecs(
 function recOf(id) { const r = D.recs.get(keyOf(id)); if (r) return r; const c = store.get("pw:" + id); return c ? { ...c, id } : null; }
 function recordFor(P) {
   const it = L.meta.items.find(x => x.id === P.id) || {};
-  return { kind: "paper", id: P.id, name: P.fileName || it.name || P.id.split(":")[0], title: P.title, year: it.year || null, folder: it.folder || "", authors: it.authors || recOf(P.id)?.authors || [],
+  return { kind: "paper", id: P.id, name: P.fileName || it.name || P.id.split(":")[0], title: P.title, year: it.year || null, folder: it.folder || "", authors: authorsFor(P),
     primer: P.primer || null, briefs: P.briefs || {}, figs: Object.fromEntries(P.figures.map(f => [f.n, f.det || null])), restate: P.restate || "", verdict: P.verdict || null,
     revealed: !!P.revealed, seen: [...(P.seen || [])], nfig: P.figures.length, lastOpened: P.lastOpened || Date.now(), tags: P.tags || [],
     // until the notes and chat have loaded (hydrate), keep the counts already saved instead of writing zeros

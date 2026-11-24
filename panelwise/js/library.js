@@ -98,7 +98,7 @@ async function extractMeta(file) {
     const ti = lines.indexOf(tl[tl.length - 1]);
     if (ti >= 0) {
       let buf = "", baseH = 0;
-      for (const l of lines.slice(ti + 1, ti + 25)) {
+      for (const l of lines.slice(ti + 1, ti + 90)) {   // 90: each superscript affiliation number is a line of its own here
         const t = l.t.trim(); if (!t) continue;
         if (/department|universit|institut|cent(?:er|re)\b|school of|laborator|abstract|received|correspond|@|doi|https?:|keywords|edited by/i.test(t)) { if (buf) break; else continue; }
         if (!baseH && /[A-Z][a-z]+/.test(t) && t.length > 6) baseH = l.h;
@@ -131,8 +131,9 @@ async function extractMeta(file) {
     return { title: title.slice(0, 260) || null, year: y, authors, head, doi };
   } finally { doc.destroy(); }
 }
-const META_V = 5;
-const metaDone = it => it.tried && (it.mv === META_V || (it.mv === 4 && (it.authors || []).length >= 2 && !/^(the journal|journal|biomedicines|cell|neuron|elife)\b/i.test(it.title || "")));
+const META_V = 6;
+// v6 reads further down for authors (long lists were cut off after about ten names): only lists of 9+ are read again
+const metaDone = it => it.tried && (it.mv === META_V || (it.mv === 5 && (it.authors || []).length < 9) || (it.mv === 4 && (it.authors || []).length >= 2 && (it.authors || []).length < 9 && !/^(the journal|journal|biomedicines|cell|neuron|elife)\b/i.test(it.title || "")));
 function parseAuthors(raw) {
   const t = (raw || "").replace(/[\uE000-\uF8FF]/g, "").replace(/\([^)]*\)/g, " ").replace(/[\d*†‡§¶#✉⁎∗✝]+/g, " ").replace(/\s+/g, " ");
   const out = [];

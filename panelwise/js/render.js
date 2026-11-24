@@ -22,8 +22,10 @@ function shortAuthors(au) { if (!au.length) return ""; const fam = a => String(a
 function paperYear(P) { return P.card?.year || L.meta.items.find(x => x.id === P.id)?.year || recOf(P.id)?.year || ""; }
 function renderPaperHead(P) {
   const au = P.demo ? [] : authorsFor(P), yr = P.demo ? "" : paperYear(P);
-  const meta = [shortAuthors(au), yr, P.sub].filter(Boolean).map(esc).join(" · ");
+  const meta = [yr, P.sub].filter(Boolean).map(esc).join(" · ");
   const oi = !P.demo && typeof oaInfo === "function" ? oaInfo(P.fileName) : null;
+  if (AU.pid !== P.id) { AU.pid = P.id; AU.allShown = false; }
+  const pa = $("#phAuthors"); if (pa) pa.innerHTML = authorsLine(au);
   $("#phMeta").innerHTML = (P.demo ? `<span class="tag">example</span>` : "") + meta
     + (oi ? ` <span class="pill p3" title="Saved by Panelwise from ${esc(oi.url || "")}">Open access · ${esc(oaWhere(oi))}</span>` : "");
   if ($("#phTitle").textContent !== P.title) $("#phTitle").textContent = P.title;

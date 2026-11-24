@@ -173,6 +173,7 @@ document.addEventListener("click", async e => {
     toast(res.have ? "Already in your library" : `Saved to ${PW.files.folderName}/${OA_DIR}`);
     if (RM.el && !RM.el.hidden) { RM.onClose = null; rmClose(); }
     if (typeof lsClose === "function" && LS.el && !LS.el.hidden) lsClose();
+    if (typeof auClose === "function") auClose();
     await oaOpen(res);
   }
 }, true);

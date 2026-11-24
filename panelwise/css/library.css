@@ -271,3 +271,31 @@ select.sort{border:1px solid var(--line-strong);border-radius:var(--r-sm);backgr
 .oa-mine-out{margin-top:10px}
 .oa-list{list-style:none;padding:0;margin:10px 0 0;display:flex;flex-direction:column;gap:8px;max-height:360px;overflow:auto}
 .oa-list li{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:8px}
+
+/* authors: the list under a paper's title (authors.js) and the author sheet */
+.ph-authors{color:var(--ink);margin-top:6px;font-size:var(--t-sm);line-height:1.5}
+.ph-authors .au{border:0;background:none;padding:0;margin:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline dotted color-mix(in srgb,var(--muted) 60%,transparent);text-underline-offset:3px}
+.ph-authors .au:hover{color:var(--accent);text-decoration-color:currentColor}
+.ph-authors .au-more{color:var(--accent);text-decoration:none}
+.ph-authors .au-last{color:var(--muted);font-size:.85em}
+.au-wrap{position:fixed;inset:0;z-index:60}
+.au-scrim{position:absolute;inset:0;background:rgba(10,14,20,.35)}
+.au-sheet{position:absolute;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--surface);box-shadow:var(--sh-2);display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top,0px)}
+.au-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px 10px}
+.au-h h2{margin:2px 0 4px;font-size:var(--t-xl)}
+.au-tools{padding:0 20px 10px;border-bottom:1px solid var(--line)}
+.au-tools .seg{display:inline-flex;gap:4px;flex-wrap:wrap}
+.au-tools .seg button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--r-pill);padding:6px 12px;font:inherit;font-size:var(--t-sm);cursor:pointer}
+.au-tools .seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.au-body{overflow:auto;padding:4px 20px calc(24px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch}
+.au-body h3{font-size:var(--t-xs);font-family:var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px}
+.au-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.au-list li{border-top:1px solid var(--line);padding:9px 0}
+.au-list li.oa-box{margin:0;gap:6px}
+.au-row{display:flex;flex-direction:column;gap:2px;text-align:left;border:0;background:none;padding:0;font:inherit;color:var(--ink);cursor:pointer;width:100%}
+.au-row .t{font-weight:600}
+.au-row:hover .t{color:var(--accent)}
+.au-row:disabled{cursor:default;opacity:.7}
+.au-row:disabled:hover .t{color:inherit}
+@media (max-width:600px){.au-sheet{top:auto;height:88%;width:100%;border-radius:var(--r-lg,14px) var(--r-lg,14px) 0 0}}

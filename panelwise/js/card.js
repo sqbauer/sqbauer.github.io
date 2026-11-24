@@ -3,7 +3,11 @@
 function onelinerHTML(c) {
   return `<div class="oneliner"><span class="lab">${esc(c.lab)}</span>${c.year ? ` · ${esc(c.year)}` : ""}${c.prep ? ` · ${esc(c.prep)}` : ""}<br>${esc(c.finding)}${c.caveat ? `<div class="note" style="margin-top:6px;font-family:var(--f-ui)">Caveat: ${esc(c.caveat)}</div>` : ""}</div>`;
 }
-function authorsFor(P) { const r = recOf(P.id); if (r?.authors?.length) return r.authors; const it = L.meta.items.find(x => x.id === P.id || normTitle(x.title) === normTitle(P.title)); return it?.authors || []; }
+// the longest list we have: the saved record's can be older than the library's (author lists used to be cut off at about ten)
+function authorsFor(P) {
+  const r = recOf(P.id), it = L.meta.items.find(x => x.id === P.id || normTitle(x.title) === normTitle(P.title));
+  return [r?.authors, it?.authors, P.authorsPdf].filter(a => a && a.length).sort((a, b) => b.length - a.length)[0] || [];
+}
 function viewCard(P) {
   const c = P.card || {}, au = authorsFor(P);
   const yr = c.year || L.meta.items.find(x => x.id === P.id)?.year || "";

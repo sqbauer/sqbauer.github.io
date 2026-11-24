@@ -41,6 +41,11 @@ async function handleFile(file, canonicalId) {
     ui.hidden = true;
     pageCache.clear();
     openPaper(raw);
+    // a PDF that isn't in the library index yet (or the web version): read its authors from the first page
+    const li = L.meta.items.find(x => x.id === raw.id);
+    if ((!li || li.mv !== META_V) && typeof extractMeta === "function") extractMeta(file).then(m => {
+      if (S.paper && S.paper.id === raw.id && m && m.authors && m.authors.length > authorsFor(S.paper).length) { S.paper.authorsPdf = m.authors; renderPaperHead(S.paper); }
+    }).catch(() => {});
   } catch (e) {
     if (gen !== OPEN_GEN) return;
     console.error(e); ui.hidden = true;
