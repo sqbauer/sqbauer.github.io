@@ -82,10 +82,10 @@ async function extractMeta(file) {
   const lib = await ensurePdfJs();
   const doc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), ...PDF_OPTS }).promise;
   try {
-    const tc = await (await doc.getPage(1)).getTextContent();
+    const pg1 = await doc.getPage(1), tc = await pg1.getTextContent(), W1 = pg1.getViewport({ scale: 1 }).width;
     const lines = []; let cur = null;
     for (const it of tc.items) { if (typeof it.str !== "string") continue; const h = Math.abs(it.transform[3]) || 0, y = it.transform[5];
-      if (!cur || Math.abs(y - cur.y) > .6 * Math.max(h, cur.h) || Math.abs(h - cur.h) > .2 * cur.h) { cur = { t: "", y, h }; lines.push(cur); }
+      if (!cur || Math.abs(y - cur.y) > .6 * Math.max(h, cur.h) || Math.abs(h - cur.h) > .2 * cur.h || (it.str.trim() && it.transform[4] < cur.x - 4 * h)) { cur = { t: "", y, h, x: it.transform[4] }; lines.push(cur); }
       cur.t += it.str; }
     const good = lines.filter(l => l.t.trim().length > 2 && !/^(article|research|original|letter|report|open access|review)\b/i.test(l.t.trim()));
     const goodT = good.filter(l => l.t.trim().split(/\s+/).length >= 3 && !/journal|www\.|doi|©/i.test(l.t));
@@ -100,6 +100,7 @@ async function extractMeta(file) {
       let buf = "", baseH = 0;
       for (const l of lines.slice(ti + 1, ti + 90)) {   // 90: each superscript affiliation number is a line of its own here
         const t = l.t.trim(); if (!t) continue;
+        if (l.x > W1 * .52 && t.length > 40) continue;   // the right column's text beside the authors (two-column first pages, Neuron 2002)
         if (/department|universit|institut|cent(?:er|re)\b|school of|laborator|abstract|received|correspond|@|doi|https?:|keywords|edited by/i.test(t)) { if (buf) break; else continue; }
         if (!baseH && /[A-Z][a-z]+/.test(t) && t.length > 6) baseH = l.h;
         if (baseH && t.length > 30 && Math.abs(l.h - baseH) > .07 * baseH) break;
@@ -131,9 +132,10 @@ async function extractMeta(file) {
     return { title: title.slice(0, 260) || null, year: y, authors, head, doi };
   } finally { doc.destroy(); }
 }
-const META_V = 6;
-// v6 reads further down for authors (long lists were cut off after about ten names): only lists of 9+ are read again
-const metaDone = it => it.tried && (it.mv === META_V || (it.mv === 5 && (it.authors || []).length < 9) || (it.mv === 4 && (it.authors || []).length >= 2 && (it.authors || []).length < 9 && !/^(the journal|journal|biomedicines|cell|neuron|elife)\b/i.test(it.title || "")));
+const META_V = 7;
+// v6 reads further down for authors (long lists were cut off after about ten names): only lists of 9+ are read again.
+// v7 ignores the right column beside the authors; not re-read in the background (each paper re-reads its authors when opened)
+const metaDone = it => it.tried && (it.mv === META_V || it.mv === 6 || (it.mv === 5 && (it.authors || []).length < 9) || (it.mv === 4 && (it.authors || []).length >= 2 && (it.authors || []).length < 9 && !/^(the journal|journal|biomedicines|cell|neuron|elife)\b/i.test(it.title || "")));
 function parseAuthors(raw) {
   const t = (raw || "").replace(/[\uE000-\uF8FF]/g, "").replace(/\([^)]*\)/g, " ").replace(/[\d*†‡§¶#✉⁎∗✝]+/g, " ").replace(/\s+/g, " ");
   const out = [];
@@ -262,6 +264,7 @@ function libMoreMenu(btn) {
     { label: folder || L.files.size ? "Rescan folder" : L.meta.items.length ? "Re-select Papers folder" : "Choose Papers folder", key: libKey(native ? "⌘R" : ""), run: () => folder ? PW.files.scan() : pickFolderAction() },
     { label: "Open one PDF…", key: libKey("⌘O"), run: () => $("#fileIn").click() },
     { label: "Example paper", run: () => openPaper(DEMO) },
+    { label: "Mouse brain sections", key: libKey("⌘B"), run: () => brainOpen("", btn) },
     "-",
     { label: "Settings", key: libKey("⌘,"), run: () => { S.view = "settings"; render(); window.scrollTo(0, 0); } },
   ]);
@@ -276,6 +279,7 @@ document.addEventListener("keydown", e => {
   if (e.key === "o") { e.preventDefault(); $("#fileIn").click(); }
   else if (e.key === ",") { e.preventDefault(); S.view = "settings"; render(); window.scrollTo(0, 0); }
   else if (e.key === "r" && PW.native && PW.files.folderName) { e.preventDefault(); PW.files.scan(); }
+  else if (e.key === "b") { e.preventDefault(); brainOpen(""); }
 });
 // the library's search field: typing on another tab shows the papers; Enter searches everything
 document.addEventListener("input", e => {

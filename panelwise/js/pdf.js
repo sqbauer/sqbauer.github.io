@@ -82,6 +82,24 @@ function graphicsOf(ol, vp, O, imgOps) {
   box.w = Math.min(box.w, 1 - box.x); box.h = Math.min(box.h, 1 - box.y);
   return { area: n / (G * G), box: box.w * box.h > .03 ? box : null };
 }
+/* Some PDFs store a two-column page line by line across both columns (left, right, left, …: Neuron 2002), so the
+   stream order mixes the columns. When a page's lines keep switching column, put them in reading order: within each
+   band between full-width lines (title, wide figures), the left column top to bottom, then the right column. */
+function colOrder(lines, start, mid, W) {
+  const pl = lines.slice(start); if (pl.length < 12) return;
+  const side = l => (l.xInk ?? l.xEnd) <= mid + .03 * W ? 0 : l.x >= mid - .03 * W ? 1 : -1;
+  const cols = pl.map(side), two = cols.filter(c => c >= 0);
+  let sw = 0; for (let i = 1; i < two.length; i++) if (two[i] !== two[i - 1]) sw++;
+  if (sw < 8 || sw / two.length < .3) return;
+  // both columns real running text (not margin line numbers, page furniture or figure labels)
+  const body = c => pl.filter((l, i) => cols[i] === c && l.text.length >= 25).length;
+  if (body(0) < 8 || body(1) < 8 || Math.min(body(0), body(1)) < .3 * two.length) return;
+  const full = pl.filter((l, i) => cols[i] < 0), above = l => full.filter(f => f.y > l.y + 1).length;
+  const key = pl.map((l, i) => cols[i] < 0 ? [above(l) + 1, -1, -l.y] : [above(l), cols[i], -l.y]);
+  const order = pl.map((l, i) => i).sort((a, b) => key[a][0] - key[b][0] || key[a][1] - key[b][1] || key[a][2] - key[b][2] || a - b);
+  const sorted = order.map(i => pl[i]);
+  for (let i = 0; i < sorted.length; i++) lines[start + i] = sorted[i];
+}
 async function parsePdf(file, prog) {
   const lib = await ensurePdfJs(); prog(0);
   const data = new Uint8Array(await file.arrayBuffer());
@@ -94,7 +112,11 @@ async function parsePdf(file, prog) {
     const tc = await page.getTextContent();
     let imgs = 0, paths = 0, g = { area: 0, box: null };
     try { const ol = await page.getOperatorList(); for (const fn of ol.fnArray) { if (imgOps.has(fn)) imgs++; else if (fn === OPS.constructPath) paths++; } g = graphicsOf(ol, page.getViewport({ scale: 1 }), OPS, imgOps); } catch {}
-    let chars = 0, cur = null;
+    let chars = 0, cur = null; const pageStart = lines.length;
+    // the middle of the text block (not of the page: margins can differ, Neuron 2002 has 99 pt left and 32 pt right)
+    let tx0 = Infinity, tx1 = -Infinity;
+    for (const it of tc.items) if (it.str && it.str.trim() && Math.abs(it.transform[1]) <= Math.abs(it.transform[0]) + .01) { tx0 = Math.min(tx0, it.transform[4]); tx1 = Math.max(tx1, it.transform[4] + (it.width || 0)); }
+    const PW_MID = isFinite(tx0) ? (tx0 + tx1) / 2 : page.getViewport({ scale: 1 }).width / 2, PW_SPAN = isFinite(tx0) ? tx1 - tx0 : page.getViewport({ scale: 1 }).width;
     // bold text, used to recognise run-in subheadings ("Sst-Chodl cells are long-range projecting INs")
     const boldOf = new Map(), isBold = fn => {
       if (!boldOf.has(fn)) { let b = false; try { if (page.commonObjs.has(fn)) { const f = page.commonObjs.get(fn); b = !!(f && (f.bold || /bold|black|heavy|semibold|demi/i.test(f.name || ""))); } } catch {} boldOf.set(fn, b); }
@@ -119,15 +141,19 @@ async function parsePdf(file, prog) {
           continue;
         }
       }
-      if (cur && (Math.abs(y - cur.y) > Math.max(2, .55 * Math.min(h, cur.h)) || x < cur.xEnd - 4 * h)) push();
+      // a new line: another baseline, a jump back to the left, or a jump right across a column gutter (two columns
+      // whose lines share a baseline, e.g. Neuron 2002: "...yet the" + "time-dependent performance gains...")
+      if (cur && (Math.abs(y - cur.y) > Math.max(2, .55 * Math.min(h, cur.h)) || x < cur.xEnd - 4 * h || (it.str.trim() && cur.text.trim() && x > (cur.xInk ?? cur.xEnd) + 2.2 * h && (cur.xInk ?? cur.xEnd) < PW_MID + .03 * PW_SPAN && x > PW_MID - .03 * PW_SPAN && x < PW_MID + .1 * PW_SPAN && (cur.xInk ?? cur.xEnd) - cur.x > .35 * PW_SPAN))) push();
       if (!cur) cur = { text: "", x, y, h, xEnd: x, page: p, bc: 0 };
       if (it.fontName && isBold(it.fontName)) cur.bc += it.str.replace(/\s/g, "").length;
       if (cur.text && x > cur.xEnd + .18 * h && !/\s$/.test(cur.text)) cur.text += " ";
       cur.text += it.str; cur.xEnd = x + (it.width || 0); cur.h = Math.max(cur.h, h);
+      if (it.str.trim()) cur.xInk = cur.xEnd;           // where the last visible text ends (spaces can bridge a gutter)
       if (it.hasEOL) push();
     }
     push();
     const vp1 = page.getViewport({ scale: 1 });
+    colOrder(lines, pageStart, PW_MID, PW_SPAN);
     pageInfo[p] = { imgs, paths, chars, gArea: g.area, gBox: g.box, W: vp1.width, H: vp1.height };
     if (p % 3 === 0) prog(1, `Page ${p} of ${doc.numPages}`);
   }
