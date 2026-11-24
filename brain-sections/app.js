@@ -613,6 +613,28 @@ function syncPlaneUi() {
   $("pos").min = (c ? lo : -hi).toFixed(2); $("pos").max = hi.toFixed(2);
 }
 
+let descData = null;              // data/descriptions.json {fn: {acronym: text}}
+let pinnedRegion = null;          // region id kept in the info card until cleared
+function regionDesc(id) {         // nearest ancestor (incl. self) with a function blurb
+  const fn = descData && descData.fn; if (!fn) return null;
+  for (const u of lineage(id)) { const st = struct(u); if (st && fn[st.a]) return { id: u, text: fn[st.a], inherited: u !== id }; }
+  return null;
+}
+function showRegion(id, pinned) {
+  const st = struct(id); if (!st) return;
+  $("rcName").textContent = `${st.a} — ${st.n}`;
+  const d = regionDesc(id);
+  $("rcFn").textContent = d ? d.text : "No description available for this region.";
+  let note = "Function written by an AI (LLM) — may be inaccurate; verify against primary sources.";
+  if (d && d.inherited) { const a = struct(d.id); note = `General function of ${a.a} (${a.n}). ` + note; }
+  $("rcSrc").textContent = note;
+  $("regionCard").hidden = false;
+  $("rcPin").hidden = (pinnedRegion == null);
+}
+function clearRegion() {           // revert to the pinned region, or hide the card
+  if (pinnedRegion != null) showRegion(pinnedRegion, true);
+  else { $("regionCard").hidden = true; $("rcPin").hidden = true; }
+}
 function addHighlight(id) {
   if (state.hl.has(id)) return;
   const used = new Set(state.hl.values());
@@ -928,6 +950,7 @@ function wire() {
     const el = e.target.closest("[data-id]");
     if (!el) return;
     const id = +el.dataset.id;
+    pinnedRegion = id; showRegion(id, true);
     let side = el.dataset.side || null;
     if ((e.ctrlKey || e.metaKey) && current.plane !== "sagittal") {
       // one hemisphere only: the half that was clicked
@@ -954,17 +977,18 @@ function wire() {
       const pt = svgPoint(e); if (!pt) return;
       const [X, Y] = pt;
       const r = hitRegion(current, "fine", X, Y);
-      const name = r ? `${struct(r.id).a} — ${struct(r.id).n} · ` : "";
-      if (current.plane === "view3d") { $("hover").innerHTML = name ? esc(name.slice(0, -3)) : "&nbsp;"; return; }
-      if (current.plane === "dorsal") { $("hover").textContent = `${name}ML ${fmt(X / 1000)} mm, AP ${fmt(-Y / 1000)} mm`; return; }
+      if (r) showRegion(r.id, false); else clearRegion();
+      if (current.plane === "view3d") { $("hover").innerHTML = "&nbsp;"; return; }
+      if (current.plane === "dorsal") { $("hover").textContent = `ML ${fmt(X / 1000)} mm, AP ${fmt(-Y / 1000)} mm`; return; }
       const sy = surfaceY(current, X);
       const a = current.plane === "coronal" ? `ML ${fmt(X / 1000)} mm` : `AP ${fmt(-X / 1000)} mm`;
       const dv = `${fmt(Y / 1000)} mm below bregma` + (sy != null && Y >= sy ? ` (${fmt((Y - sy) / 1000)} mm below surface)` : "");
-      $("hover").textContent = (r ? `${struct(r.id).a} — ${struct(r.id).n} · ` : "") + `${a}, ${dv}`;
+      $("hover").textContent = `${a}, ${dv}`;
     });
   });
-  paper.addEventListener("pointerleave", () => { $("hover").innerHTML = "&nbsp;"; });
+  paper.addEventListener("pointerleave", () => { $("hover").innerHTML = "&nbsp;"; clearRegion(); });
 
+  $("rcPin").addEventListener("click", () => { pinnedRegion = null; clearRegion(); });
   $("dlSvg").addEventListener("click", exportSvg);
   $("dlPng").addEventListener("click", exportPng);
   $("copyLink").addEventListener("click", async () => {
@@ -978,5 +1002,6 @@ function wire() {
   try {
     atlas = await (await fetch("data/index.json")).json();
   } catch (e) { $("status").textContent = "Could not load the atlas index."; return; }
+  try { descData = await (await fetch("data/descriptions.json")).json(); } catch (e) { descData = null; }
   loadHash(); stateToForm(); syncPlaneUi(); wire(); draw();
 })();

@@ -51,6 +51,14 @@ These are approximations: the CCF is an average brain without skull landmarks, a
 coordinate systems is the Paxinos & Franklin atlas. Do not use the drawings for surgical planning
 without checking against histology.
 
+## Region descriptions
+
+Hovering or clicking a region shows its name and a one-line general function, read from
+`data/descriptions.json` (keyed by Allen CCF acronym). A region without its own entry inherits the
+nearest parent structure's description, so the twelve major divisions always provide a fallback.
+**These blurbs were written by an AI language model and may be wrong** — the UI says so, and they are
+meant only as a rough orientation. The file is plain JSON: edit or extend it by hand and reload.
+
 ## Licence and citation
 
 - **Code** (`index.html`, `app.js`, `style.css`, `tools/`): [MIT](LICENSE).
