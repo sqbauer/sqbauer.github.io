@@ -23,7 +23,9 @@ function paperYear(P) { return P.card?.year || L.meta.items.find(x => x.id === P
 function renderPaperHead(P) {
   const au = P.demo ? [] : authorsFor(P), yr = P.demo ? "" : paperYear(P);
   const meta = [shortAuthors(au), yr, P.sub].filter(Boolean).map(esc).join(" · ");
-  $("#phMeta").innerHTML = (P.demo ? `<span class="tag">example</span>` : "") + meta;
+  const oi = !P.demo && typeof oaInfo === "function" ? oaInfo(P.fileName) : null;
+  $("#phMeta").innerHTML = (P.demo ? `<span class="tag">example</span>` : "") + meta
+    + (oi ? ` <span class="pill p3" title="Saved by Panelwise from ${esc(oi.url || "")}">Open access · ${esc(oaWhere(oi))}</span>` : "");
   if ($("#phTitle").textContent !== P.title) $("#phTitle").textContent = P.title;
   $("#phTitle").title = P.title;
   // compact title in the bar, shown once the big one has scrolled away
@@ -72,7 +74,7 @@ function render() {
   else m.innerHTML = viewFigures(P);
   if (S.view === "figures" && P.figures[S.figIdx]) { P.seen.add(P.figures[S.figIdx].n); if (!P.demo && P.seen.size !== P._savedSeen) { P._savedSeen = P.seen.size; saveCache(); } }
   { const im = $("#frame img"); if (im) { const set = () => im.naturalWidth && $("#frame")?.style.setProperty("--ar", (im.naturalWidth / im.naturalHeight).toFixed(3)); im.complete ? set() : im.addEventListener("load", set, { once: true }); } }
-  if (S.view === "figures") { applyHL(); const f = P.figures[S.figIdx]; if (f && !P.demo && !f.img && !f.busy && !f.tried && P.doc) { f.tried = true; prepareFigure(f); } }
+  if (S.view === "figures") { figFit(); $("#frame img")?.addEventListener("load", figFit, { once: true }); applyHL(); const f = P.figures[S.figIdx]; if (f && !P.demo && !f.img && !f.busy && !f.tried && P.doc) { f.tried = true; prepareFigure(f); } }
   draftsRestore(typing);
   updateChatCtx();
   topScrolled();
@@ -111,6 +113,14 @@ document.addEventListener("click", e => {
     if (nb) nb.focus({ preventScroll: true });
   }
 });
+// the figure column (wide windows) must fit the window: the room left for the image, from the real window height
+function figFit() {
+  const st = document.querySelector(".stage"); if (!st) return;
+  const top = parseFloat(getComputedStyle(st).top) || 0, frame = st.querySelector(".frame");
+  const other = frame ? st.getBoundingClientRect().height - frame.getBoundingClientRect().height : 120;   // panel row, bar
+  document.documentElement.style.setProperty("--fig-max", Math.max(220, Math.floor(innerHeight - top - other - 16)) + "px");
+}
+addEventListener("resize", () => { if (S.view === "figures") figFit(); });
 // where you are in a paper (step and figure), so reopening it continues there
 const stepKey = id => "pwread:step:" + id;
 function stepLoad(id) { try { return JSON.parse(localStorage.getItem(stepKey(id)) || "null"); } catch { return null; } }
@@ -215,7 +225,7 @@ function viewFigures(P) {
   const hasPanels = f.panels && f.panels.length;
   const title = L.title || f.legend.slice(0, 120);
   const stage = f.img
-    ? `<div class="frame ${S.outlines ? "outlines" : ""}" id="frame"><img src="${f.img}" alt="Figure ${f.n}">${hasPanels ? f.panels.map(p => `<button type="button" class="hot" data-panel="${esc(p.label)}" style="left:${p.x * 100}%;top:${p.y * 100}%;width:${p.w * 100}%;height:${p.h * 100}%" aria-label="Panel ${esc(p.label)}" aria-pressed="false"><span class="badge" aria-hidden="true">${esc(p.label)}</span></button>`).join("") : ""}</div>`
+    ? `<div class="frame ${S.outlines ? "outlines" : ""}" id="frame"><div class="zw" id="zw"><img src="${f.img}" alt="Figure ${f.n}">${hasPanels ? f.panels.map(p => `<button type="button" class="hot" data-panel="${esc(p.label)}" style="left:${p.x * 100}%;top:${p.y * 100}%;width:${p.w * 100}%;height:${p.h * 100}%" aria-label="Panel ${esc(p.label)}" aria-pressed="false"><span class="badge" aria-hidden="true">${esc(p.label)}</span></button>`).join("") : ""}</div></div>`
     : `<div class="frame"><div class="pagewait">${f.busy ? `<div class="thinking"><span class="dot"></span>${S.sample && S.imagesOK ? "Claude is locating the panels…" : "Rendering the page…"}</div>` : P.docFailed ? "Couldn't load this PDF to draw the figure. Close the paper and open it again." : P.doc || P.demo || P.docReady ? "Preparing figure…" : "This figure isn't on your phone yet. Open the paper once on your PC to sync it."}</div></div>`;
   let status = "";
   if (P.demo) status = "Hover a panel or a dotted sentence to link them; click to keep it selected.";
@@ -291,8 +301,21 @@ function applyHL() {
     el.classList.toggle("pin", !!pin && ls.includes(pin));
   });
   panelCard(f, pin);
+  figZoom(f, pin);
   noteTarget(f, pin);
   updateChatCtx();
+}
+// Mac (mouse): clicking a panel on the figure enlarges it inside the figure's own box (never over the text);
+// another click goes back. While enlarged, choosing another panel (panel row, arrows, a sentence) moves to it.
+function figZoom(f, pin) {
+  const zw = $("#zw"), frame = $("#frame"); if (!zw || !frame) return;
+  const p = S.zoom && pin && (f.panels || []).find(q => q.label === pin);
+  if (!p) { if (S.zoom && !pin) S.zoom = false; zw.style.transform = ""; frame.classList.remove("zoomed"); zw.style.removeProperty("--zs"); return; }
+  const s = Math.max(1, Math.min(4, 0.94 / Math.max(p.w, p.h)));
+  const cl = (v, lo) => Math.min(0, Math.max(lo, v));
+  const tx = cl(50 - s * (p.x + p.w / 2) * 100, 100 - 100 * s), ty = cl(50 - s * (p.y + p.h / 2) * 100, 100 - 100 * s);
+  zw.style.transform = `translate(${tx.toFixed(2)}%, ${ty.toFixed(2)}%) scale(${s.toFixed(3)})`;
+  zw.style.setProperty("--zs", s.toFixed(3)); frame.classList.add("zoomed");
 }
 // the selected-panel card: what the panel shows (its legend part), how many sentences cite it, and arrows to the neighbours
 function panelCard(f, pin) {

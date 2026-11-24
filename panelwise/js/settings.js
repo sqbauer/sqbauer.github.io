@@ -30,6 +30,8 @@ async function renderSettings() {
         : `<p class="note">In a browser, pick the folder from the library each session.</p><div class="setrow"><button class="btn" type="button" data-act="pickdir">Choose Papers folder</button></div>`}
     </div>
 
+    ${typeof oaMineHTML === "function" ? oaMineHTML() : ""}
+
     <div class="card"><h3>Saved work and backups</h3>
       <p>${nRecs} papers with saved work on this ${PW.native ? "iPhone" : "browser"}.</p>
       ${PW.native ? `<p class="note">A backup is written to <span class="mono">${esc(folder || "Papers")}/_panelwise/backup.json</span> when the app goes to the background${PW.backup.lastAt ? `, last at ${new Date(PW.backup.lastAt).toLocaleTimeString()}` : ""}. iCloud Drive keeps it in sync with your other devices.</p>

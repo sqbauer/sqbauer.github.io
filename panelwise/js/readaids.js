@@ -109,7 +109,7 @@ function rmFocusStep(d) {
    Lines exist only after layout, so they are measured from the laid-out text (every layout) and a band
    is moved over them: the text itself is never wrapped or changed. ---- */
 function rmLines() {
-  const vp = RM.vp, vr = vp.getBoundingClientRect(), left = RM.flow.getBoundingClientRect().left, sl = vp.scrollLeft;
+  const vp = RM.vp, vr = vp.getBoundingClientRect(), left = RM.flow.getBoundingClientRect().left, sl = vp.scrollLeft + rmSlideX();
   const rects = [];
   for (const p of RM.flow.querySelectorAll("p, li, h2, h3, h4")) {
     if (p.closest(".rdm-more, .rdm-figcard")) continue;
@@ -146,7 +146,8 @@ function rmLineSet(i, quiet) {
   RM.ln = i; const pad = Math.max(3, Math.round(l.h * .18));
   RM.band.hidden = false;
   RM.band.classList.toggle("quiet", !!quiet);           // no slide when it jumps (layout, page turn by swipe)
-  Object.assign(RM.band.style, { left: (l.x - 8) + "px", top: (l.y - pad) + "px", width: (l.w + 16) + "px", height: (l.h + 2 * pad) + "px" });
+  RM.band.dataset.x = l.x - 8; RM.band.style.transition = "";   // line to line: the CSS animation
+  Object.assign(RM.band.style, { left: (l.x - 8 - rmSlideX()) + "px", top: (l.y - pad) + "px", width: (l.w + 16) + "px", height: (l.h + 2 * pad) + "px" });
 }
 function rmLineSync(p) {
   if (RM.fsLock || !RM.lines || !RM.lines.length) return;

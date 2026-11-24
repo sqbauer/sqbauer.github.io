@@ -332,9 +332,12 @@ document.addEventListener("click", e => {
   if (S.view !== "figures" || !e.target.closest) return;
   const frame = e.target.closest("#frame"); if (!frame || !frame.querySelector("img")) return;
   const hot = e.target.closest(".hot");
+  const mouse = !matchMedia("(hover: none)").matches;
+  if (mouse && S.zoom) { e.stopPropagation(); S.zoom = false; applyHL(); return; }   // enlarged: any click goes back
   if (hot) {
-    if (!matchMedia("(hover: none)").matches) return;   // with a mouse, clicking a panel still pins it
-    e.stopPropagation(); fvOpen(hot.dataset.panel);
+    e.stopPropagation();
+    if (mouse) { const f = S.paper.figures[S.figIdx]; S.pinned = { fig: f.n, panel: hot.dataset.panel }; S.zoom = true; applyHL(); revealLinked($(".ptext .sent.pin") || $(".seg.pin")); }   // with a mouse: select the panel and enlarge it in place
+    else fvOpen(hot.dataset.panel);
   } else { e.stopPropagation(); fvOpen(null); }
 }, true);
 document.addEventListener("keydown", e => {

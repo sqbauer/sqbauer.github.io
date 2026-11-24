@@ -46,7 +46,7 @@ function rmWordPos(i) {
   const r = rg.getClientRects()[0]; if (!r) return null;
   const left = RM.flow.getBoundingClientRect().left, vr = RM.vp.getBoundingClientRect();
   return { page: Math.max(0, Math.min(RM.pages - 1, Math.floor((r.left - left + 1) / RM.step))),
-    x: r.left - vr.left + RM.vp.scrollLeft, y: r.top - vr.top, w: r.width, h: r.height };
+    x: r.left - vr.left + RM.vp.scrollLeft + rmSlideX(), y: r.top - vr.top, w: r.width, h: r.height };
 }
 // where to start: the word paused on (if the reader hasn't moved since), else the guide's line, else the top of the page
 function rmWordStart() {
@@ -76,7 +76,8 @@ function rmWordBand(p) {
   if (!RM.wband) { RM.wband = document.createElement("div"); RM.wband.className = "rdm-wband"; RM.wband.setAttribute("aria-hidden", "true"); }
   if (RM.wband.parentNode !== RM.vp) RM.vp.appendChild(RM.wband);
   RM.wband.hidden = false;
-  Object.assign(RM.wband.style, { left: (p.x - 2) + "px", top: (p.y - 1) + "px", width: (p.w + 4) + "px", height: (p.h + 2) + "px" });
+  RM.wband.dataset.x = p.x - 2; RM.wband.style.transition = "";
+  Object.assign(RM.wband.style, { left: (p.x - 2 - rmSlideX()) + "px", top: (p.y - 1) + "px", width: (p.w + 4) + "px", height: (p.h + 2) + "px" });
 }
 function rmWordKeep(i) { RM.wordAt = i; RM.wordPg = RM.page; RM.wordLn = RM.ln; }
 function rmWordsLayout() { if (!(RM.tts && RM.tts.on)) rmWordBand(null); }   // after a new layout the underline would be off
