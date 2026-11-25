@@ -6,6 +6,7 @@
      await s.limits()                                           -> { images: true }
    Errors are thrown as { code, text } with the codes errCopy() understands. */
 const PW_MODEL = "claude-sonnet-5-5";
+const PW_MODEL_FAST = "claude-haiku-5-5";                  // quick, cheap steps (turning a question into search terms)
 const PW_CACHE_COL = "_cache";
 
 PW.makeSample = function (apiKey, kv) {
@@ -60,20 +61,20 @@ PW.makeSample = function (apiKey, kv) {
     let ck = null;
     if (cacheOn) {
       const imgKeys = await Promise.all(images.map(async b => sha([await toB64(b)])));
-      ck = await sha([PW_MODEL, JSON.stringify(input), ...imgKeys]);
+      ck = await sha([opts.model || PW_MODEL, JSON.stringify(input), ...imgKeys]);
       if (!opts.cache.refresh) {
         const hit = await kv.get(PW_CACHE_COL, ck);
         if (hit && Date.now() - hit.at < (opts.cache.gcTime || 864e5)) { opts.onText && opts.onText({ text: hit.text }); return { text: hit.text }; }
       }
     }
     const params = {
-      model: PW_MODEL,
+      model: opts.model || PW_MODEL,
       max_tokens: opts.maxTokens || 16000,
       messages: await toMessages(input, images),
       output_config: { effort: opts.effort || "low" },
       // if Sonnet declines on a safety category, the API retries on a fallback model in the same call
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
+      // (Haiku has no server-side fallback: the parameter is left out for it)
+      ...((opts.model || PW_MODEL) === PW_MODEL_FAST ? {} : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" }),
     };
     let text = "";
     try {

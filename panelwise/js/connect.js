@@ -80,6 +80,7 @@ async function pwIndexPaper(id, raw) {
     if (typeof WKI !== "undefined") WKI.agg = null;           // the wiki gathers again next time
     IX.map.set(id, d);
     await PW.be.put(IX_COL, id, d);
+    if (typeof aixLater === "function") aixLater(id, raw);
   } catch (e) { console.warn("index failed", e && e.message); }
 }
 /* papers that aren't indexed yet; with read=true also those whose text was never read (slow: reads the PDF) */
@@ -241,6 +242,7 @@ function lsBuild() {
     }
     else if (a === "brain") { lsClose(true); brainOpen(b.dataset.hash || ""); }
     else if (a === "note") { lsClose(true); const it = nbFind(b.dataset.nb); if (it) nbGo(it); }
+    else if (a === "ask") { const v = $("#lsQ").value.trim(); lsClose(true); askOpen(v); }
     else if (a === "term") { lsClose(true); S.wk = b.dataset.k; S.view = "wiki"; render(); window.scrollTo(0, 0); }
     else if (a === "lib") { const v = $("#lsQ").value.trim(); lsClose(true); L.q = v; L.tab = "papers"; L.folderSel = "*"; S.view = "library"; render(); window.scrollTo(0, 0); }
     else if (a === "read") {
@@ -334,7 +336,9 @@ function lsQuick(q) {
     return `<button type="button" class="ls-row" role="option" data-lsi data-ls="paper" data-id="${esc(L_.id)}"><span class="ls-i">${LS_SVG.paper}</span><span class="ls-b"><span class="ls-h1">${lsHL(L_.title, q)}</span><span class="ls-h2">${esc([L_.label.trim(), pr.label !== "New" ? pr.label : "", !L_.g.file ? "not in folder" : ""].filter(Boolean).join(" · "))}</span></span><span class="ls-go">Open ↵</span></button>`; }).join("")
     + (ps.length > 5 ? `<button type="button" class="ls-row ls-more" role="option" data-lsi data-ls="lib">Show all ${ps.length} papers in the library</button>` : "");
   const tRows = ts.slice(0, 5).map(a => `<button type="button" class="ls-row" role="option" data-lsi data-ls="term" data-k="${esc(a.k)}"><span class="ls-i">${LS_SVG.term}</span><span class="ls-b"><span class="ls-h1">${lsHL(a.name, q)}${a.sf ? ` <span class="wk-abbr">${esc(a.sf)}</span>` : ""}</span><span class="ls-h2">${esc(a.cat)} · in ${a.papers.length} paper${a.papers.length === 1 ? "" : "s"}</span></span><span class="ls-go">Wiki ↵</span></button>`).join("");
-  box.innerHTML = (ps.length ? lsGroup("Papers", ps.length > 5 ? `5 of ${ps.length}` : ps.length, pRows, "lsgP") : "")
+  const askRow = !PW.single && typeof askOpen === "function" && (q.split(/\s+/).length >= 4 || /\?\s*$/.test(q))
+    ? lsGroup("Ask", "", `<button type="button" class="ls-row ls-ask" role="option" data-lsi data-ls="ask"><span class="ls-i">${LS_SVG.search}</span><span class="ls-b"><span class="ls-h1">Ask your library</span><span class="ls-h2">${esc(q)}</span></span></button>`, "lsgA") : "";
+  box.innerHTML = askRow + (ps.length ? lsGroup("Papers", ps.length > 5 ? `5 of ${ps.length}` : ps.length, pRows, "lsgP") : "")
     + (ts.length ? lsGroup("Wiki terms", ts.length > 5 ? `5 of ${ts.length}` : ts.length, tRows, "lsgT") : wkWait && q.length >= 2 ? `<p class="note ls-wait">Gathering wiki terms…</p>` : "")
     + (typeof lsNotesHTML === "function" ? lsNotesHTML(q) : "")
     + lsBrainRow(q)

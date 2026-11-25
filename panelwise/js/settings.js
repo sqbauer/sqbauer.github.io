@@ -35,6 +35,8 @@ async function renderSettings() {
         : `<p class="note">In a browser, pick the folder from the library each session.</p><div class="setrow"><button class="btn" type="button" data-act="pickdir">Choose Papers folder</button></div>`}
     </div>
 
+    ${askIndexHTML()}
+
     ${typeof oaMineHTML === "function" ? oaMineHTML() : ""}
 
     <div class="card"><h3>Saved work and backups</h3>
@@ -55,6 +57,15 @@ async function renderSettings() {
   </section>`;
 }
 
+// Ask your library: the search index on this device
+function askIndexHTML() {
+  if (!PW.native) return "";
+  const c = aixCounts();
+  return `<div class="card"><h3>Ask your library</h3>
+    <p>${c.done} of ${c.total} papers are searchable on this ${PW.sync.deviceName === "Mac" ? "Mac" : "iPhone"}.${AIX.busy ? ` Indexing ${esc(AIX.step || "…")}` : ""}</p>
+    <p class="note">A paper becomes searchable once its text has been read: when you open it, or here. Reading the rest takes a while (a few seconds per paper); keep the app open. The index stays on this device.</p>
+    <div class="setrow">${c.done < c.total ? `<button class="btn" type="button" data-askidx="read" ${AIX.busy ? "disabled" : ""}>Read and index the other ${c.total - c.done}</button>` : ""}${AIX.busy ? `<button class="btn quiet" type="button" data-askidx="stop">Stop</button>` : ""}</div></div>`;
+}
 // is everything working? the last good sync and backup, and the last error, from PW.log
 function healthHTML() {
   const ago = t => { if (!t) return "not yet"; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : new Date(t).toLocaleDateString(); };
@@ -98,6 +109,13 @@ document.addEventListener("click", e => {
   const b = e.target.closest && e.target.closest("[data-theme-set]"); if (!b) return;
   pwTheme.set(b.dataset.themeSet);
   $$("[data-theme-set]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+});
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("[data-askidx]"); if (!b) return;
+  if (b.dataset.askidx === "stop") { AIX.stop = true; return; }
+  let last = 0;
+  aixFill({ read: true, onStep: () => { if (S.view === "settings" && Date.now() - last > 1500) { last = Date.now(); renderSettings(); } } }).then(() => { if (S.view === "settings") renderSettings(); toast("Your library is searchable."); });
+  setTimeout(() => S.view === "settings" && renderSettings(), 300);
 });
 document.addEventListener("submit", async e => {
   if (e.target.id !== "keyForm") return;

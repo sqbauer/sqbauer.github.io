@@ -17,7 +17,7 @@ window.claude = {
 
 // re-read saved work after an import or a key change
 PW.reloadSaved = async function () {
-  D.recs.clear(); D.topics.clear(); D.status.clear(); D.palace = null;
+  D.recs.clear(); D.topics.clear(); D.status.clear(); D.asks && D.asks.clear(); D.palace = null;
   await initDb();
 };
 PW.reloadClaude = async function () { S.claudeChecked = false; await initClaude(); };
@@ -32,6 +32,7 @@ PW.boot = async function () {
   await initDb();
   initClaude();
   setTimeout(() => PW.tidy().catch(e => PW.log.error("tidy", e)), 8000);
+  if (!PW.single) setTimeout(() => { if (typeof aixFill === "function") aixFill().catch(e => PW.log.error("ask index", e)); }, 20000);
   PW.keepDeviceId().catch(() => {});
   if (hasFolder) {
     PW.files.scan();

@@ -9,10 +9,10 @@ function renderHeader(onPaper) {
   $("#top").classList.toggle("paper", onPaper);
   $("#paperHead").hidden = !onPaper; $("#steps").hidden = !onPaper;
   $("#brandBtn").hidden = onPaper; $("#backBtn").hidden = !onPaper; $("#moreBtn").hidden = !onPaper;
-  $("#backBtn").textContent = S.backTo === "cards" ? "Cards" : PW.single ? "Start" : "Library";
-  $("#backBtn").title = S.backTo === "cards" ? "Back to your cards" : PW.single ? "Back to the start page" : "Back to your library";
+  $("#backBtn").textContent = S.backTo === "cards" ? "Cards" : S.backTo === "ask" ? "Ask" : PW.single ? "Start" : "Library";
+  $("#backBtn").title = S.backTo === "cards" ? "Back to your cards" : S.backTo === "ask" ? "Back to your question" : PW.single ? "Back to the start page" : "Back to your library";
   $("#chatBtn").hidden = !onPaper || !askShown(); if (RM.btn) RM.btn.hidden = !onPaper;
-  $("#libBtn").hidden = onPaper || PW.single || ["library", "record", "topic", "wiki", "review", "cards"].includes(S.view); $("#setBtn").hidden = onPaper || S.view === "settings" || (S.view === "library" && !PW.single);
+  $("#libBtn").hidden = onPaper || PW.single || ["library", "record", "topic", "wiki", "review", "cards", "ask"].includes(S.view); $("#setBtn").hidden = onPaper || S.view === "settings" || (S.view === "library" && !PW.single);
   // on the library, Open one PDF and Settings are in its More menu (one place for rare actions)
   $("#openBtn").hidden = onPaper || S.view === "upload" || (S.view === "library" && !PW.single);
   renderBar(onPaper);
@@ -60,12 +60,12 @@ function renderBar(onPaper) {
 }
 function render() {
   document.documentElement.classList.toggle("cb-feed-on", S.view === "cards");   // the phone's card feed snaps per card
-  const lib = ["library", "topic", "record", "review", "palace", "cards", "settings", "upload", "wiki"].includes(S.view);
+  const lib = ["library", "topic", "record", "review", "palace", "cards", "settings", "upload", "wiki", "ask"].includes(S.view);
   renderHeader(!lib && !!S.paper);
   if (S.view === "upload") { renderUpload(); return; }
   if (S.view === "wiki") { if (!$("#chat").hidden) setChat(false); renderWikiTerm(); return; }
   renderTags();
-  if (lib) { if (!$("#chat").hidden) setChat(false); if (S.view === "settings") renderSettings(); else if (S.view === "topic") renderTopic(); else if (S.view === "record") renderRecord(); else if (S.view === "review") renderReview(); else if (S.view === "palace") renderPalace(); else if (S.view === "cards") renderCardBrowse(); else renderLibrary(); return; }
+  if (lib) { if (!$("#chat").hidden) setChat(false); if (S.view === "ask") renderAsk(); else if (S.view === "settings") renderSettings(); else if (S.view === "topic") renderTopic(); else if (S.view === "record") renderRecord(); else if (S.view === "review") renderReview(); else if (S.view === "palace") renderPalace(); else if (S.view === "cards") renderCardBrowse(); else renderLibrary(); return; }
   const P = S.paper; if (!P) return;
   renderPaperHead(P);
   const m = $("#main");
@@ -88,7 +88,7 @@ function topScrolled() {
   const t = $("#phTitle"); top.classList.toggle("scrolled", !!t && t.getBoundingClientRect().bottom < top.getBoundingClientRect().bottom);
 }
 addEventListener("scroll", () => { if (topScrolled.raf) return; topScrolled.raf = requestAnimationFrame(() => { topScrolled.raf = 0; topScrolled(); }); }, { passive: true });
-$("#backBtn").onclick = () => { if (S.backTo === "cards") { S.backTo = null; cbBack(); } else $("#brandBtn").click(); };     // the same as the brand button: library, or the start page on the web
+$("#backBtn").onclick = () => { if (S.backTo === "cards") { S.backTo = null; cbBack(); } else if (S.backTo === "ask") askBack(); else $("#brandBtn").click(); };     // the same as the brand button: library, or the start page on the web
 $("#moreBtn").onclick = e => {
   const P = S.paper; if (!P) return;
   const f = S.view === "figures" ? P.figures[S.figIdx] : null, items = [];

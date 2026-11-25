@@ -19,6 +19,7 @@ async function pwSqliteBackend() {
     async put(parent, id, data) { await db.run("INSERT OR REPLACE INTO docs (parent, id, data) VALUES (?, ?, ?);", [parent, id, JSON.stringify(data)]); },
     async del(parent, id) { await db.run("DELETE FROM docs WHERE parent = ? AND id = ?;", [parent, id]); },
     async keys(parent) { const r = await db.query("SELECT id FROM docs WHERE parent = ?;", [parent]); return (r.values || []).map(v => v.id); },
+    sql: db,                                                // the connection itself, for the Ask index (askindex.js)
     async dump() { const r = await db.query("SELECT parent, id, data FROM docs WHERE parent NOT LIKE '\\_%' ESCAPE '\\';", []); return (r.values || []).map(v => ({ parent: v.parent, id: v.id, data: JSON.parse(v.data) })); },
   };
 }
@@ -112,6 +113,7 @@ PW.dbReady = (async () => {
   try { be = PW.native ? await pwSqliteBackend() : pwIdbBackend(); }
   catch (e) { PW.log.error("database", "SQLite unavailable, using a temporary store: " + (e && e.message)); PW.dbFallback = true; be = pwIdbBackend(); }
   PW.be = pwTracked(be);
+  PW.sql = be.sql || null;
   // small key-value view on the same table, used by the Claude response cache
   PW.kv = { get: (col, id) => be.get(col, id), put: (col, id, v) => be.put(col, id, v) };
   // app saves go through the tracked backend, so every edit and delete gets a time and reaches the other devices
