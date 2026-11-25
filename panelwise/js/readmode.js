@@ -391,7 +391,7 @@ function rmShowToc(tab, find) {
   const marks = [...RM.flow.querySelectorAll("mark.rdm-hl[data-m]")].filter((el, i, a) => a.findIndex(x => x.dataset.m === el.dataset.m) === i);
   const hl = marks.length ? marks.map(el => {
     const m = (RM.marks || []).find(x => x._id === el.dataset.m) || {};
-    return `<button type="button" class="rdm-toc-i sub rdm-hlitem" data-sheet="mark-go" data-v="${esc(el.dataset.m)}"><span><i class="rdm-dot c-${m.color || "y"}"></i>${esc((m.text || "").replace(/\s*refs(?=[\s.,;:)]|$)/g, "").slice(0, 140))}${(m.text || "").length > 140 ? "…" : ""}</span><span class="pg">${rmPageOf(el) + 1}</span></button>`;
+    return `<button type="button" class="rdm-toc-i sub rdm-hlitem" data-sheet="mark-go" data-v="${esc(el.dataset.m)}"><span><i class="rdm-dot c-${m.color || "y"}"></i>${esc((m.text || "").replace(/\s*refs(?=[\s.,;:)]|$)/g, "").slice(0, 140))}${(m.text || "").length > 140 ? "…" : ""}${m.comment ? `<span class="rdm-hlc">${esc(m.comment)}</span>` : ""}</span><span class="pg">${rmPageOf(el) + 1}</span></button>`;
   }).join("") : `<p class="rdm-empty">No highlights yet. Press and hold a sentence in the text to highlight it.</p>`;
   // brain regions named in the paper, by first mention
   const regs = [], seenR = new Set();
@@ -529,11 +529,18 @@ async function rmHighlight(color) {
   const ex = (RM.marks || []).find(m => m.text === RM.sel.sentence);
   try {
     if (ex) { await delChild(P, "marks", ex._id); RM.marks = RM.marks.filter(m => m !== ex); }
-    const m = await addChild(P, "marks", { text: RM.sel.sentence, para: RM.sel.raw.slice(0, 80), color });
+    const m = await addChild(P, "marks", { text: RM.sel.sentence, para: RM.sel.raw.slice(0, 80), color, ...(ex && ex.comment ? { comment: ex.comment } : {}) });
     RM.marks = [...(RM.marks || []), m];
     rmSheetClose(); rmRender(at);
     if (P.demo) toast("Highlighted (example paper: not saved)");
   } catch { toast("Couldn't save the highlight."); }
+}
+// a comment on a highlight: shown in the Highlights list and in the Notebook
+async function rmHlComment() {
+  const P = S.paper, mk = RM.sel && (RM.marks || []).find(m => m.text === RM.sel.sentence), v = ($("#rmHlNote")?.value || "").trim();
+  if (!P || !mk) return;
+  try { await updChild(P.id, "marks", mk._id, { comment: v }); mk.comment = v; nbStale(); toast(v ? "Comment saved" : "Comment removed"); rmSheetClose(); }
+  catch { toast("Couldn't save the comment."); }
 }
 async function rmUnhighlight() {
   const P = S.paper, ex = RM.sel && (RM.marks || []).find(m => m.text === RM.sel.sentence); if (!P || !ex) return;
@@ -619,6 +626,7 @@ function rmSheetAction(b) {
   else if (k === "atl-zoom") atlasZoom(b);
   else if (k === "hl") rmHighlight(v);
   else if (k === "hl-x") rmUnhighlight();
+  else if (k === "hl-note") rmHlComment();
   else if (k === "find-go") rmFindGo(+v);
   else if (k === "mark-go") rmMarkGo(v);
   else if (k === "reg-open") rmShowTerm(+v);
@@ -793,6 +801,7 @@ function rmLongPress(x, y) {
   rmSheet("Sentence", `<blockquote class="rdm-quote">${esc(RM.sel.quote)}</blockquote>
     <div class="rdm-seg"><button type="button" class="rdm-btn primary" data-sheet="explain">Explain</button><button type="button" class="rdm-btn" data-sheet="note">Save to notes</button></div>
     <div class="rdm-seg rdm-hlrow"><span class="lbl">Highlight</span>${RM_HL.map(([c, l]) => `<button type="button" class="rdm-sw c-${c}${mk && mk.color === c ? " on" : ""}" aria-pressed="${!!(mk && mk.color === c)}" data-sheet="hl" data-v="${c}" aria-label="Highlight ${l}"></button>`).join("")}${mk ? `<button type="button" class="rdm-btn" data-sheet="hl-x">Remove</button>` : ""}</div>
+    ${mk && !S.paper?.demo ? `<div class="rdm-hlnote"><label for="rmHlNote" class="lbl">Your comment on this highlight</label><textarea id="rmHlNote" rows="2" placeholder="Why it matters, what to check…">${esc(mk.comment || "")}</textarea><button type="button" class="rdm-btn" data-sheet="hl-note">Save comment</button></div>` : ""}
     <div class="rdm-explain" id="rmExplain"></div>`);
 }
 async function rmExplain() {
@@ -818,7 +827,7 @@ async function rmSaveNote(withAnswer) {
   const P = S.paper; if (!P || !RM.sel) return;
   const text = `“${RM.sel.quote}”` + (withAnswer && RM.sel.answer ? `\n\nClaude: ${RM.sel.answer}` : "");
   try {
-    const n = await addChild(P, "notes", { kind: withAnswer ? "saved" : "note", text, fig: null, panel: null });
+    const n = await addChild(P, "notes", { kind: withAnswer ? "saved" : "note", text, quote: RM.sel.quote, fig: null, panel: null });
     P.notes = [...(P.notes || []), n]; persistPaper(P);
     toast(P.demo ? "Note added (example paper: not saved)" : "Saved to this paper's notes");
     rmSheetClose();

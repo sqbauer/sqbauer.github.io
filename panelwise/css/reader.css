@@ -190,3 +190,11 @@ textarea{width:100%;min-height:96px;resize:vertical;border:1px solid var(--line-
 .cardrow-a{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:6px}
 .cardrow-a .note{margin-right:auto}
 .stagebar .figcard{flex:0 0 auto}
+/* your verdict on a figure, and the methods & statistics check (figjudge.js) */
+.judge{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.judge .lbl{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.judge .chip.j-yes[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:var(--accent-ink)}
+.judge .chip.j-part[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:var(--accent-ink)}
+.judge .chip.j-no[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--accent-ink)}
+.judge-why{font:inherit;border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 10px;background:var(--surface);color:var(--ink);width:100%}
+.brief.stats,.judge+.brief{margin-top:12px}

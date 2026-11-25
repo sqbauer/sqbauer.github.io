@@ -49,7 +49,7 @@ PW.makeSample = function (apiKey, kv) {
     else if (e instanceof A.BadRequestError) out.code = /too long|too many tokens|context/i.test(e.message) ? "prompt_too_large" : /image/i.test(e.message) ? "image_rejected" : "bad_request";
     else if (e instanceof A.APIConnectionError) out.code = PW.online() ? "network" : "offline";
     else if (e instanceof A.APIError) out.code = e.status === 529 || e.status >= 500 ? "overloaded" : "unknown";
-    if (out.code === "unknown") console.warn("Claude call failed:", e && e.message); // message only; never the key
+    if (out.code === "unknown") PW.log.error("claude", e && e.message); // message only; never the key
     return out;
   }
 

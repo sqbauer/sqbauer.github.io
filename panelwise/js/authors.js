@@ -41,7 +41,7 @@ function auOpen(name, from) {
   const P = S.paper, au = P && !P.demo ? authorsFor(P) : [], i = auPos(au, name);
   $("#auName").textContent = name;
   $("#auRole").textContent = i < 0 ? "" : i === au.length - 1 && au.length > 1 ? `Last author of this paper (usually the lab head) · ${au.length} authors` : i === 0 ? `First author of this paper · ${au.length} authors` : `Author ${i + 1} of ${au.length} on this paper`;
-  AU.el.hidden = false; document.documentElement.classList.add("au-open");
+  AU.el.hidden = false; document.documentElement.classList.add("au-open"); pwModal(AU.el, AU.back);
   auRender();
   auLoadWeb(AU.token);
   requestAnimationFrame(() => AU.el.querySelector('[data-au-close]:not(.au-scrim)').focus({ preventScroll: true }));
@@ -49,7 +49,7 @@ function auOpen(name, from) {
 function auClose() {
   if (!AU.el || AU.el.hidden) return;
   AU.el.hidden = true; AU.token++; document.documentElement.classList.remove("au-open");
-  if (AU.back && AU.back.isConnected) AU.back.focus({ preventScroll: true });
+  pwModalEnd(AU.el);
 }
 
 // papers in the library with this author (and, for "their lab", as last author)

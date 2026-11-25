@@ -2,6 +2,7 @@
 <html lang="en" data-pw="single">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.anthropic.com https://api.openalex.org https://www.ebi.ac.uk https://europepmc.org; worker-src 'self' blob:; frame-src 'self' https://sqbauer.github.io; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Panelwise · read a paper figure by figure</title>
 <meta name="description" content="Open a scientific paper as a PDF and read it figure by figure, with each panel linked to the text that describes it. The PDF is read in your browser and never uploaded.">
@@ -60,6 +61,7 @@
 <!-- platform adapter: Anthropic SDK, SQLite, Papers folder (replaces claude.ai's window.claude.use) -->
 <script src="vendor/deps.js"></script>
 <script src="js/platform/native.js"></script>
+<script src="js/platform/log.js"></script>
 <script src="js/platform/sample.js"></script>
 <script src="js/platform/db.js"></script>
 <script src="js/platform/files.js"></script>
@@ -68,6 +70,7 @@
 <script src="js/platform/index.js"></script>
 <!-- the app (split from panelwise.html; ordered scripts sharing one global scope) -->
 <script src="js/util.js"></script>
+<script src="js/dialog.js"></script>
 <script src="js/refs.js"></script>
 <script src="js/demo.js"></script>
 <script src="js/paper.js"></script>
@@ -76,10 +79,13 @@
 <script src="js/open.js"></script>
 <script src="js/papercache.js"></script>
 <script src="js/store.js"></script>
+<script src="js/status.js"></script>
 <script src="js/library.js"></script>
 <script src="js/card.js"></script>
+<script src="js/figjudge.js"></script>
 <script src="js/review.js"></script>
 <script src="js/palace.js"></script>
+<script src="js/cardbrowse.js"></script>
 <script src="js/render.js"></script>
 <script src="js/events.js"></script>
 <script src="js/figview.js"></script>
@@ -94,6 +100,9 @@
 <script src="js/wikidefs-abbr.js"></script>
 <script src="js/wikicore.js"></script>
 <script src="js/connect.js"></script>
+<script src="js/notebook.js"></script>
+<script src="js/cite.js"></script>
+<script src="js/mdexport.js"></script>
 <script src="js/oa.js"></script>
 <script src="js/authors.js"></script>
 <script src="js/brain.js"></script>

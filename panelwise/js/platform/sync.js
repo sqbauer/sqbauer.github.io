@@ -37,8 +37,8 @@ PW.sync = {
       for (const [k, m] of metas) if (m.del) { const [p, i] = k.split("\u0001"); docs.push({ p, i, t: m.t, del: 1 }); }
       const file = { v: 1, device: this.device, name: this.deviceName, at: Date.now(), docs, reading };
       await PW.files.writeText(`${this.DIR}/${this.device}.json`, JSON.stringify(file));
-      this.dirty = false; this._lastReading = rkey; this.lastWrite = Date.now();
-    } catch (e) { console.warn("sync write failed", e && e.message); }
+      this.dirty = false; this._lastReading = rkey; this.lastWrite = Date.now(); PW.log.success("sync");
+    } catch (e) { PW.log.error("sync", "write: " + (e && e.message)); }
     finally { this._busy = false; }
   },
 
@@ -73,7 +73,7 @@ PW.sync = {
         this.peers[f.name] = { mtime: f.mtime, name: file.name || "another device", at: file.at };
       }
       this.lastRead = Date.now();
-    } catch (e) { console.warn("sync read failed", e && e.message); }
+    } catch (e) { PW.log.error("sync", "read: " + (e && e.message)); }
     finally { this._reading = false; }
     return n;
   },

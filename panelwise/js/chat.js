@@ -19,7 +19,7 @@ $("#chatClose").onclick = () => setChat(false);
 function ctxLine() {
   const P = S.paper; if (!P) return "";
   if (S.view === "figures" && P.figures[S.figIdx]) { const f = P.figures[S.figIdx]; return `Viewing Figure ${f.n}` + (S.pinned && S.pinned.fig === f.n ? `, panel ${f.n}${S.pinned.panel} pinned` : ""); }
-  return S.view === "question" ? "Viewing goal and question" : "Viewing background";
+  return S.view === "question" ? "Viewing goal and question" : S.view === "card" ? "Writing a card" : "Viewing background";
 }
 function updateChatCtx() {
   $("#chatCtx").textContent = ctxLine();

@@ -100,4 +100,8 @@ body{margin:0;padding-top:env(safe-area-inset-top,0px)}
   .linkbtn::after,.tchip button::after,.chip::after,:not(span).seg>button::after,.wk-cat::after,.sug::after,.rdm-sw::after,.rdm-inlib::after,.fchip::after,.pchip::after,.btn::after,.rdm-btn::after{
     content:"";position:absolute;left:-4px;right:-4px;top:50%;height:44px;min-height:100%;transform:translateY(-50%)}
   .tchip button::after{left:-10px;right:-10px}
+  /* added later: authors, the author sheet, brain sections */
+  .ph-authors .au,.au-row,.br-ref,.br-paper.mini,.br-reg{position:relative}
+  .ph-authors .au::after,.au-row::after,.br-ref::after,.br-paper.mini::after,.br-reg::after{content:"";position:absolute;left:-3px;right:-3px;top:50%;height:44px;min-height:100%;transform:translateY(-50%)}
+  .ph-authors{font-size:var(--t-base,15px);line-height:1.9}
 }

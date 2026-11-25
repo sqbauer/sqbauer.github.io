@@ -55,9 +55,9 @@
 .rm-meta{font:11px var(--f-mono);fill:var(--muted);pointer-events:none}
 .rm-lock{font:12px var(--f-mono);fill:var(--muted);pointer-events:none}
 .rm-lock.afford{fill:var(--accent);font-weight:500}
-.pin{fill:var(--mark);stroke:color-mix(in srgb,var(--ink) 18%,transparent);pointer-events:none}
-.pin-t{font:500 11px var(--f-ui);fill:var(--mark-ink);pointer-events:none}
-.pin-empty{fill:none;stroke:var(--line);stroke-dasharray:3 3;pointer-events:none}
+svg .pin{fill:var(--mark);stroke:color-mix(in srgb,var(--ink) 18%,transparent);pointer-events:none}
+svg .pin-t{font:500 11px var(--f-ui);fill:var(--mark-ink);pointer-events:none}
+svg .pin-empty{fill:none;stroke:var(--line);stroke-dasharray:3 3;pointer-events:none}
 .duedot{fill:var(--amber);pointer-events:none}
 .palstats{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
 .stat{display:flex;flex-direction:column}
