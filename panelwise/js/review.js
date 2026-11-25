@@ -3,9 +3,18 @@
 const DAY = 864e5;
 function reviewTypes(card, img) { const t = []; if (img) t.push("fig"); t.push("who", "lab"); if (card.caveat) t.push("caveat"); return t; }
 function processedRecs() { return allRecs().filter(r => r.card && r.card.finding); }
+// a paper's cards: the first (r.card, its schedule under srs[type]) and any more (r.cards, under srs["c<at>:type"])
+function cardsOfRec(r) {
+  const out = r.card && r.card.finding ? [{ card: r.card, img: r.cardImg, pre: "" }] : [];
+  for (const x of r.cards || []) if (x && x.finding && x.at) out.push({ card: x, img: x.img || null, pre: "c" + x.at + ":" });
+  return out;
+}
 function reviewItems() {
   const out = [];
-  for (const r of processedRecs()) for (const t of reviewTypes(r.card, r.cardImg)) out.push({ r, t, s: (r.srs || {})[t] || { due: 0, ivl: 0, ease: 2.5, reps: 0, lapses: 0 } });
+  for (const r of processedRecs()) for (const cd of cardsOfRec(r)) {
+    const rr = cd.pre ? { ...r, card: cd.card, cardImg: cd.img } : r;   // the review screens read .card and .cardImg
+    for (const t of reviewTypes(cd.card, cd.img)) out.push({ r: rr, t, key: cd.pre + t, s: (r.srs || {})[cd.pre + t] || { due: 0, ivl: 0, ease: 2.5, reps: 0, lapses: 0 } });
+  }
   return out;
 }
 const dueItems = () => reviewItems().filter(i => i.s.due <= Date.now());
@@ -102,10 +111,11 @@ function renderReview() {
 function gradeCard(g) {
   const R = S.rv; if (!R || !R.shown) return;
   const it = R.q[R.i];
-  const before = { srs: it.r.srs, qLen: R.q.length, earned: R.earned || 0, typed: R.typed };   // for Undo
+  const cur = (recOf(it.r.id) || {}).srs || it.r.srs || {};       // the record's latest schedule (other cards of the paper may just have been graded)
+  const before = { srs: cur, qLen: R.q.length, earned: R.earned || 0, typed: R.typed };   // for Undo
   let earned = 0;
   if (!R.practice) {
-    const ns = schedule(it.s, g), srs = { ...(it.r.srs || {}), [it.t]: ns };
+    const ns = schedule(it.s, g), srs = { ...cur, [it.key || it.t]: ns };
     patchRec(it.r.id, { srs }); it.r.srs = srs;
     if (g === 1) R.q.push({ ...it, s: ns });
     earned = [0, 0, 1, 2, 3][g]; if (earned) { const P = pal(); P.pts += earned; R.earned = (R.earned || 0) + earned; savePalace(); }

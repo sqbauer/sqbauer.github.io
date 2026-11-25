@@ -41,7 +41,7 @@ function recordFor(P) {
     // until the notes and chat have loaded (hydrate), keep the counts already saved instead of writing zeros
     nNotes: P.hydrated ? (P.notes || []).length : (recOf(P.id)?.nNotes || 0),
     nChat: P.hydrated ? S.chat.filter(m => m.content && !m.err).length : (recOf(P.id)?.nChat || 0), updated: Date.now(),
-    card: P.card || null, cardImg: P.cardImg || null, srs: P.srs || recOf(P.id)?.srs || {},
+    card: P.card || null, cards: P.cards || recOf(P.id)?.cards || [], cardImg: P.cardImg || null, srs: P.srs || recOf(P.id)?.srs || {},
     phone: P.phone !== undefined ? P.phone : (recOf(P.id)?.phone || null), phoneOff: !!P.phoneOff };
 }
 function persistPaper(P) {
@@ -80,7 +80,7 @@ async function hydrate(P) {
     P.primer = r.primer || P.primer; P.briefs = { ...(P.briefs || {}), ...(r.briefs || {}) }; P.restate = r.restate || P.restate; P.verdict = r.verdict || P.verdict;
     P.revealed = r.revealed || P.revealed; P.tags = r.tags || P.tags || []; (r.seen || []).forEach(n => P.seen.add(n));
     P.figures.forEach(f => { if (r.figs && r.figs[f.n]) f.det = r.figs[f.n]; });
-    P.card = r.card || P.card || null; P.cardImg = r.cardImg || P.cardImg || null; P.srs = r.srs || P.srs || {};
+    P.card = r.card || P.card || null; P.cards = r.cards || P.cards || []; P.cardImg = r.cardImg || P.cardImg || null; P.srs = r.srs || P.srs || {};
     if (P.phone === undefined) P.phone = r.phone || null; P.phoneOff = !!r.phoneOff;
   }
   const [chat, notes] = await Promise.all([listChildren(P.id, "chat"), listChildren(P.id, "notes")]);
@@ -107,12 +107,29 @@ function renderTags() {
   if (!onPaper || P.demo) { box.innerHTML = ""; box.hidden = true; return; }
   box.hidden = false;
   const tags = P.tags || [];
+  // typing a topic: a re-render (figure ready, sync, primer) must not rebuild the field under your fingers
+  if (S.tagEdit && box.querySelector("#tagIn")) return;
   box.innerHTML = tags.map(t => `<span class="tchip">${esc(t)}<button type="button" data-untag="${esc(t)}" aria-label="Remove topic ${esc(t)}">×</button></span>`).join("") +
-    (S.tagEdit ? `<input class="taginput" id="tagIn" list="tagList" placeholder="Topic, then Enter" aria-label="Add topic"><datalist id="tagList">${allTopics().filter(t => !tags.includes(t)).map(t => `<option value="${esc(t)}">`).join("")}</datalist>`
+    (S.tagEdit ? `<span class="tagedit"><input class="taginput" id="tagIn" placeholder="Topic, then Enter" aria-label="Add topic" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"><span class="tagsug" id="tagSug" role="listbox" aria-label="Your topics"></span></span>`
       : `<button type="button" class="btn quiet addtag" data-act="addtag"><span aria-hidden="true">+</span> Topic</button>`) +
     (P.synced ? `<span class="pill p1" title="Synced copy from your PC">Synced copy</span>` : "");
   if (S.tagEdit) setTimeout(() => $("#tagIn")?.focus(), 0);
 }
+// your earlier topics that match what you type (instead of a <datalist>, which misbehaves in the iPad web view on the Mac)
+function tagSuggest() {
+  const inp = $("#tagIn"), box = $("#tagSug"); if (!inp || !box || !S.paper) return;
+  const q = inp.value.trim().toLowerCase(), have = S.paper.tags || [];
+  const list = allTopics().filter(t => !have.includes(t) && (!q || t.toLowerCase().includes(q))).sort((a, b) => (b.toLowerCase().startsWith(q) - a.toLowerCase().startsWith(q)) || a.localeCompare(b)).slice(0, 6);
+  box.innerHTML = list.map(t => `<button type="button" role="option" data-tagsug="${esc(t)}">${esc(t)}</button>`).join("");
+}
+document.addEventListener("input", e => { if (e.target.id === "tagIn") tagSuggest(); });
+document.addEventListener("focusin", e => { if (e.target.id === "tagIn") tagSuggest(); });
+// mousedown, so the field keeps focus (its focusout would close it first)
+document.addEventListener("mousedown", e => { if (e.target.closest && e.target.closest("[data-tagsug]")) e.preventDefault(); });
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("[data-tagsug]"); if (!b || !S.paper) return;
+  S.tagEdit = false; setTags(S.paper, [...(S.paper.tags || []), b.dataset.tagsug]);
+});
 function notesBox(P, figN) {
   const list = (P.notes || []).filter(n => figN === null ? true : n.fig === figN);
   const pinOn = figN && S.pinned && S.pinned.fig === figN ? `${figN}${S.pinned.panel}` : "";

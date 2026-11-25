@@ -32,6 +32,8 @@ document.addEventListener("click", e => {
   if (t.dataset.go) { S.view = t.dataset.go; render(); window.scrollTo(0, 0); viewFocus(); return; }
   if (t.dataset.figIdx !== undefined) { S.figIdx = +t.dataset.figIdx; S.view = "figures"; S.hover = null; S.textHover = null; render(); window.scrollTo(0, 0); viewFocus(); return; }
   if (t.matches(".ref")) { e.stopPropagation(); goFigure(+t.dataset.fig, t.dataset.panel || null); if (t.closest("#chat") && innerWidth <= 1100) setChat(false); return; }
+  if (t.dataset.cardsel !== undefined) { cardSelect(t.dataset.cardsel === "new" ? "new" : +t.dataset.cardsel); return; }
+  if (t.dataset.carddel !== undefined) { deleteCard(+t.dataset.carddel); return; }
   if (t.matches(".hot, .pchip")) { pin(t.dataset.panel); return; }
   if (t.matches(".seg")) { const l = (t.dataset.letters || "")[0]; if (l) pin(l, false); return; }
   if (t.matches(".sent.has")) { const f = S.paper.figures[S.figIdx]; const ks = t.dataset.k.split(" ").filter(k => parseInt(k) === f.n && !k.endsWith("*")); if (ks.length) pin(ks[0].replace(/^\d+/, ""), false); return; }
@@ -55,6 +57,7 @@ document.addEventListener("click", e => {
   else if (act === "demo") openPaper(DEMO);
   else if (act === "addtag") { S.tagEdit = true; renderTags(); }
   else if (act === "savecard") saveCard();
+  else if (act === "figcard") cardFromFigure();
   else if (act === "checkcard") checkCard();
   else if (act === "review") startReview(false);
   else if (act === "palace") { S.view = "palace"; S.walk = null; S.wing = null; render(); window.scrollTo(0, 0); }
