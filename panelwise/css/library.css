@@ -428,3 +428,38 @@ html.cb-open{overflow:hidden}
 .keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0}
 .keys dt{white-space:nowrap}.keys dd{margin:0;color:var(--ink);font-size:var(--t-sm)}
 .keys kbd{font:500 12px var(--f-mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;background:var(--sunk)}
+
+/* ---- Ask your library (ask.js) ---- */
+.ask-form{display:flex;gap:8px;align-items:flex-end;margin-top:14px}
+.ask-form textarea{flex:1;font:inherit;font-size:16px;line-height:1.45;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:var(--surface);color:var(--ink);resize:vertical;min-height:52px}
+.ask-scope{margin-top:6px}
+.ask-res{display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.ask-q div{font-family:var(--f-read);font-size:18px;line-height:1.4;margin:2px 0}
+.ask-verdict .pill{font-size:var(--t-sm);padding:4px 10px}
+.ask-answer{font-family:var(--f-read);font-size:17px;line-height:1.55;color:var(--ink)}
+.ask-cite{font:600 12px var(--f-mono);color:var(--accent);text-decoration:none;vertical-align:super;margin-left:1px}
+.ask-steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.ask-cav{margin:0;padding-left:18px;color:var(--muted);font-size:var(--t-sm)}
+.ask-tools{display:flex;flex-wrap:wrap;gap:8px}
+.ask-h{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 4px}
+.ask-ev{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:6px;scroll-margin-top:90px}
+.ask-ev.flash{animation:askflash 1.2s ease}
+@keyframes askflash{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+.ask-evh{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.ask-n{font:600 11px var(--f-mono);color:var(--muted);border:1px solid var(--line);border-radius:999px;min-width:22px;text-align:center;padding:1px 6px}
+.ask-paper{font-weight:600;color:var(--ink)}
+.ask-title{margin-top:-2px}
+.ask-quote{margin:4px 0;padding:6px 12px;border-left:3px solid var(--accent);font-family:var(--f-read);font-size:15.5px;line-height:1.5}
+.ask-text,.ask-more p{margin:0;font-family:var(--f-read);font-size:15px;line-height:1.5;color:var(--ink)}
+.ask-ev mark{background:var(--mark);color:var(--mark-ink);border-radius:2px;padding:0 1px}
+.ask-more summary,.ask-rest summary{cursor:pointer;color:var(--muted);font-size:var(--t-sm)}
+.ask-rest{display:flex;flex-direction:column;gap:10px}
+.ask-rest[open]>.ask-ev{margin-top:10px}
+.ask-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.ask-hist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.ask-past{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;padding:10px 0;font:inherit;color:var(--ink);cursor:pointer}
+.ask-past:hover span:first-child{color:var(--accent)}
+.ask-known ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.ask-known li{border-top:1px solid var(--line);padding-top:8px}
+.ls-ask .ls-h1{color:var(--accent);font-weight:600}
+@media (max-width:640px){ .ask-form{flex-direction:column;align-items:stretch} .ask-form .btn{align-self:flex-end} }

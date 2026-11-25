@@ -11,7 +11,7 @@ async function initDb() {
     const uid = await user.id(); if (!uid) return;
     D.col = db.collection("data/users/" + uid);
     const snap = await D.col.get();
-    for (const d of snap.docs) { const v = d.data(); if (!v) continue; if (v.kind === "topic") D.topics.set(d.id, v); else if (v.kind === "paper") D.recs.set(d.id, v); else if (v.kind === "status" && v.id) D.status.set(v.id, v); else if (v.kind === "palace") D.palace = v; }
+    for (const d of snap.docs) { const v = d.data(); if (!v) continue; if (v.kind === "topic") D.topics.set(d.id, v); else if (v.kind === "paper") D.recs.set(d.id, v); else if (v.kind === "status" && v.id) D.status.set(v.id, v); else if (v.kind === "ask") (D.asks = D.asks || new Map()).set(d.id, v); else if (v.kind === "palace") D.palace = v; }
     D.ready = true;
     if (D.palace && (!S.pal || (D.palace.updated || 0) >= (S.pal.updated || 0))) S.pal = D.palace;
     else if (S.pal && S.pal.updated) savePalace();

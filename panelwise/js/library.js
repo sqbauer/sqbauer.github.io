@@ -265,6 +265,7 @@ function libMoreMenu(btn) {
     { label: folder || L.files.size ? "Rescan folder" : L.meta.items.length ? "Re-select Papers folder" : "Choose Papers folder", key: libKey(native ? "⌘R" : ""), run: () => folder ? PW.files.scan() : pickFolderAction() },
     { label: "Open one PDF…", key: libKey("⌘O"), run: () => $("#fileIn").click() },
     { label: "Example paper", run: () => openPaper(DEMO) },
+    { label: "Ask your library…", run: () => askOpen("") },
     { label: "Mouse brain sections", key: libKey("⌘B"), run: () => brainOpen("", btn) },
     ...(matchMedia("(hover: hover)").matches ? [{ label: "Keyboard shortcuts", key: libKey("?"), run: () => showKeys() }] : []),
     "-",
