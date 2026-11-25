@@ -22,6 +22,11 @@ async function renderSettings() {
       ${PW.native ? "" : `<p class="note">Browser test mode: the key is kept in memory only and forgotten on reload.</p>`}
     </div>
 
+    <div class="card"><h3>Appearance</h3>
+      <div class="tags" role="group" aria-label="Appearance">${[["auto", "Automatic"], ["light", "Light"], ["dark", "Dark"]].map(([v, l]) => `<button type="button" class="chip" data-theme-set="${v}" aria-pressed="${pwTheme.get() === v}">${l}</button>`).join("")}</div>
+      <p class="note" style="margin-top:8px">Automatic follows your ${PW.sync.deviceName === "Mac" ? "Mac" : "iPhone"}'s light or dark setting. Reading mode keeps its own look (Aa).</p>
+    </div>
+
     <div class="card"><h3>Papers folder</h3>
       ${PW.native
         ? `<p>${folder ? `Connected: <strong>${esc(folder)}</strong> · ${L.meta.items.length} PDFs` : "No folder connected yet."}</p>
@@ -89,6 +94,11 @@ async function settingsAction(act) {
   else if (act === "copylog") { try { await navigator.clipboard.writeText(PW.log.text()); toast("Log copied"); } catch { toast("Couldn't copy the log."); } }
 }
 
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("[data-theme-set]"); if (!b) return;
+  pwTheme.set(b.dataset.themeSet);
+  $$("[data-theme-set]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+});
 document.addEventListener("submit", async e => {
   if (e.target.id !== "keyForm") return;
   e.preventDefault();
