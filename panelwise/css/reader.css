@@ -182,3 +182,11 @@ textarea{width:100%;min-height:96px;resize:vertical;border:1px solid var(--line-
 .frame.zoomed .hot{cursor:zoom-out}
 .frame.zoomed .hot.pin{border-color:transparent;box-shadow:none;background:transparent}
 @media (prefers-reduced-motion:reduce){.frame .zw{transition:none}}
+/* several cards per paper (card.js) */
+.cardlist{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.cardrow{width:100%;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:var(--surface)}
+.cardrow.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.cardrow .oneliner{margin:0}
+.cardrow-a{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:6px}
+.cardrow-a .note{margin-right:auto}
+.stagebar .figcard{flex:0 0 auto}

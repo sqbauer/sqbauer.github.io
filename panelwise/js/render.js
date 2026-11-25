@@ -19,7 +19,7 @@ function renderHeader(onPaper) {
   if (!onPaper) $("#top").classList.remove("scrolled");
 }
 function shortAuthors(au) { if (!au.length) return ""; const fam = a => String(a).trim().split(/\s+/).pop(); return au.length === 1 ? au[0] : au.length === 2 ? `${fam(au[0])} & ${fam(au[1])}` : `${fam(au[0])} et al.`; }
-function paperYear(P) { return P.card?.year || L.meta.items.find(x => x.id === P.id)?.year || recOf(P.id)?.year || ""; }
+function paperYear(P) { return P.card?.year || L.meta.items.find(x => x.id === P.id)?.year || recOf(P.id)?.year || P.yearPdf || ((P.fileName || "").match(/(?:^|[^0-9])((?:19|20)\d{2})(?:[^0-9]|$)/) || [])[1] || ""; }
 function renderPaperHead(P) {
   const au = P.demo ? [] : authorsFor(P), yr = P.demo ? "" : paperYear(P);
   const meta = [yr, P.sub].filter(Boolean).map(esc).join(" · ");
@@ -262,7 +262,7 @@ function viewFigures(P) {
      <div class="stage">
        ${stage}
        ${letters.length ? `<div class="panelrow" role="group" aria-label="Panels"><span class="eyebrow">Panels</span>${letters.map(l => `<button type="button" class="chip pchip mono" data-panel="${esc(l)}" aria-pressed="false" aria-label="Panel ${esc(l)}">${esc(l)}</button>`).join("")}<button type="button" class="btn quiet clearpin" data-act="unpin" hidden>Clear</button></div>` : ""}
-       <div class="stagebar"><span>${esc(status)}</span></div>
+       <div class="stagebar"><span>${esc(status)}</span>${P.figures.length ? `<button type="button" class="btn quiet figcard" data-act="figcard">+ Card from this figure</button>` : ""}</div>
      </div>
      <div class="figtext" id="figtext">
        ${letters.length ? `<section class="box pcard" id="pcard" aria-live="polite" aria-label="Selected panel"></section>` : ""}

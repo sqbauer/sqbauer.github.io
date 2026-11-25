@@ -8,11 +8,11 @@ function openPaper(raw) {
   const P = S.paper;
   if (!P.demo) {
     const c = recOf(P.id);                          // the database record (it has what sync brought in) before the local copy
-    if (c) { P.tags = c.tags || []; P.primer = c.primer; P.briefs = c.briefs || {}; P.restate = c.restate; P.verdict = c.verdict; P.revealed = c.revealed; P.seen = new Set(c.seen || []); P.card = c.card || null; P.cardImg = c.cardImg || null; P.srs = c.srs || {}; P.figures.forEach(f => { if (c.figs && c.figs[f.n]) f.det = c.figs[f.n]; }); }
+    if (c) { P.tags = c.tags || []; P.primer = c.primer; P.briefs = c.briefs || {}; P.restate = c.restate; P.verdict = c.verdict; P.revealed = c.revealed; P.seen = new Set(c.seen || []); P.card = c.card || null; P.cards = c.cards || []; P.cardImg = c.cardImg || null; P.srs = c.srs || {}; P.figures.forEach(f => { if (c.figs && c.figs[f.n]) f.det = c.figs[f.n]; }); }
   } else { P.briefs = { ...raw.briefs }; }
   P.seen = P.seen || new Set(); P.lastOpened = Date.now(); P.notes = P.notes || []; P.tags = P.tags || [];
   if (S.chatBusy) { try { chatCtl && chatCtl.abort(); } catch {} S.chatBusy = false; }
-  S.view = "background"; S.figIdx = 0; S.pinned = null; S.hover = null; S.chat = [];
+  S.view = "background"; S.figIdx = 0; S.pinned = null; S.cardSel = null; S.cardFrom = null; S.hover = null; S.chat = [];
   // continue where you left off in this paper (kept with the reading positions, so it follows you across devices)
   if (!P.demo) { const w = stepLoad(P.id); if (w && ["background", "question", "figures", "card"].includes(w.view)) { S.view = w.view; S.figIdx = Math.max(0, Math.min(P.figures.length - 1, w.fig || 0)); if (S.view === "figures" && !P.figures.length) S.view = "background"; } }
   render(); renderChat();
@@ -44,6 +44,7 @@ async function handleFile(file, canonicalId) {
     // a PDF that isn't in the library index yet (or the web version): read its authors from the first page
     const li = L.meta.items.find(x => x.id === raw.id);
     if ((!li || li.mv !== META_V) && typeof extractMeta === "function") extractMeta(file).then(m => {
+      if (S.paper && S.paper.id === raw.id && m && m.year && !S.paper.yearPdf) { S.paper.yearPdf = m.year; renderPaperHead(S.paper); }
       if (S.paper && S.paper.id === raw.id && m && m.authors && m.authors.length > authorsFor(S.paper).length) { S.paper.authorsPdf = m.authors; renderPaperHead(S.paper); }
     }).catch(() => {});
   } catch (e) {

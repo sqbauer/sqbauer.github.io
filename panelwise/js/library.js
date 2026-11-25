@@ -489,7 +489,7 @@ async function renderRecord() {
       <div class="card wide"><div class="eyebrow">Core question</div><div style="font-family:var(--f-read);font-size:19px;margin-top:4px">${esc(pr.coreQuestion || "Not generated")}</div></div>
       <div class="card"><div class="eyebrow">Your version</div><p style="margin:6px 0 0">${esc(r.restate || "Not written")}</p>${r.verdict ? `<p class="note" style="margin:6px 0 0">${esc(r.verdict.feedback)}</p>` : ""}</div>
       <div class="card"><div class="eyebrow">Progress</div><p style="margin:6px 0 0">${esc(progressOf(r.id).label)}</p></div>
-      ${r.card ? `<div class="card wide"><div class="eyebrow">Your card</div><div style="margin-top:6px">${onelinerHTML(r.card)}</div></div>` : ""}
+      ${r.card ? `<div class="card wide"><div class="eyebrow">Your card${(r.cards || []).length ? `s · ${1 + r.cards.length}` : ""}</div>${[r.card, ...(r.cards || [])].map(c => `<div style="margin-top:6px">${onelinerHTML(c)}</div>`).join("")}</div>` : ""}
       ${Object.keys(r.briefs || {}).length ? `<div class="card wide"><div class="eyebrow">Figure claims</div><ul style="margin:6px 0 0;padding-left:18px">${Object.entries(r.briefs).map(([k, b]) => `<li><strong>Fig. ${esc(k)}</strong> ${esc(b.claim)}</li>`).join("")}</ul></div>` : ""}
     </div>
     <div class="box" style="margin-top:18px"><h3><span>Notes</span></h3><div class="notes" id="recNotes"><div class="thinking"><span class="dot"></span>Loading…</div></div></div>
