@@ -26,6 +26,7 @@ PW.reloadClaude = async function () { S.claudeChecked = false; await initClaude(
 // background, the other devices' changes (iCloud can be slow or offline) and the first-run import, which refresh
 // the screen when anything comes in
 PW.boot = async function () {
+  window.pwTheme && pwTheme.apply();                       // the native window (status bar, keyboard) too
   await PW.dbReady;
   const hasFolder = await PW.files.restore();
   await initDb();

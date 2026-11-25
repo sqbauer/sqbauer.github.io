@@ -47,6 +47,10 @@ async function renderWebSettings() {
       <label class="webremember"><input type="checkbox" id="keyRemember" ${key && !kept ? "" : "checked"}> Remember the key in this browser, so it still works when you come back</label>
       <p class="note" id="keyNote">${PW.online() ? "" : "You're offline. Claude needs a connection; reading still works."}</p>
     </div>
+    <div class="card"><h3>Appearance</h3>
+      <div class="tags" role="group" aria-label="Appearance">${[["auto", "Automatic"], ["light", "Light"], ["dark", "Dark"]].map(([v, l]) => `<button type="button" class="chip" data-theme-set="${v}" aria-pressed="${pwTheme.get() === v}">${l}</button>`).join("")}</div>
+      <p class="note" style="margin-top:8px">Automatic follows your device's light or dark setting. Reading mode keeps its own look (Aa).</p>
+    </div>
     <div class="card"><h3>How it works</h3>
       <ul class="webfacts">
         <li>Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Use is billed to your Anthropic account; a paper typically costs a few cents.</li>
