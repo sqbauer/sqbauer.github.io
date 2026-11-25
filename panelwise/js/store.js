@@ -1,6 +1,6 @@
 "use strict";
 /* ---------- saved work (db, with local fallback) ---------- */
-const D = { col: null, ready: false, recs: new Map(), topics: new Map(), chain: new Map(), tm: new Map() };
+const D = { col: null, ready: false, recs: new Map(), topics: new Map(), status: new Map(), chain: new Map(), tm: new Map() };
 const keyOf = id => "p~" + String(id).replace(/[^A-Za-z0-9_\-.~:@+]/g, "_").slice(0, 180);
 const topicKey = n => "t~" + (n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) || "topic");
 async function initDb() {
@@ -11,7 +11,7 @@ async function initDb() {
     const uid = await user.id(); if (!uid) return;
     D.col = db.collection("data/users/" + uid);
     const snap = await D.col.get();
-    for (const d of snap.docs) { const v = d.data(); if (!v) continue; if (v.kind === "topic") D.topics.set(d.id, v); else if (v.kind === "paper") D.recs.set(d.id, v); else if (v.kind === "palace") D.palace = v; }
+    for (const d of snap.docs) { const v = d.data(); if (!v) continue; if (v.kind === "topic") D.topics.set(d.id, v); else if (v.kind === "paper") D.recs.set(d.id, v); else if (v.kind === "status" && v.id) D.status.set(v.id, v); else if (v.kind === "palace") D.palace = v; }
     D.ready = true;
     if (D.palace && (!S.pal || (D.palace.updated || 0) >= (S.pal.updated || 0))) S.pal = D.palace;
     else if (S.pal && S.pal.updated) savePalace();
@@ -36,7 +36,7 @@ function recOf(id) { const r = D.recs.get(keyOf(id)); if (r) return r; const c =
 function recordFor(P) {
   const it = L.meta.items.find(x => x.id === P.id) || {};
   return { kind: "paper", id: P.id, name: P.fileName || it.name || P.id.split(":")[0], title: P.title, year: it.year || null, folder: it.folder || "", authors: authorsFor(P),
-    primer: P.primer || null, briefs: P.briefs || {}, figs: Object.fromEntries(P.figures.map(f => [f.n, f.det || null])), restate: P.restate || "", verdict: P.verdict || null,
+    primer: P.primer || null, briefs: P.briefs || {}, judge: P.judge || recOf(P.id)?.judge || {}, stats: P.stats || recOf(P.id)?.stats || {}, figs: Object.fromEntries(P.figures.map(f => [f.n, f.det || null])), restate: P.restate || "", verdict: P.verdict || null,
     revealed: !!P.revealed, seen: [...(P.seen || [])], nfig: P.figures.length, lastOpened: P.lastOpened || Date.now(), tags: P.tags || [],
     // until the notes and chat have loaded (hydrate), keep the counts already saved instead of writing zeros
     nNotes: P.hydrated ? (P.notes || []).length : (recOf(P.id)?.nNotes || 0),
@@ -55,7 +55,7 @@ function persistPaper(P) {
   D.tm.set(key, setTimeout(() => enqueue(key, () => D.col.doc(key).set(rec)), 700));
 }
 async function addChild(P, sub, obj) {
-  obj.at = Date.now();
+  obj.at = Date.now(); if (typeof nbStale === "function") nbStale();
   if (P.demo) { obj._id = "d" + obj.at + Math.random(); return obj; }
   if (D.col) {
     const ref = D.col.doc(keyOf(P.id)).collection(sub).doc(); obj._id = ref.id;
@@ -65,8 +65,18 @@ async function addChild(P, sub, obj) {
 }
 async function delChild(P, sub, id) {
   if (P.demo) return;
+  if (typeof nbStale === "function" && sub !== "chat" && S.view !== "library") nbStale();
   if (D.col) enqueue(keyOf(P.id) + "/" + sub, () => D.col.doc(keyOf(P.id)).collection(sub).doc(id).delete());
   else { const k = "pw:" + P.id + ":" + sub; store.set(k, (store.get(k) || []).filter(x => x._id !== id)); }
+}
+// change some fields of a note or highlight (by the paper's id, so it works without opening the paper)
+async function updChild(paperId, sub, cid, patch) {
+  if (D.col) {
+    const ref = D.col.doc(keyOf(paperId)).collection(sub).doc(cid);
+    await new Promise((res, rej) => enqueue(keyOf(paperId) + "/" + sub, async () => {
+      try { const d = await ref.get(); if (d.exists) await ref.set({ ...d.data(), ...patch, edited: Date.now() }); res(); } catch (e) { rej(e); }
+    }));
+  } else { const k = "pw:" + paperId + ":" + sub; store.set(k, (store.get(k) || []).map(x => x._id === cid ? { ...x, ...patch, edited: Date.now() } : x)); }
 }
 async function listChildren(id, sub) {
   if (D.col) { try { const sn = await D.col.doc(keyOf(id)).collection(sub).orderBy("at").limit(500).get(); return sn.docs.map(d => ({ ...d.data(), _id: d.id })); } catch (e) { console.warn(e); return []; } }
@@ -77,7 +87,7 @@ async function hydrate(P) {
   if (r) {
     // the saved record is the newest truth: every change here goes through persistPaper into it, and sync writes
     // the other device's newer edits into it. So it wins over what this open paper still holds in memory.
-    P.primer = r.primer || P.primer; P.briefs = { ...(P.briefs || {}), ...(r.briefs || {}) }; P.restate = r.restate || P.restate; P.verdict = r.verdict || P.verdict;
+    P.primer = r.primer || P.primer; P.briefs = { ...(P.briefs || {}), ...(r.briefs || {}) }; P.judge = r.judge || P.judge || {}; P.stats = { ...(P.stats || {}), ...(r.stats || {}) }; P.restate = r.restate || P.restate; P.verdict = r.verdict || P.verdict;
     P.revealed = r.revealed || P.revealed; P.tags = r.tags || P.tags || []; (r.seen || []).forEach(n => P.seen.add(n));
     P.figures.forEach(f => { if (r.figs && r.figs[f.n]) f.det = r.figs[f.n]; });
     P.card = r.card || P.card || null; P.cards = r.cards || P.cards || []; P.cardImg = r.cardImg || P.cardImg || null; P.srs = r.srs || P.srs || {};

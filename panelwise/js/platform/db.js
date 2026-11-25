@@ -18,6 +18,7 @@ async function pwSqliteBackend() {
     async get(parent, id) { const r = await db.query("SELECT data FROM docs WHERE parent = ? AND id = ?;", [parent, id]); const v = (r.values || [])[0]; return v ? JSON.parse(v.data) : null; },
     async put(parent, id, data) { await db.run("INSERT OR REPLACE INTO docs (parent, id, data) VALUES (?, ?, ?);", [parent, id, JSON.stringify(data)]); },
     async del(parent, id) { await db.run("DELETE FROM docs WHERE parent = ? AND id = ?;", [parent, id]); },
+    async keys(parent) { const r = await db.query("SELECT id FROM docs WHERE parent = ?;", [parent]); return (r.values || []).map(v => v.id); },
     async dump() { const r = await db.query("SELECT parent, id, data FROM docs WHERE parent NOT LIKE '\\_%' ESCAPE '\\';", []); return (r.values || []).map(v => ({ parent: v.parent, id: v.id, data: JSON.parse(v.data) })); },
   };
 }
@@ -33,6 +34,7 @@ function pwIdbBackend() {
     async get(parent, id) { const r = await tx("readonly", st => st.get([parent, id])); return r ? r.data : null; },
     async put(parent, id, data) { await tx("readwrite", st => st.put({ parent, id, data: JSON.parse(JSON.stringify(data)) })); },
     async del(parent, id) { await tx("readwrite", st => st.delete([parent, id])); },
+    async keys(parent) { const ks = await tx("readonly", st => st.index("parent").getAllKeys(parent)); return ks.map(k => k[1]); },
     async dump() { const rows = await tx("readonly", st => st.getAll()); return rows.filter(r => !r.parent.startsWith("_")); },
   };
 }
@@ -88,14 +90,33 @@ PW.makeDb = function (be) {
   return { collection };
 };
 
+/* Until Nov 2026 the app's own saves skipped change tracking, so records edited since sync began carry no time
+   (or none at all) and never won against the other device's copy. Once per device: give each untracked record
+   the time it says it was last changed, so the newer copy wins at the next sync. */
+async function pwStampUntracked(be) {
+  if (await be.get(PW_META, "stamped-v1")) return;
+  const metas = new Map(); for (const r of await be.all(PW_META)) metas.set(r.id, r.data);
+  let n = 0;
+  for (const r of await be.dump()) {
+    const k = r.parent + "\u0001" + r.id, m = metas.get(k), d = r.data || {};
+    const t = +(d.updated || d.at || d.created || 0);
+    if (t > 0 && t <= Date.now() && (!m || !m.t)) { await be.put(PW_META, k, { t }); n++; }
+  }
+  await be.put(PW_META, "stamped-v1", { t: Date.now(), n });
+  if (n) console.info("sync: stamped", n, "records");
+}
+
 PW.USER_COL = "data/users/local";
 PW.dbReady = (async () => {
   let be;
   try { be = PW.native ? await pwSqliteBackend() : pwIdbBackend(); }
-  catch (e) { console.warn("SQLite unavailable, using IndexedDB", e); be = pwIdbBackend(); }
+  catch (e) { PW.log.error("database", "SQLite unavailable, using a temporary store: " + (e && e.message)); PW.dbFallback = true; be = pwIdbBackend(); }
   PW.be = pwTracked(be);
   // small key-value view on the same table, used by the Claude response cache
   PW.kv = { get: (col, id) => be.get(col, id), put: (col, id, v) => be.put(col, id, v) };
-  PW.db = PW.makeDb(be);
+  // app saves go through the tracked backend, so every edit and delete gets a time and reaches the other devices
+  PW.db = PW.makeDb(PW.be);
+  await pwStampUntracked(be).catch(e => PW.log.error("sync", e));
+  await PW.log?.load();
   return PW.db;
 })();

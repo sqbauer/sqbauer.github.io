@@ -180,7 +180,8 @@ function libItems() {
   const groups = buildGroups();
   const ids = new Set(L.meta.items.map(it => it.id)), titles = new Set(groups.map(g => normTitle(g.title)).filter(t => t.length >= 25));
   const extra = allRecs().filter(r => r.id && !ids.has(r.id) && !titles.has(normTitle(r.title))).map(r => ({ key: "r:" + r.id, id: r.id, members: [], name: r.name || r.id.split(":")[0], folders: [r.folder || ""], mtime: r.lastOpened || 0, title: r.title, year: r.year, authors: r.authors || [], copies: 0, versions: 0, file: false, notInFolder: true }));
-  let items = [...groups, ...extra].map(it => { const r = recOf(it.id) || (it.members || []).map(m => recOf(m.id)).find(Boolean); return { ...it, synced: !!r?.phone?.bundle, prog: progressOf(it.id), label: it.title || guessFromName(it.name).label, tags: r?.tags || [], nNotes: r?.nNotes || 0, nChat: r?.nChat || 0 }; });
+  let items = [...groups, ...extra].map(it => { const r = recOf(it.id) || (it.members || []).map(m => recOf(m.id)).find(Boolean); return { ...it, prog: progressOf(it.id), label: it.title || guessFromName(it.name).label, tags: r?.tags || [], nNotes: r?.nNotes || 0, nChat: r?.nChat || 0 }; });
+  if (L.status) items = items.filter(it => L.status === "none" ? !statusOf(it.id) : statusOf(it.id) === L.status);
   if (L.folderSel === "~dup") items = items.filter(it => it.copies > 1);
   else if (L.folderSel !== "*") items = items.filter(it => it.folders.includes(L.folderSel));
   if (q) {
@@ -265,6 +266,7 @@ function libMoreMenu(btn) {
     { label: "Open one PDF…", key: libKey("⌘O"), run: () => $("#fileIn").click() },
     { label: "Example paper", run: () => openPaper(DEMO) },
     { label: "Mouse brain sections", key: libKey("⌘B"), run: () => brainOpen("", btn) },
+    ...(matchMedia("(hover: hover)").matches ? [{ label: "Keyboard shortcuts", key: libKey("?"), run: () => showKeys() }] : []),
     "-",
     { label: "Settings", key: libKey("⌘,"), run: () => { S.view = "settings"; render(); window.scrollTo(0, 0); } },
   ]);
@@ -306,6 +308,7 @@ function libWelcome() {
       <li><div>${tap} <strong>Choose Papers folder</strong>.</div></li>
       <li><div>${PW.native ? "In Files, open iCloud Drive and select the folder where your PDFs end up, for example" : "Pick the folder where your PDFs end up, for example"}<span class="path">${PW.native ? "iCloud Drive / Papers" : "Documents / Papers"}</span></div></li>
       <li><div>${PW.native ? "Panelwise keeps access and rescans it each time it opens. New PDFs simply appear." : "Your browser asks to “upload” the files. They are only read on this page; pick the folder again next time."}</div></li>
+      <li><div><strong>Optional:</strong> add your Anthropic API key in <button type="button" class="linkbtn" data-act="tosettings">Settings</button> for figure briefs, panel detection, card checks and chat. Reading works without it.</div></li>
     </ol>
     <div class="lacts"><button class="btn primary" type="button" data-act="pickdir">Choose Papers folder</button><button class="btn" type="button" data-act="demo">Try the example paper</button><button class="btn quiet" type="button" data-act="pickfile">Open one PDF</button></div>
     <p class="note lprivacy">${LIB_SVG.lock}<span>PDFs stay on this device. Only text you choose to send to Claude leaves it.</span></p>
@@ -352,7 +355,7 @@ function renderLibrary() {
     ${lost ? libLostCard() : ""}
     ${!have && !lost && M.items.length && !L.scanning ? `<div class="lnote note">Showing your last scan from ${fmtDate(M.scannedAt)}. To open a PDF, <button type="button" class="linkbtn" data-act="pickdir">re-select the folder</button> (browsers don't let pages keep folder access). Papers you've worked on open as a read-back of your notes and chat.</div>` : ""}
     ${cont || rev ? `<div class="libtop ${cont && rev ? "two" : ""}">${cont}${rev}</div>` : ""}
-    <div class="libnav">${libTabs()}${L.tab === "papers" ? `<div class="lsorts"><select class="sort" id="libField" aria-label="Search in">${[["all", "All fields"], ["authors", "Authors only"], ["title", "Titles only"]].map(([v, l]) => `<option value="${v}" ${L.field === v ? "selected" : ""}>${l}</option>`).join("")}</select><select class="sort" id="libSort" aria-label="Sort papers">${[["added", "Recently added"], ["read", "Recently read"], ["title", "Title A–Z"], ["year", "Year"]].map(([v, l]) => `<option value="${v}" ${L.sort === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>` : ""}</div>
+    <div class="libnav">${libTabs()}${L.tab === "papers" ? `<div class="lsorts"><select class="sort" id="libField" aria-label="Search in">${[["all", "All"], ["authors", "Authors"], ["title", "Titles"]].map(([v, l]) => `<option value="${v}" ${L.field === v ? "selected" : ""}>${l}</option>`).join("")}</select><select class="sort" id="libStatus" aria-label="Reading status"><option value="">Status</option>${Object.entries(STATUS_NAMES).map(([v, l]) => `<option value="${v}" ${L.status === v ? "selected" : ""}>${l}</option>`).join("")}<option value="none" ${L.status === "none" ? "selected" : ""}>No status</option></select><select class="sort" id="libSort" aria-label="Sort papers">${[["added", "Newest"], ["read", "Last read"], ["title", "A–Z"], ["year", "Year"]].map(([v, l]) => `<option value="${v}" ${L.sort === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>` : ""}</div>
     ${L.tab === "wiki" ? `<div id="wkBox" style="margin-top:16px"></div>` : L.tab === "topics" ? topicsTab() : L.tab === "notebook" ? `<div id="nbBox" style="margin-top:16px"><div class="thinking"><span class="dot"></span>Gathering your notes…</div></div>` : `
     ${fl.length > 1 || nDup ? `<div class="lchips" role="group" aria-label="Folders"><button class="chip" type="button" data-folder="*" aria-pressed="${L.folderSel === "*"}">All <span class="c">${groups.length}</span></button>${fl.length > 1 ? fl.map(([f, c]) => `<button class="chip" type="button" data-folder="${esc(f)}" aria-pressed="${L.folderSel === f}">${esc(f || "Top level")} <span class="c">${c}</span></button>`).join("") : ""}${nDup ? `<button class="chip" type="button" data-folder="~dup" aria-pressed="${L.folderSel === "~dup"}">Duplicates <span class="c">${nDup}</span></button>` : ""}</div>` : ""}
     <div id="libScan" class="lscan"></div>
@@ -388,10 +391,10 @@ function renderLibList() {
   const lost = libLost();
   box.innerHTML = items.length ? items.slice(0, 400).map(it => {
     const g = guessFromName(it.name), off = !it.file && !it.synced, hasRec = it.prog.last > 0;
-    const extras = [it.nNotes ? `${it.nNotes} note${it.nNotes > 1 ? "s" : ""}` : "", it.nChat ? `${it.nChat} chat` : "", it.synced ? "on phone" : "", it.notInFolder && !it.synced ? "not in folder" : ""].filter(Boolean).join(" · ");
+    const extras = [it.nNotes ? `${it.nNotes} note${it.nNotes > 1 ? "s" : ""}` : "", it.nChat ? `${it.nChat} chat` : "", it.notInFolder ? "not in folder" : ""].filter(Boolean).join(" · ");
     const dup = it.copies > 1 ? `<div class="rm"><span class="pill p2">${it.copies} copies${it.versions > 1 ? " · files differ" : ""}</span> ${esc(it.members.map(m => (m.folder || "Top level") + " / " + m.name).join("  ·  "))}</div>` : "";
     return `<button type="button" class="row ${off && (!hasRec || lost) ? "off" : ""}" ${off && hasRec ? `data-record="${esc(it.id)}"` : `data-open="${esc(it.key)}"`}><div style="min-width:0"><div class="rt">${esc(it.label)}</div>${it.authors && it.authors.length ? `<div class="rm" style="color:var(--ink);opacity:.8">${authorsHTML(it.authors)}</div>` : ""}<div class="rm">${esc([it.year, it.copies > 1 ? null : (it.title ? g.label : null), it.copies > 1 ? null : it.folders[0], extras].filter(Boolean).join(" · "))}</div>${dup}${it.tags.length ? `<div class="tags" style="margin-top:5px">${it.tags.map(t => `<span class="tchip ro">${esc(t)}</span>`).join("")}</div>` : ""}</div>
-      <div class="rr">${lost && !it.synced ? `<span class="loff">${LIB_SVG.lock}Re-select to open</span>` : `<span class="pill ${it.prog.cls}">${esc(it.prog.label)}</span>`}<span>${it.prog.last ? "read " + fmtDate(it.prog.last) : "added " + fmtDate(it.mtime)}</span>${typeof rmProgressLabel === "function" && rmProgressLabel(it.id) ? `<span class="pill">${esc(rmProgressLabel(it.id))}</span>` : ""}</div></button>`;
+      <div class="rr">${lost && !it.synced ? `<span class="loff">${LIB_SVG.lock}Re-select to open</span>` : `${statusPill(it.id)}<span class="pill ${it.prog.cls}">${esc(it.prog.label)}</span>`}<span>${it.prog.last ? "read " + fmtDate(it.prog.last) : "added " + fmtDate(it.mtime)}</span>${typeof rmProgressLabel === "function" && rmProgressLabel(it.id) ? `<span class="pill">${esc(rmProgressLabel(it.id))}</span>` : ""}</div></button>`;
   }).join("") + (items.length > 400 ? `<div class="row note">Showing 400 of ${items.length}. Search to narrow down.</div>` : "") + (L.scanning ? libSkel(3) : "")
     : `<div class="row note lnone">No papers match${L.q.trim() ? ` “${esc(L.q.trim())}”` : ""}.${L.q.trim().length >= 2 ? ` <button type="button" class="linkbtn" data-act="lsearch">Search everything, including the text of every paper</button>` : ""}</div>`;
 }
@@ -410,20 +413,18 @@ function topicsTab() {
   return `<div class="tlist">${ts.map(t => { const ps = papersInTopic(t), tv = D.topics.get(topicKey(t)); const nn = ps.reduce((a, r) => a + (r.nNotes || 0), 0);
     return `<button type="button" class="tcard" data-topic="${esc(t)}"><span class="tn">${esc(t)}</span><span class="tm">${ps.length} paper${ps.length === 1 ? "" : "s"} · ${nn} note${nn === 1 ? "" : "s"}</span><span class="tm">${tv?.synthAt ? "Overview written " + fmtDate(tv.synthAt) : "No overview yet"}</span></button>`; }).join("")}</div>`;
 }
-async function gatherNotes(recs) {
-  const out = [];
-  await Promise.all(recs.filter(r => r.nNotes > 0 || !D.col).map(async r => { const ns = await listChildren(r.id, "notes"); ns.forEach(n => out.push({ ...n, paper: r })); }));
-  return out.sort((a, b) => b.at - a.at);
-}
-async function renderNotebook() {
-  const notes = await gatherNotes(allRecs());
-  const box = $("#nbBox"); if (!box || L.tab !== "notebook" || S.view !== "library") return;
-  const q = (L.nbq || "").toLowerCase();
-  const list = q ? notes.filter(n => (n.text + " " + (n.q || "") + " " + n.paper.title + " " + (n.paper.tags || []).join(" ")).toLowerCase().includes(q)) : notes;
-  box.innerHTML = notes.length ? `<input class="search" id="nbQ" type="search" placeholder="Search your notes and saved answers" value="${esc(L.nbq || "")}" aria-label="Search notes" style="width:100%;margin-bottom:12px">
-    <div class="notes">${list.map(n => `<div role="button" tabindex="0" data-record="${esc(n.paper.id)}" style="cursor:pointer">${noteHTML(n, false, n.paper.title)}</div>`).join("") || `<p class="note">No notes match.</p>`}</div>`
-    : `<div class="card"><h3>Your notebook is empty</h3><p class="note">Notes you write next to a figure, and chat answers you save, collect here across all papers.</p></div>`;
-  if (q) { const i = $("#nbQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+// the papers side by side, from your cards and verdicts (no Claude needed)
+function topicTableHTML(ps) {
+  const rows = ps.map((r, i) => {
+    const cs = [r.card, ...(r.cards || [])].filter(c => c && c.finding), c = cs[0] || {};
+    const j = Object.values(r.judge || {}), cnt = k => j.filter(x => x.v === k).length;
+    const verdict = j.length ? Object.keys(JUDGE_NAMES).filter(cnt).map(k => `<span class="pill j-${k}">${cnt(k)} ${JUDGE_NAMES[k].toLowerCase()}</span>`).join(" ") : "";
+    return `<tr><td><button type="button" class="linkbtn" data-record="${esc(r.id)}">[${i + 1}]</button></td><td>${esc(c.lab || shortAuthors(r.authors || []) || "")}${r.year || c.year ? ` <span class="note">${esc(c.year || r.year)}</span>` : ""}</td>
+      <td>${esc(c.prep || "")}</td><td>${cs.map(x => esc(x.finding)).join("<br>") || `<span class="note">${esc(r.primer?.coreQuestion || "")}</span>`}</td><td>${cs.map(x => esc(x.caveat || "")).filter(Boolean).join("<br>")}</td><td>${verdict}${statusPill(r.id)}</td></tr>`;
+  }).join("");
+  if (!ps.some(r => r.card || Object.keys(r.judge || {}).length)) return "";
+  return `<div class="box" style="margin-top:18px"><h3><span>Side by side</span><span class="note">from your cards and verdicts</span></h3>
+    <div class="ttable-wrap"><table class="ttable"><thead><tr><th></th><th>Lab · year</th><th>Preparation</th><th>Finding</th><th>Caveat</th><th>Your verdict</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function renderTopic() {
   const name = S.topic, ps = papersInTopic(name), tv = D.topics.get(topicKey(name)) || {};
@@ -433,8 +434,10 @@ function renderTopic() {
     <div class="eyebrow" style="margin-top:12px">Topic</div><h2>${esc(name)}</h2>
     <div class="box" style="margin-top:18px"><h3><span>Overview across papers</span>${tv.synthAt ? `<span class="savebadge">written ${fmtDate(tv.synthAt)}</span>` : ""}</h3>
       <div id="synthBox" class="synth">${tv.synthesis ? md(tv.synthesis) : `<p class="note">Claude can compare these papers' questions, approaches and findings, and fold in your notes and saved answers: where they agree, where they conflict, and what's still open.</p>`}</div>
-      ${S.sample ? `<div style="margin-top:10px"><button class="btn ${tv.synthesis ? "" : "primary"}" type="button" data-act="synth" ${S.synthBusy ? "disabled" : ""}>${S.synthBusy ? "Writing…" : tv.synthesis ? "Rewrite overview" : "Write overview"}</button></div>` : `<p class="note">${NO_CLAUDE}</p>`}
+      ${S.sample ? `<div style="margin-top:10px"><button class="btn ${tv.synthesis ? "" : "primary"}" type="button" data-act="synth" ${S.synthBusy ? "disabled" : ""}>${S.synthBusy ? "Writing…" : tv.synthesis ? "Rewrite overview" : "Write overview"}</button></div>` : `<p class="note">${NO_CLAUDE_HTML}</p>`}
     </div>
+    ${topicTableHTML(ps)}
+    <div class="rec-tools" style="margin-top:14px"><button type="button" class="btn quiet" data-mdtopic="${esc(name)}">Export as Markdown</button><button type="button" class="btn quiet" data-bibtopic="${esc(name)}">Export BibTeX</button></div>
     <h3 style="margin:24px 0 10px">Papers</h3>
     <div class="plist">${ps.map((r, i) => `<div class="pcard"><span class="num">[${i + 1}]</span><div style="min-width:0;display:flex;flex-direction:column;gap:4px">
       <button type="button" class="linkbtn" data-record="${esc(r.id)}" style="text-align:left;font-size:15px;font-weight:600;color:var(--ink)">${esc(r.title)}</button>
@@ -450,12 +453,14 @@ async function synthTopic(name) {
   const notes = await gatherNotes(ps);
   const blocks = ps.map((r, i) => {
     const pn = notes.filter(n => n.paper.id === r.id).slice(0, 25).map(n => `- ${n.fig ? `(Fig. ${n.fig}${n.panel || ""}) ` : ""}${n.q ? "Q: " + n.q + " A: " : ""}${n.text}`.slice(0, 1200)).join("\n");
-    const br = Object.entries(r.briefs || {}).map(([k, b]) => `- Fig. ${k}: ${b.claim}`).join("\n");
+    const br = [...new Set([...Object.keys(r.briefs || {}), ...Object.keys(r.judge || {})])].map(k => { const b = (r.briefs || {})[k] || {}, j = (r.judge || {})[k]; return `- Fig. ${k}: ${b.claim || ""}${j ? ` (reader: ${JUDGE_NAMES[j.v] || j.v}${j.why ? ", " + j.why : ""})` : ""}`; }).join("\n");
+    const cds = [r.card, ...(r.cards || [])].filter(c => c && c.finding).map(c => `- ${c.lab}${c.year ? " " + c.year : ""}: ${c.finding}${c.prep ? " | preparation: " + c.prep : ""}${c.caveat ? " | caveat: " + c.caveat : ""}`).join("\n");
     return `[${i + 1}] ${r.title}${r.year ? " (" + r.year + ")" : ""}
 Core question: ${r.primer?.coreQuestion || "unknown"}
 Approach: ${r.primer?.approach || "unknown"}
 Gap addressed: ${r.primer?.gap || "unknown"}
 Figure claims:\n${br || "- none recorded"}
+Reader's cards (their one-line summaries):\n${cds || "- none"}
 Reader's own version of the question: ${r.restate || "none"}
 Reader's notes and saved answers:\n${pn || "- none"}`;
   }).join("\n\n");
@@ -477,20 +482,22 @@ ${blocks}`.slice(0, 200000);
 }
 async function renderRecord() {
   const r = recOf(S.recId); if (!r) { S.view = "library"; renderLibrary(); return; }
-  const canOpen = buildGroups().some(g => (g.id === r.id || g.members.some(m => m.id === r.id) || (normTitle(r.title).length >= 25 && normTitle(g.title) === normTitle(r.title))) && g.file) || !!r.phone?.bundle;
+  const canOpen = buildGroups().some(g => (g.id === r.id || g.members.some(m => m.id === r.id) || (normTitle(r.title).length >= 25 && normTitle(g.title) === normTitle(r.title))) && g.file);
   $("#pTitle").textContent = r.title; $("#pSub").textContent = "Your saved work";
   const pr = r.primer || {};
   $("#main").innerHTML = `<section class="view" style="max-width:980px">
     <button class="backlink" type="button" data-act="tolib">Library</button>
     <div class="libhead" style="margin-top:12px"><div style="min-width:0"><div class="eyebrow">Read-back · last opened ${fmtDate(r.lastOpened)}</div><h2>${esc(r.title)}</h2>
       ${(r.tags || []).length ? `<div class="tags" style="margin-top:8px">${r.tags.map(t => `<button type="button" class="tchip ro" data-topic="${esc(t)}" style="border:0">${esc(t)}</button>`).join("")}</div>` : ""}</div>
-      <button class="btn ${canOpen ? "primary" : ""}" type="button" data-act="openrec">${canOpen ? (r.phone?.bundle && !buildGroups().some(g => g.id === r.id && g.file) ? "Open synced copy" : "Open the PDF") : "Re-select folder to open the PDF"}</button></div>
+      ${canOpen ? `<button class="btn primary" type="button" data-act="openrec">Open the PDF</button>`
+        : `<div style="text-align:right"><button class="btn" type="button" data-act="pickdir">${PW.native ? "Choose Papers folder" : "Re-select folder to open the PDF"}</button>${PW.native ? `<div class="note" style="margin-top:4px">The PDF isn't in your Papers folder.</div>` : ""}</div>`}</div>
+    <div class="rec-tools">${statusSelectHTML(r.id)}<button type="button" class="btn quiet" data-cite="${esc(r.id)}">Copy citation</button><button type="button" class="btn quiet" data-mdpaper="${esc(r.id)}">Export as Markdown</button></div>
     <div class="reveal" style="margin-top:18px">
       <div class="card wide"><div class="eyebrow">Core question</div><div style="font-family:var(--f-read);font-size:19px;margin-top:4px">${esc(pr.coreQuestion || "Not generated")}</div></div>
       <div class="card"><div class="eyebrow">Your version</div><p style="margin:6px 0 0">${esc(r.restate || "Not written")}</p>${r.verdict ? `<p class="note" style="margin:6px 0 0">${esc(r.verdict.feedback)}</p>` : ""}</div>
       <div class="card"><div class="eyebrow">Progress</div><p style="margin:6px 0 0">${esc(progressOf(r.id).label)}</p></div>
       ${r.card ? `<div class="card wide"><div class="eyebrow">Your card${(r.cards || []).length ? `s · ${1 + r.cards.length}` : ""}</div>${[r.card, ...(r.cards || [])].map(c => `<div style="margin-top:6px">${onelinerHTML(c)}</div>`).join("")}</div>` : ""}
-      ${Object.keys(r.briefs || {}).length ? `<div class="card wide"><div class="eyebrow">Figure claims</div><ul style="margin:6px 0 0;padding-left:18px">${Object.entries(r.briefs).map(([k, b]) => `<li><strong>Fig. ${esc(k)}</strong> ${esc(b.claim)}</li>`).join("")}</ul></div>` : ""}
+      ${Object.keys({ ...(r.briefs || {}), ...(r.judge || {}) }).length ? `<div class="card wide"><div class="eyebrow">Figures: the claim and your verdict</div><ul style="margin:6px 0 0;padding-left:18px">${[...new Set([...Object.keys(r.briefs || {}), ...Object.keys(r.judge || {})])].sort((a, b) => a - b).map(k => { const b = (r.briefs || {})[k] || {}, j = (r.judge || {})[k]; return `<li><strong>Fig. ${esc(k)}</strong> ${esc(b.claim || "")}${j ? ` <span class="pill j-${esc(j.v)}">${esc(JUDGE_NAMES[j.v] || "")}</span>${j.why ? ` <span class="note">${esc(j.why)}</span>` : ""}` : ""}</li>`; }).join("")}</ul></div>` : ""}
     </div>
     <div class="box" style="margin-top:18px"><h3><span>Notes</span></h3><div class="notes" id="recNotes"><div class="thinking"><span class="dot"></span>Loading…</div></div></div>
     <div class="box" style="margin-top:18px"><h3><span>Conversation</span></h3><div class="transcript" id="recChat"><div class="thinking"><span class="dot"></span>Loading…</div></div></div>

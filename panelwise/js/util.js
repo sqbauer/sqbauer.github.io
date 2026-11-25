@@ -2,7 +2,9 @@
 /* ---------- helpers ---------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// a saved key-panel image (from synced or imported files) goes into src="" only if it is an inline picture
+const safeImg = u => typeof u === "string" && /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/.test(u) ? u : "";
 const clamp01 = v => Math.max(0, Math.min(1, +v || 0));
 function toast(msg, ms = 3200) { toastDone(); const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, ms); }
 /* a toast with an Undo button: undo() runs if it's tapped, done() when the toast goes (time up, or another toast) */
@@ -74,7 +76,10 @@ function errCopy(e) {
 
 // the paper's sections by their key, as shown everywhere (the figure view's in-text list says "Text" for "other")
 const SEC_NAMES = { abstract: "Abstract", intro: "Introduction", results: "Results", discussion: "Discussion", methods: "Methods", other: "Other text" };
-const NO_CLAUDE = PW.single ? "Claude is off. To turn it on, add your own Anthropic API key in Settings (the gear at the top)." : "Claude is off until you add your API key in Settings.";
+const NO_CLAUDE = PW.single ? "Claude is off. To turn it on, add your own Anthropic API key in Settings." : "Claude is off until you add your API key in Settings.";
+// the same, with a button that goes there (for places that show it inside the page)
+const ADD_KEY_BTN = `<button type="button" class="btn sm" data-act="tosettings">Add API key</button>`;
+const NO_CLAUDE_HTML = `${NO_CLAUDE} ${ADD_KEY_BTN}`;
 
 /* ---------- state ---------- */
 const S = {

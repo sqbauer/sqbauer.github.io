@@ -45,12 +45,13 @@ document.addEventListener("click", e => {
   else if (act === "check") checkRestate();
   else if (act === "reveal") { S.paper.revealed = true; saveCache(); render(); }
   else if (act === "brief") genBrief(S.paper.figures[S.figIdx]);
+  else if (act === "stats") genStats(S.paper.figures[S.figIdx]);
   else if (act === "unpin") { S.pinned = null; applyHL(); }
   else if (act === "outlines") { S.outlines = !S.outlines; render(); }
   else if (act === "redetect") prepareFigure(S.paper.figures[S.figIdx], true);
   else if (act === "openchat") setChat(true);
   else if (act === "pickdir") pickFolderAction();
-  else if (["key-test", "key-remove", "rescan", "export", "import", "sync-now"].includes(act)) settingsAction(act).catch(e => { console.warn(e); toast("That didn't work" + (e && e.message ? `: ${e.message}` : "."), 6000); });
+  else if (["key-test", "key-remove", "rescan", "export", "import", "sync-now", "copylog"].includes(act)) settingsAction(act).catch(e => { console.warn(e); toast("That didn't work" + (e && e.message ? `: ${e.message}` : "."), 6000); });
   else if (act === "pickfile") $("#fileIn").click();
   else if (act === "tosettings") { S.view = "settings"; render(); window.scrollTo(0, 0); }
   else if (act === "tostart") { S.view = "upload"; render(); window.scrollTo(0, 0); }
@@ -60,6 +61,7 @@ document.addEventListener("click", e => {
   else if (act === "figcard") cardFromFigure();
   else if (act === "checkcard") checkCard();
   else if (act === "review") startReview(false);
+  else if (act === "cards") { S.view = "cards"; CB.open = -1; render(); window.scrollTo(0, 0); }
   else if (act === "palace") { S.view = "palace"; S.walk = null; S.wing = null; render(); window.scrollTo(0, 0); }
   else if (act === "palhome") { S.wing = null; S.walk = null; renderPalace(); }
   else if (act === "newwing") newWing();
@@ -123,9 +125,9 @@ document.addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.matches("[data-record]")) e.target.click();
 });
 document.addEventListener("focusout", e => { if (e.target.id === "tagIn" && !e.target.value.trim()) setTimeout(() => { if (S.tagEdit && document.activeElement?.id !== "tagIn") { S.tagEdit = false; renderTags(); } }, 150); });
-document.addEventListener("change", e => { if (e.target.id === "libSort") { L.sort = e.target.value; renderLibList(); } if (e.target.id === "libField") { L.field = e.target.value; const i = $("#libQ"); if (i) i.placeholder = L.field === "authors" ? "Author name, e.g. Romano" : "Search titles, authors, file names, topics"; renderLibList(); } });
+document.addEventListener("change", e => { if (e.target.id === "libStatus") { L.status = e.target.value; renderLibList(); } if (e.target.id === "libSort") { L.sort = e.target.value; renderLibList(); } if (e.target.id === "libField") { L.field = e.target.value; const i = $("#libQ"); if (i) i.placeholder = L.field === "authors" ? "Author name, e.g. Romano" : `Search ${L.meta.items.length ? L.meta.items.length + " papers" : "papers"} by title, author or topic`; renderLibList(); } });
 $("#dirIn").onchange = e => { const fs = e.target.files; if (fs && fs.length) onFolderPicked(fs); e.target.value = ""; };
-const toLibrary = () => { if (PW.single) { S.view = "upload"; render(); window.scrollTo(0, 0); return; } S.view = "library"; render(); window.scrollTo(0, 0); runMetaQueue(); };
+const toLibrary = () => { S.backTo = null; if (PW.single) { S.view = "upload"; render(); window.scrollTo(0, 0); return; } S.view = "library"; render(); window.scrollTo(0, 0); runMetaQueue(); };
 $("#brandBtn").onclick = toLibrary; $("#libBtn").onclick = toLibrary;
 $("#openBtn").onclick = () => $("#fileIn").click();
 $("#fileIn").onchange = e => { const f = e.target.files[0]; e.target.value = ""; if (f) handleFile(f); };
@@ -135,7 +137,10 @@ addEventListener("dragleave", () => { dragN = Math.max(0, dragN - 1); if (!dragN
 addEventListener("dragover", e => e.preventDefault());
 addEventListener("drop", e => { e.preventDefault(); dragN = 0; $("#drop").hidden = true; const f = e.dataTransfer?.files?.[0]; if (f) handleFile(f); });
 addEventListener("keydown", e => {
-  if (S.view !== "figures" || /TEXTAREA|INPUT/.test(document.activeElement?.tagName)) return;
+  if (S.view !== "figures" || /TEXTAREA|INPUT|SELECT/.test(document.activeElement?.tagName)) return;
+  // a sheet or overlay on top (reading mode, author, enlarged figure, brain sections, card, shortcuts): its own keys
+  const top = document.documentElement.classList;
+  if (["rdm-open", "au-open", "fv-open", "brain-open", "cb-open", "reg-open", "keys-open"].some(c => top.contains(c))) return;
   if (e.key === "ArrowRight" && S.figIdx < S.paper.figures.length - 1) { S.figIdx++; S.pinned = null; render(); }
   if (e.key === "ArrowLeft" && S.figIdx > 0) { S.figIdx--; S.pinned = null; render(); }
   if (e.key === "Escape" && S.pinned) { S.pinned = null; applyHL(); }

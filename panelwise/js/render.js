@@ -9,10 +9,10 @@ function renderHeader(onPaper) {
   $("#top").classList.toggle("paper", onPaper);
   $("#paperHead").hidden = !onPaper; $("#steps").hidden = !onPaper;
   $("#brandBtn").hidden = onPaper; $("#backBtn").hidden = !onPaper; $("#moreBtn").hidden = !onPaper;
-  $("#backBtn").textContent = PW.single ? "Start" : "Library";
-  $("#backBtn").title = PW.single ? "Back to the start page" : "Back to your library";
+  $("#backBtn").textContent = S.backTo === "cards" ? "Cards" : PW.single ? "Start" : "Library";
+  $("#backBtn").title = S.backTo === "cards" ? "Back to your cards" : PW.single ? "Back to the start page" : "Back to your library";
   $("#chatBtn").hidden = !onPaper || !askShown(); if (RM.btn) RM.btn.hidden = !onPaper;
-  $("#libBtn").hidden = onPaper || S.view === "library" || PW.single; $("#setBtn").hidden = onPaper || S.view === "settings" || (S.view === "library" && !PW.single);
+  $("#libBtn").hidden = onPaper || PW.single || ["library", "record", "topic", "wiki", "review", "cards"].includes(S.view); $("#setBtn").hidden = onPaper || S.view === "settings" || (S.view === "library" && !PW.single);
   // on the library, Open one PDF and Settings are in its More menu (one place for rare actions)
   $("#openBtn").hidden = onPaper || S.view === "upload" || (S.view === "library" && !PW.single);
   renderBar(onPaper);
@@ -59,12 +59,13 @@ function renderBar(onPaper) {
   bar.innerHTML = `<button class="btn" type="button" data-bar="read">Read</button>${askShown() ? `<button class="btn" type="button" data-bar="ask" aria-expanded="${!$("#chat").hidden}">Ask</button>` : ""}<button class="btn primary" type="button" ${n.a}><span class="bl">${esc(n.l)}</span>${/savecard/.test(n.a) ? "" : chev()}</button>`;
 }
 function render() {
-  const lib = ["library", "topic", "record", "review", "palace", "settings", "upload", "wiki"].includes(S.view);
+  document.documentElement.classList.toggle("cb-feed-on", S.view === "cards");   // the phone's card feed snaps per card
+  const lib = ["library", "topic", "record", "review", "palace", "cards", "settings", "upload", "wiki"].includes(S.view);
   renderHeader(!lib && !!S.paper);
   if (S.view === "upload") { renderUpload(); return; }
   if (S.view === "wiki") { if (!$("#chat").hidden) setChat(false); renderWikiTerm(); return; }
   renderTags();
-  if (lib) { if (!$("#chat").hidden) setChat(false); if (S.view === "settings") renderSettings(); else if (S.view === "topic") renderTopic(); else if (S.view === "record") renderRecord(); else if (S.view === "review") renderReview(); else if (S.view === "palace") renderPalace(); else renderLibrary(); return; }
+  if (lib) { if (!$("#chat").hidden) setChat(false); if (S.view === "settings") renderSettings(); else if (S.view === "topic") renderTopic(); else if (S.view === "record") renderRecord(); else if (S.view === "review") renderReview(); else if (S.view === "palace") renderPalace(); else if (S.view === "cards") renderCardBrowse(); else renderLibrary(); return; }
   const P = S.paper; if (!P) return;
   renderPaperHead(P);
   const m = $("#main");
@@ -87,7 +88,7 @@ function topScrolled() {
   const t = $("#phTitle"); top.classList.toggle("scrolled", !!t && t.getBoundingClientRect().bottom < top.getBoundingClientRect().bottom);
 }
 addEventListener("scroll", () => { if (topScrolled.raf) return; topScrolled.raf = requestAnimationFrame(() => { topScrolled.raf = 0; topScrolled(); }); }, { passive: true });
-$("#backBtn").onclick = () => $("#brandBtn").click();     // the same as the brand button: library, or the start page on the web
+$("#backBtn").onclick = () => { if (S.backTo === "cards") { S.backTo = null; cbBack(); } else $("#brandBtn").click(); };     // the same as the brand button: library, or the start page on the web
 $("#moreBtn").onclick = e => {
   const P = S.paper; if (!P) return;
   const f = S.view === "figures" ? P.figures[S.figIdx] : null, items = [];
@@ -95,7 +96,9 @@ $("#moreBtn").onclick = e => {
   if (!P.demo) items.push({ label: "Add a topic", run: () => { S.tagEdit = true; renderTags(); } });
   if (f && f.panels && f.panels.length) items.push({ label: S.outlines ? "Hide panel outlines" : "Show panel outlines", run: () => { S.outlines = !S.outlines; render(); } });
   if (f && !P.demo && S.sample && S.imagesOK && !f.busy) items.push({ label: "Re-detect panels", run: () => prepareFigure(f, true) });
+  if (!P.demo) items.push({ label: `Reading status${statusOf(P.id) ? ": " + STATUS_NAMES[statusOf(P.id)] : ""}…`, run: () => openMenu($("#moreBtn"), statusItems(P.id)) });
   items.push({ label: "Mouse brain sections", run: () => brainOpen("") });
+  if (matchMedia("(hover: hover)").matches) items.push({ label: "Keyboard shortcuts  ?", run: () => showKeys() });
   items.push("-", { label: "Settings", run: () => $("#setBtn").click() });
   openMenu(e.currentTarget, items);
 };
@@ -162,7 +165,7 @@ function primerHTML(P) {
   if (!pr) {
     if (P.primerBusy) return `<div class="card"><div class="thinking"><span class="dot"></span>Claude is reading the introduction…</div></div>`;
     if (!S.claudeChecked) return `<div class="card"><div class="thinking"><span class="dot"></span>Connecting to Claude…</div></div>`;
-    if (!S.sample) return `<div class="card"><h3>Primer</h3><p class="note">${NO_CLAUDE} No primer yet. Read the abstract and introduction on the right; the figures and linked text still work.</p></div>`;
+    if (!S.sample) return `<div class="card"><h3>Primer</h3><p class="note">${NO_CLAUDE_HTML} No primer yet. Read the abstract and introduction on the right; the figures and linked text still work.</p></div>`;
     return `<div class="card"><h3>Primer</h3><p class="note">${esc(P.primerErr || "Claude can summarise the background, gap and key terms before you start.")}</p><button class="btn" type="button" data-act="primer">Write the primer</button></div>`;
   }
   return `<div class="primer">
@@ -216,7 +219,7 @@ function viewQuestion(P) {
      ${v ? `<div class="verdict"><div class="v v-${esc(v.verdict)}">${esc(vtxt)}</div><div>${esc(v.feedback)}</div>${v.missing ? `<div class="note" style="margin-top:6px">Missing: ${esc(v.missing)}</div>` : ""}</div>` : ""}
    </div>
    ${pr ? `<div class="reveal ${revealed ? "" : "locked"}">${revealed ? cards : `<div class="blur reveal" style="grid-column:1/-1">${cards}</div><div class="veil"><span class="btn" style="pointer-events:none">Hidden until you write your version</span></div>`}</div>`
-        : `<p class="note">${S.sample ? "The primer isn't ready yet, so there's nothing to compare against." : NO_CLAUDE + " Use the abstract as your check."}</p>`}
+        : `<p class="note">${S.sample ? "The primer isn't ready yet, so there's nothing to compare against." : NO_CLAUDE_HTML + " Use the abstract as your check."}</p>`}
    <div class="nextbar"><button class="btn" type="button" data-go="background">${chev("l")}Background</button><button class="btn ${revealed ? "primary" : ""}" type="button" ${n.a}>${esc(n.ll)}${chev()}</button></div>
   </div></section>`;
 }
@@ -229,7 +232,7 @@ function viewFigures(P) {
   const title = L.title || f.legend.slice(0, 120);
   const stage = f.img
     ? `<div class="frame ${S.outlines ? "outlines" : ""}" id="frame"><div class="zw" id="zw"><img src="${f.img}" alt="Figure ${f.n}">${hasPanels ? f.panels.map(p => `<button type="button" class="hot" data-panel="${esc(p.label)}" style="left:${p.x * 100}%;top:${p.y * 100}%;width:${p.w * 100}%;height:${p.h * 100}%" aria-label="Panel ${esc(p.label)}" aria-pressed="false"><span class="badge" aria-hidden="true">${esc(p.label)}</span></button>`).join("") : ""}</div></div>`
-    : `<div class="frame"><div class="pagewait">${f.busy ? `<div class="thinking"><span class="dot"></span>${S.sample && S.imagesOK ? "Claude is locating the panels…" : "Rendering the page…"}</div>` : P.docFailed ? "Couldn't load this PDF to draw the figure. Close the paper and open it again." : P.doc || P.demo || P.docReady ? "Preparing figure…" : "This figure isn't on your phone yet. Open the paper once on your PC to sync it."}</div></div>`;
+    : `<div class="frame"><div class="pagewait">${f.busy ? `<div class="thinking"><span class="dot"></span>${S.sample && S.imagesOK ? "Claude is locating the panels…" : "Rendering the page…"}</div>` : P.docFailed ? "Couldn't load this PDF to draw the figure. Close the paper and open it again." : P.doc || P.demo || P.docReady ? "Preparing figure…" : "The PDF isn't loaded, so the figure can't be drawn. Open the paper from your Papers folder."}</div></div>`;
   let status = "";
   if (P.demo) status = "Hover a panel or a dotted sentence to link them; click to keep it selected.";
   else if (f.busy) status = "Locating panels…";
@@ -243,7 +246,8 @@ function viewFigures(P) {
       ${(brief.read || []).length ? `<div><div class="lbl">How to read it</div><ul>${brief.read.map(r => `<li><button type="button" class="ref" data-fig="${f.n}" data-panel="${esc(String(r.panel).toUpperCase())}">${f.n}${esc(r.panel)}</button> ${esc(r.what)}</li>`).join("")}</ul></div>` : ""}
       ${(brief.scrutinize || []).length ? `<div><div class="lbl">Check before you believe it</div><ul>${brief.scrutinize.map(s => `<li>${renderRefs(s)}</li>`).join("")}</ul></div>` : ""}
     </div></details>`
-    : S.sample ? `<div class="brief"><div class="brief-ask"><span><strong>Figure ${f.n} at a glance</strong><br><span class="note">The question it answers, its claim, and what to scrutinise.</span></span><button class="btn" type="button" data-act="brief" ${f.briefBusy ? "disabled" : ""}>${f.briefBusy ? "Writing…" : "Brief me"}</button></div></div>` : "";
+    : S.sample ? `<div class="brief"><div class="brief-ask"><span><strong>Figure ${f.n} at a glance</strong><br><span class="note">The question it answers, its claim, and what to scrutinise.</span></span><button class="btn" type="button" data-act="brief" ${f.briefBusy ? "disabled" : ""}>${f.briefBusy ? "Writing…" : "Brief me"}</button></div></div>`
+    : `<div class="brief off"><div class="brief-ask"><span><strong>Figure ${f.n} at a glance</strong><br><span class="note">Claude can sum up the question, the claim and what to check. It needs your API key.</span></span>${ADD_KEY_BTN}</div></div>`;
   const legend = `<div class="legend"><span class="ttl">${esc(L.head || `Figure ${f.n}. `)}${esc(L.title)}</span> ${L.segs.map(s => `<span class="seg" data-letters="${s.letters.join("")}">${renderRefs(s.text)}</span>`).join(" ")}</div>`;
   const rel = P.paras.filter(p => [...p.keys].some(k => parseInt(k) === f.n));
   const secName = { ...SEC_NAMES, other: "Text" };
@@ -269,6 +273,7 @@ function viewFigures(P) {
        <div class="box"><h3><span>In the text</span><span class="c">${rel.length} paragraph${rel.length === 1 ? "" : "s"}</span></h3><div class="ptext">${textHTML}</div></div>
        <div class="box"><h3><span>Legend</span></h3>${legend}</div>
        ${briefHTML}
+       ${P.demo ? "" : judgeHTML(P, f) + statsHTML(P, f)}
        ${notesBox(P, f.n)}
        <div class="figfoot">
          ${S.figIdx > 0 ? `<button class="btn" type="button" data-fig-idx="${S.figIdx - 1}">${chev("l")}Figure ${P.figures[S.figIdx - 1].n}</button>` : `<button class="btn" type="button" data-go="question">${chev("l")}Goal &amp; question</button>`}

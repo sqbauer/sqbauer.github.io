@@ -306,3 +306,8 @@ html.rdm-open,html.rdm-open body{overflow:hidden}
 /* pages turn by scrolling sideways: no scroll bar for that (macOS draws it as a glass capsule over the slider) */
 .rdm-vp{scrollbar-width:none}
 .rdm-vp::-webkit-scrollbar{display:none;height:0}
+.rdm-hlnote{display:flex;flex-direction:column;gap:6px;margin:12px 0}
+.rdm-hlnote textarea{font:inherit;font-size:15px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--surface);color:var(--ink)}
+.rdm-hlnote .rdm-btn{align-self:flex-start}
+.rdm-hlitem span:first-child{flex-wrap:wrap}
+.rdm-hlc{flex-basis:100%;margin:3px 0 0 16px;font-style:italic;color:var(--muted);font-size:13px}

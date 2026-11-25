@@ -25,7 +25,7 @@ function viewCard(P) {
   const kp = c.panel || from?.panel || (!c.fig && S.pinned && S.pinned.fig === +kf ? S.pinned.panel : "");
   const fig = P.figures.find(f => f.n === +kf), isNew = sel === "new", idx = isNew ? cards.length : sel;
   const saved = cards.length ? `<div class="cardlist"><div class="eyebrow" style="margin-bottom:6px">Your cards for this paper${P.demo ? " (example paper: not kept)" : ""} · ${cards.length}</div>
-    ${cards.map((x, i) => `<div class="cardrow ${i === sel ? "on" : ""}">${onelinerHTML(x)}<div class="cardrow-a">${x.fig ? `<span class="note">Figure ${esc(x.fig)}${x.panel ? esc(x.panel) : ""}</span>` : ""}<button type="button" class="btn quiet" data-cardsel="${i}" ${i === sel ? "disabled" : ""}>${i === sel ? "Editing" : "Edit"}</button>${i > 0 ? `<button type="button" class="btn quiet" data-carddel="${i}">Delete</button>` : ""}</div></div>`).join("")}
+    ${cards.map((x, i) => `<div class="cardrow ${i === sel ? "on" : ""}">${onelinerHTML(x)}<div class="cardrow-a">${x.fig ? `<span class="note">Figure ${esc(x.fig)}${x.panel ? esc(x.panel) : ""}</span>` : ""}<button type="button" class="btn quiet" data-cardsel="${i}" ${i === sel ? "disabled" : ""}>${i === sel ? "Editing" : "Edit"}</button><button type="button" class="btn quiet" data-carddel="${i}">Delete</button></div></div>`).join("")}
     ${isNew ? "" : `<button type="button" class="btn" data-cardsel="new">+ Another card</button>`}</div>` : "";
   return `<section class="view"><div class="qwrap">
    <div><div class="eyebrow">Step 4 · Your card${cards.length ? ` · ${isNew ? "new card" : `card ${idx + 1} of ${cards.length}`}` : ""}</div><h2>Put the paper in one line, in your own words</h2>
@@ -43,7 +43,7 @@ function viewCard(P) {
    <div class="cf-acts">
      <button class="btn ${isNew ? "primary cf-save" : ""}" type="button" data-act="savecard">${isNew ? (cards.length ? "Save as a new card" : "Save card") : "Update card"}</button>
      ${isNew && cards.length ? `<button class="btn quiet" type="button" data-cardsel="0">Cancel</button>` : ""}
-     ${S.sample ? `<button class="btn" type="button" data-act="checkcard" ${P.cardBusy ? "disabled" : ""}>${P.cardBusy ? "Checking…" : "Check against the paper"}</button>` : ""}
+     ${S.sample ? `<button class="btn" type="button" data-act="checkcard" ${P.cardBusy ? "disabled" : ""}>${P.cardBusy ? "Checking…" : "Check against the paper"}</button>` : `<button class="btn quiet" type="button" data-act="tosettings" title="Checking the card needs your Anthropic API key">Check against the paper: add API key</button>`}
    </div>
    ${P.cardCheck ? `<div class="verdict" style="margin-top:12px"><div class="v ${P.cardCheck.ok ? "v-match" : "v-partial"}">${P.cardCheck.ok ? "No factual errors found" : "Check these"}</div>${(P.cardCheck.issues || []).length ? `<ul style="margin:6px 0 0;padding-left:18px">${P.cardCheck.issues.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : ""}</div>` : ""}
    </div>
@@ -62,12 +62,25 @@ function cardFromFigure() {
   const P = S.paper, f = P && P.figures[S.figIdx]; if (!f) return;
   S.view = "card"; cardSelect("new", { fig: f.n, panel: S.pinned && S.pinned.fig === f.n ? S.pinned.panel : "" });
 }
+// delete any card, the first one included (the next one takes its place); Undo puts everything back
 function deleteCard(i) {
-  const P = S.paper, x = (P.cards || [])[i - 1]; if (!x) return;
-  if (!confirm("Delete this card? Its review history goes too.")) return;
-  P.cards.splice(i - 1, 1);
-  if (x.at && P.srs) for (const k of Object.keys(P.srs)) if (k.startsWith("c" + x.at + ":")) delete P.srs[k];
-  S.cardSel = 0; persistPaper(P); render(); toast("Card deleted.");
+  const P = S.paper, cards = cardList(P); if (!P || !cards[i]) return;
+  const before = { card: P.card, cardImg: P.cardImg, cards: [...(P.cards || [])], srs: { ...(P.srs || {}) } };
+  const TYPES = ["fig", "who", "lab", "caveat"];
+  P.srs = P.srs || {};
+  if (i === 0) {
+    for (const t of TYPES) delete P.srs[t];
+    const next = (P.cards || [])[0];
+    if (next) {                                     // the second card becomes the first, with its schedule
+      const { img, ...c } = next; P.card = c; P.cardImg = img || null; P.cards = P.cards.slice(1);
+      for (const t of TYPES) { const k = "c" + next.at + ":" + t; if (P.srs[k]) { P.srs[t] = P.srs[k]; delete P.srs[k]; } }
+    } else { P.card = null; P.cardImg = null; }
+  } else {
+    const x = P.cards[i - 1]; P.cards = P.cards.filter((_, k) => k !== i - 1);
+    if (x.at) for (const k of Object.keys(P.srs)) if (k.startsWith("c" + x.at + ":")) delete P.srs[k];
+  }
+  S.cardSel = cardList(P).length ? 0 : "new"; persistPaper(P); render();
+  toastUndo("Card deleted.", () => { Object.assign(P, before); S.cardSel = i; persistPaper(P); render(); });
 }
 function readCardForm() {
   return { lab: $("#cLab").value.trim(), year: $("#cYear").value.trim(), prep: $("#cPrep").value.trim(), finding: $("#cFind").value.trim().replace(/\s+/g, " "), caveat: $("#cCav").value.trim(), fig: +$("#cFig")?.value || null, panel: $("#cPanel")?.value || "" };
@@ -91,7 +104,15 @@ async function panelImage(P, figN, panel) {
   return url;
 }
 async function saveCard() {
-  const P = S.paper, c = readCardForm(), sel = cardSelOf(P);
+  const P = S.paper;
+  if (!P || P.cardSaving) return;                                  // a second tap while the key panel is still being cut out
+  P.cardSaving = true;
+  $$('[data-act="savecard"]').forEach(b => { b.disabled = true; b.dataset.label = b.textContent; b.textContent = "Saving…"; });
+  try { await saveCardNow(P); }
+  finally { P.cardSaving = false; $$('[data-act="savecard"]').forEach(b => { b.disabled = false; if (b.dataset.label) b.textContent = b.dataset.label; }); }
+}
+async function saveCardNow(P) {
+  const c = readCardForm(), sel = cardSelOf(P);
   if (!c.lab || !c.finding) { toast("Fill in at least the lab and the finding."); return; }
   P.srs = P.srs || {};
   if (sel === "new" && P.card) {                                   // another card: stored with its own key panel and schedule

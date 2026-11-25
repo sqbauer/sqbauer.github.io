@@ -78,13 +78,23 @@ PW.backup = {
   async writeAuto() {
     if (!PW.native || !PW.files.folderName) return;
     try {
-      const json = JSON.stringify(await this.exportData());
+      const data = await this.exportData(), json = JSON.stringify(data);
       if (json === this._last) return;
       const prev = await PW.files.readText(this.DIR + "/backup.json");
+      // never replace a backup with a much smaller one: an empty or damaged database must not wipe the good copies
+      let had = 0; try { had = prev ? (JSON.parse(prev).docs || []).length : 0; } catch {}
+      if (had >= 10 && data.docs.length < had * 0.5) {
+        PW.log.error("backup", `skipped: ${data.docs.length} records here, ${had} in the last backup`);
+        if (!this._warned) { this._warned = true; toast(`Backup paused: this device has far fewer saved records (${data.docs.length}) than the last backup (${had}). Your backups are kept.`, 8000); }
+        return;
+      }
       if (prev) await PW.files.writeText(this.DIR + "/backup.prev.json", prev);
       await PW.files.writeText(this.DIR + "/backup.json", json);
-      this._last = json; this.lastAt = Date.now();
-    } catch (e) { console.warn("backup failed", e && e.message); }
+      // plus one copy per weekday, so a week of earlier versions is always there
+      const day = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][new Date().getDay()];
+      await PW.files.writeText(`${this.DIR}/backups/backup-${day}.json`, json);
+      this._last = json; this.lastAt = Date.now(); PW.log.success("backup");
+    } catch (e) { PW.log.error("backup", e); }
   },
 };
 

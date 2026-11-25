@@ -35,7 +35,7 @@ PW.files = {
       this.folderName = r.name;
       await this.scan();
       // a folder picked for the first time on this device: bring in what the other devices have synced
-      PW.sync.run().then(() => PW.backup.firstRunImport()).catch(e => console.warn("import", e));
+      PW.sync.run().then(() => PW.backup.firstRunImport()).catch(e => PW.log.error("import", e));
     } catch (e) { console.warn(e); toast("Couldn't open that folder. Try picking it again." + (e && e.message ? ` (${e.message})` : ""), 8000); }
   },
   async scan() {

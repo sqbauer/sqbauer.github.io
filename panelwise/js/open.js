@@ -1,6 +1,7 @@
 "use strict";
 /* ---------- open a paper ---------- */
 function openPaper(raw) {
+  S.backTo = null;                                          // set again by whoever opened it to come back to (Browse cards)
   const prev = S.paper;
   S.paper = buildPaper(raw);
   // the previous paper's PDF stays in pdf.js's memory until destroyed
@@ -26,7 +27,7 @@ async function handleFile(file, canonicalId) {
   const gen = ++OPEN_GEN;                            // tap A, then B: whichever finishes last, B is the paper that opens
   if (!file || !/pdf$/i.test(file.type || file.name)) { toast("That isn't a PDF. Choose a .pdf file."); return; }
   const steps = ["Loading the PDF reader", "Reading text from each page", "Removing headers and footers", "Finding sections and figure legends", "Done"];
-  const ui = $("#progress"); ui.hidden = false; $("#progTitle").textContent = file.name;
+  const ui = $("#progress"); ui.hidden = false; $("#progTitle").textContent = (L.meta.items.find(x => x.id === canonicalId || x.name === file.name) || {}).title || file.name;
   const draw = (k, note) => { $("#progList").innerHTML = steps.slice(0, 4).map((s, i) => `<li class="${i < k ? "done" : i === k ? "run" : "todo"}">${s}</li>`).join(""); $("#progNote").textContent = note || ""; };
   draw(0);
   try {

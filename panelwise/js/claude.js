@@ -14,7 +14,7 @@ async function initClaude() {
 }
 // before a Claude request that writes into out: say why not, if Claude is off or there's no connection
 function claudeReady(out, offlineToo) {
-  if (!S.sample) { out.innerHTML = `<p class="note">${esc(NO_CLAUDE)}</p>`; return false; }
+  if (!S.sample) { out.innerHTML = `<p class="note">${NO_CLAUDE_HTML}</p>`; return false; }
   if (!PW.online()) { out.innerHTML = `<p class="note">You're offline. Claude needs a connection${offlineToo ? "; " + esc(offlineToo) : ""}.</p>`; return false; }
   return true;
 }

@@ -11,7 +11,7 @@ async function renderSettings() {
     <div class="eyebrow">Settings</div><h2>Settings</h2>
 
     <div class="card"><h3>Claude</h3>
-      <p class="note">Summaries, panel detection, chat and card checks use your own Anthropic API key with ${esc(PW_MODEL)}. The key is stored in the iPhone Keychain and is only sent to api.anthropic.com.</p>
+      <p class="note">Summaries, panel detection, chat and card checks use your own Anthropic API key with ${esc(PW_MODEL)}. The key is stored in the ${PW.sync.deviceName === "Mac" ? "Keychain" : "iPhone Keychain"} and is only sent to api.anthropic.com.</p>
       <p>${key ? `Key saved: <span class="mono">${esc(PW.keys.mask(key))}</span>` : `<strong>No key saved.</strong> Reading works without one; Claude features stay off.`}</p>
       <form id="keyForm" class="setrow" autocomplete="off">
         <input id="keyIn" type="password" placeholder="sk-ant-…" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Anthropic API key">
@@ -33,18 +33,31 @@ async function renderSettings() {
     ${typeof oaMineHTML === "function" ? oaMineHTML() : ""}
 
     <div class="card"><h3>Saved work and backups</h3>
-      <p>${nRecs} papers with saved work on this ${PW.native ? "iPhone" : "browser"}.</p>
+      <p>${nRecs} papers with saved work on this ${PW.native ? (PW.sync.deviceName === "Mac" ? "Mac" : "iPhone") : "browser"}.</p>
       ${PW.native ? `<p class="note">A backup is written to <span class="mono">${esc(folder || "Papers")}/_panelwise/backup.json</span> when the app goes to the background${PW.backup.lastAt ? `, last at ${new Date(PW.backup.lastAt).toLocaleTimeString()}` : ""}. iCloud Drive keeps it in sync with your other devices.</p>
       <p class="note"><strong>Sync between your iPhone and Mac.</strong> Each device writes its changes to <span class="mono">_panelwise/sync/</span> in the same folder and reads the other's, keeping the newest copy of everything. ${esc(PW.sync.status())}</p>
-      <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn" type="button" data-act="sync-now">Sync now</button></div>` : ""}
+      <div class="setrow"><button class="btn" type="button" data-act="sync-now">Sync now</button></div>` : ""}
+      ${healthHTML()}
       <div class="setrow">
         <button class="btn" type="button" data-act="export">Export backup</button>
         <button class="btn" type="button" data-act="import">Import backup…</button>
+        <button class="btn" type="button" data-biball="1">Export BibTeX</button>
+        <button class="btn" type="button" data-nbexport="all">Export notes as Markdown</button>
         <input type="file" id="importIn" accept="application/json,.json" hidden>
       </div>
       <p class="note">Import accepts the claude.ai export (panelwise_data.json) and this app's backups. Records are merged: the most recently updated copy wins.</p>
     </div>
   </section>`;
+}
+
+// is everything working? the last good sync and backup, and the last error, from PW.log
+function healthHTML() {
+  const ago = t => { if (!t) return "not yet"; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : new Date(t).toLocaleDateString(); };
+  const e = PW.log.last(), ok = PW.log.ok;
+  return `<div class="health">
+    ${PW.native ? `<p class="note">Last sync: <strong>${ago(ok.sync)}</strong> · last backup: <strong>${ago(ok.backup)}</strong></p>` : ""}
+    ${PW.dbFallback ? `<p class="note warn"><strong>Your saved work couldn't be opened</strong>, so this session uses a temporary store. Restart the app; your backups are kept.</p>` : ""}
+    <p class="note">${e ? `Last problem (${ago(e.t)}): ${esc(e.where)}: ${esc(e.msg)}` : "No problems logged."} ${PW.log.items.length ? `<button type="button" class="linkbtn" data-act="copylog">Copy the log</button>` : ""}</p></div>`;
 }
 
 async function settingsAction(act) {
@@ -73,6 +86,7 @@ async function settingsAction(act) {
     }
   }
   else if (act === "import") $("#importIn").click();
+  else if (act === "copylog") { try { await navigator.clipboard.writeText(PW.log.text()); toast("Log copied"); } catch { toast("Couldn't copy the log."); } }
 }
 
 document.addEventListener("submit", async e => {
