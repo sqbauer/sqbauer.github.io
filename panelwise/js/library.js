@@ -374,13 +374,38 @@ function libStatusHTML(shown) {
   if (unread && !libLost()) return `<p class="note lcount"><span class="pill p2">Authors not read for ${unread} of ${n} papers</span> Author search only covers file names for those. <button type="button" class="linkbtn" data-act="pickdir">Re-select the folder</button> to read them.</p>`;
   return `<p class="note lcount" role="status">${shown} shown</p>`;
 }
+// first and last author in bold (they usually did the work and led it); middle ones shortened
+// a name as read from a PDF, tidied for showing: no degrees ("PhD"), footnote marks or a stray capital in front ("X Lila Davachi")
+function libCleanName(n) {
+  let s = String(n || "").replace(/[*†‡§¶#\d]+/g, " ").replace(/,?\s+\b(Ph\.?\s?D|M\.?D|M\.?Sc|B\.?Sc|D\.?Phil|MPH|MA|MS|BA|BS|DVM|FRS|Jr\.?|Sr\.?)\.?(?=\s|,|$)/g, "").replace(/^Dr\.?\s+/, "").replace(/\s+/g, " ").trim().replace(/,$/, "");
+  const w = s.split(" ");
+  if (w.length >= 3 && /^[A-Z]$/.test(w[0]) && /^[A-Z][a-z]/.test(w[1])) s = w.slice(1).join(" ");
+  return s;
+}
+function libAuthorsBold(a) {
+  a = (a || []).map(libCleanName).filter(Boolean);
+  if (!a.length) return "";
+  const b = n => `<b>${esc(n)}</b>`;
+  if (a.length === 1) return b(a[0]);
+  if (a.length === 2) return `${b(a[0])}, ${b(a[1])}`;
+  return `${b(a[0])} … ${b(a[a.length - 1])} <span class="rn">(${a.length})</span>`;
+}
+// the right side of a row: your status, how far you got (one line and a bar), when
+function libProgressHTML(it) {
+  const c = recOf(it.id), p = it.prog, rm = typeof rmLoad === "function" ? rmLoad(it.id) : null;
+  const figF = c && c.nfig ? Math.min(1, (c.seen || []).length / c.nfig) : 0, readF = rm && rm.at != null ? Math.min(1, rm.at) : 0;
+  let label = p.label === "New" ? "" : p.label;
+  if ((p.label === "Started" || p.label === "Question done") && readF > 0) label = readF >= .99 ? "Read to the end" : `Read ${Math.round(readF * 100)}%`;
+  const f = p.label === "Card ✓" || p.label === "All figures" ? 1 : Math.max(figF, readF);
+  return `${statusPill(it.id)}${label ? `<span class="rp ${p.cls}">${esc(label)}</span>` : ""}${label && f > 0 ? `<span class="rbar" aria-hidden="true"><i style="width:${Math.max(6, Math.round(f * 100))}%"></i></span>` : ""}<span class="rd">${it.prog.last ? "read " + fmtDate(it.prog.last) : "added " + fmtDate(it.mtime)}</span>`;
+}
 function authorsHTML(a) {
   const q = (L.q || "").trim().toLowerCase(), norm = x => x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  if (!q || L.field === "title") return esc(libShortAuthors(a));
+  if (!q || L.field === "title") return libAuthorsBold(a);
   const hit = a.filter(n => norm(n).includes(norm(q)));
-  if (!hit.length) return esc(libShortAuthors(a));
+  if (!hit.length) return libAuthorsBold(a);
   const pos = a.indexOf(hit[0]) + 1;
-  return esc(libShortAuthors(a)) + ` <span class="pill p2" style="margin-left:4px">${esc(hit[0])} · author ${pos} of ${a.length}${pos === a.length && a.length > 1 ? " (last)" : ""}</span>`;
+  return libAuthorsBold(a) + ` <span class="pill p2" style="margin-left:4px">${esc(hit[0])} · author ${pos} of ${a.length}${pos === a.length && a.length > 1 ? " (last)" : ""}</span>`;
 }
 function renderLibList() {
   if (S.view !== "library") return;
@@ -392,10 +417,12 @@ function renderLibList() {
   const lost = libLost();
   box.innerHTML = items.length ? items.slice(0, 400).map(it => {
     const g = guessFromName(it.name), off = !it.file && !it.synced, hasRec = it.prog.last > 0;
+    const yr = it.year || g.year, isNew = !hasRec && it.prog.label === "New" && Date.now() - it.mtime < 14 * 864e5;
     const extras = [it.nNotes ? `${it.nNotes} note${it.nNotes > 1 ? "s" : ""}` : "", it.nChat ? `${it.nChat} chat` : "", it.notInFolder ? "not in folder" : ""].filter(Boolean).join(" · ");
+    const meta = [it.copies > 1 ? null : it.folders[0], extras].filter(Boolean).join(" · "), jn = typeof journalOf === "function" ? journalOf(it) : "";
     const dup = it.copies > 1 ? `<div class="rm"><span class="pill p2">${it.copies} copies${it.versions > 1 ? " · files differ" : ""}</span> ${esc(it.members.map(m => (m.folder || "Top level") + " / " + m.name).join("  ·  "))}</div>` : "";
-    return `<button type="button" class="row ${off && (!hasRec || lost) ? "off" : ""}" ${off && hasRec ? `data-record="${esc(it.id)}"` : `data-open="${esc(it.key)}"`}><div style="min-width:0"><div class="rt">${esc(it.label)}</div>${it.authors && it.authors.length ? `<div class="rm" style="color:var(--ink);opacity:.8">${authorsHTML(it.authors)}</div>` : ""}<div class="rm">${esc([it.year, it.copies > 1 ? null : (it.title ? g.label : null), it.copies > 1 ? null : it.folders[0], extras].filter(Boolean).join(" · "))}</div>${dup}${it.tags.length ? `<div class="tags" style="margin-top:5px">${it.tags.map(t => `<span class="tchip ro">${esc(t)}</span>`).join("")}</div>` : ""}</div>
-      <div class="rr">${lost && !it.synced ? `<span class="loff">${LIB_SVG.lock}Re-select to open</span>` : `${statusPill(it.id)}<span class="pill ${it.prog.cls}">${esc(it.prog.label)}</span>`}<span>${it.prog.last ? "read " + fmtDate(it.prog.last) : "added " + fmtDate(it.mtime)}</span>${typeof rmProgressLabel === "function" && rmProgressLabel(it.id) ? `<span class="pill">${esc(rmProgressLabel(it.id))}</span>` : ""}</div></button>`;
+    return `<button type="button" class="row ${off && (!hasRec || lost) ? "off" : ""}" ${off && hasRec ? `data-record="${esc(it.id)}"` : `data-open="${esc(it.key)}"`}><div style="min-width:0"><div class="rt">${isNew ? `<span class="rnew" title="Added recently, not opened yet"></span>` : ""}${esc(it.label)}</div>${it.authors && it.authors.length || yr ? `<div class="ra">${yr ? `<span class="ry">${esc(yr)}</span>` : ""}${it.authors && it.authors.length ? `<span>${authorsHTML(it.authors)}</span>` : ""}</div>` : ""}${jn || meta ? `<div class="rm">${jn ? `<i class="rj">${esc(jn)}</i>${meta ? " · " : ""}` : ""}${esc(meta)}</div>` : ""}${dup}${it.tags.length ? `<div class="tags" style="margin-top:5px">${it.tags.map(t => `<span class="tchip ro">${esc(t)}</span>`).join("")}</div>` : ""}</div>
+      <div class="rr">${lost && !it.synced ? `<span class="loff">${LIB_SVG.lock}Re-select to open</span>` : libProgressHTML(it)}</div></button>`;
   }).join("") + (items.length > 400 ? `<div class="row note">Showing 400 of ${items.length}. Search to narrow down.</div>` : "") + (L.scanning ? libSkel(3) : "")
     : `<div class="row note lnone">No papers match${L.q.trim() ? ` “${esc(L.q.trim())}”` : ""}.${L.q.trim().length >= 2 ? ` <button type="button" class="linkbtn" data-act="lsearch">Search everything, including the text of every paper</button>` : ""}</div>`;
 }

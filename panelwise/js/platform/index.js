@@ -32,6 +32,8 @@ PW.boot = async function () {
   await initDb();
   initClaude();
   setTimeout(() => PW.tidy().catch(e => PW.log.error("tidy", e)), 8000);
+  if (!PW.single) setTimeout(() => { if (typeof jrLoad === "function") jrLoad().then(() => S.view === "library" && renderLibList()).catch(() => {}); }, 1500);
+  if (!PW.single) setTimeout(() => { if (typeof jrFill === "function") jrFill().catch(e => PW.log.error("journals", e)); }, 12000);
   if (!PW.single) setTimeout(() => { if (typeof aixFill === "function") aixFill().catch(e => PW.log.error("ask index", e)); }, 20000);
   PW.keepDeviceId().catch(() => {});
   if (hasFolder) {
